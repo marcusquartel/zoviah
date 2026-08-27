@@ -70,7 +70,7 @@ em vez de quebrar.
 
 ```bash
 npm install
-npm run dev          # http://localhost:3000
+npm run dev          # http://localhost:3001 (3000 fica livre para outro projeto)
 ```
 
 Outros comandos:
