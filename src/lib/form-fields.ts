@@ -115,8 +115,8 @@ export function defaultFormValues(
 }
 
 // ---------------------------------------------------------------------------
-// Zod schema built from field defs. Used by the client (via zodResolver) and
-// re-run on the server — the browser check is UX only.
+// Zod schema built from field defs. The client runs `safeParse` for UX; the
+// server re-runs the same builder as the real gate.
 // ---------------------------------------------------------------------------
 function schemaForField(field: PublicFieldDef): z.ZodTypeAny {
   const req = field.required;
