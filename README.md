@@ -103,6 +103,11 @@ Abra o **SQL Editor** no dashboard e cole o conteúdo de cada arquivo em
 
 1. `20260827000001_foundation.sql` — tabelas, constraints, índices, triggers
 2. `20260827000002_rls.sql` — funções de membership, RLS e policies
+3. `20260827000003_programs_and_forms.sql` — programs, form_fields, creators,
+   creator_social_profiles, applications, creator_events
+4. `20260827000004_programs_forms_rls.sql` — RLS + policies das tabelas acima
+5. `20260827000005_public_submission.sql` — RPCs públicas
+   `get_public_program` e `submit_application` (SECURITY DEFINER, escopo mínimo)
 
 ## Criar o primeiro usuário e a organização
 
@@ -121,6 +126,38 @@ Depois é só acessar `/login` e entrar com esse usuário.
 
 Não existe — e não deve existir — endpoint público que promova um usuário a
 `owner`.
+
+## Programas e formulário público (Fase 1)
+
+Fluxo: **criar programa → montar formulário → ativar → captar candidaturas**.
+
+- Admin em `/app/programs`: lista, aba **Geral** (nome, slug, conteúdo público,
+  status) e aba **Formulário** (form builder — adicionar/editar/reordenar/
+  desativar campos, opções de select, campo obrigatório, e o *mapeamento* de
+  cada campo para colunas estruturadas). Aba **Inscrições** mostra o contador e
+  as inscrições recentes (a gestão completa é da Fase 2).
+- URL pública: **`/p/{orgSlug}/{programSlug}`** (ex.: `/p/rare-way/creators`).
+  Sem UUID na URL. Só aceita envio quando `status = active`.
+- Ativar um programa exige ao menos um campo ativo mapeado para **Nome completo**.
+
+### Seed de desenvolvimento
+
+Com a org Rare Way já criada, rode `supabase/seed_rare_creators.sql` no SQL
+Editor para criar o programa **Rare Creators** (`slug: creators`, em `draft`)
+com todos os campos do briefing. Ative pelo `/app/programs`. Não rode em
+produção.
+
+### Teste manual ponta a ponta
+
+1. `/app/programs` → **Novo programa** → aba Formulário: adicione campos
+   (mapeie um `text` para *Nome completo* e um `email` para *E-mail*).
+2. Aba Geral → status **Ativo** → salvar. Copie a URL pública.
+3. Abra a URL (anônimo, de preferência no celular) com
+   `?utm_source=instagram&utm_campaign=teste` na query.
+4. Preencha, marque o consentimento, envie → deve aparecer a mensagem de
+   sucesso do programa.
+5. Volte ao admin → aba **Inscrições**: o contador subiu; UTMs e dedup ficam
+   registrados no banco.
 
 ## Decisões importantes
 

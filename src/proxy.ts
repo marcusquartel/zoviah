@@ -6,6 +6,11 @@ import { updateSession } from "@/lib/supabase/proxy";
  * Next.js "proxy" (formerly middleware). Single entry point per project.
  */
 export async function proxy(request: NextRequest) {
+  // Public program pages (/p/...) are unauthenticated by design — skip the
+  // session round-trip entirely.
+  if (request.nextUrl.pathname.startsWith("/p/")) {
+    return NextResponse.next();
+  }
   // Without credentials there is no session to manage; let every route render
   // its own "configure Supabase" notice instead of crashing here.
   if (!isSupabaseConfigured()) {
