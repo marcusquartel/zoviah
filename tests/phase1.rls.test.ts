@@ -118,6 +118,7 @@ describe("Phase 1 — programs, forms, public submission", { skip }, () => {
           name: "A Draft",
           slug: `draft-${stamp}`,
           status: "draft",
+          form_version: 1,
         },
       ])
       .select("id, slug, organization_id");
