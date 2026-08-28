@@ -111,6 +111,8 @@ Abra o **SQL Editor** no dashboard e cole o conteúdo de cada arquivo em
 6. `20260828000001_crm.sql` — máquina de estados da `applications`, view
    `application_list_items`, RPCs `crm_counts` / `transition_application_status`
    / `add_creator_note`, índices de busca (`pg_trgm`)
+7. `20260828000002_approved_at_semantics.sql` — `create or replace` da função
+   de transição: `approved_at` passa a refletir só a aprovação atual
 
 ## Criar o primeiro usuário e a organização
 

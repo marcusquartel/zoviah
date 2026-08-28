@@ -248,9 +248,15 @@ approved               → archived
 archived               → awaiting_review   (reabrir)
 ```
 
-Colunas novas: `applications.approved_at` (setada ao aprovar, mantida ao
-arquivar), `creator_events.actor_user_id` (quem fez a ação; nulo na submissão
-pública).
+Colunas novas: `applications.approved_at`, `creator_events.actor_user_id` (quem
+fez a ação; nulo na submissão pública).
+
+`approved_at` reflete a **aprovação atual** da application, não é histórico
+(o histórico fica em `creator_events`). Regra na função de transição
+(migration `20260828000002`): `→ approved` grava `now()`; `approved → archived`
+preserva; qualquer volta a estado pré-decisão
+(`awaiting_review` / `information_requested`) zera; uma nova aprovação grava
+`now()` de novo.
 
 ## Mudança de status — fonte única
 

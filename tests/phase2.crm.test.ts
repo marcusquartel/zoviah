@@ -298,11 +298,105 @@ describe("Phase 2 — CRM", { skip }, () => {
     );
     row = await admin
       .from("applications")
-      .select("status, archived_at")
+      .select("status, approved_at, archived_at")
       .eq("id", appId)
       .single();
     assert.equal(row.data!.status, "awaiting_review");
     assert.equal(row.data!.archived_at, null, "archived_at cleared on reopen");
+    assert.equal(
+      row.data!.approved_at,
+      null,
+      "approved_at cleared on reopen (no longer approved)",
+    );
+  });
+
+  test("approved_at tracks the current approval only", async () => {
+    // Fresh application in 'new'.
+    const creator = await admin
+      .from("creators")
+      .insert({ organization_id: orgA, full_name: "At Person" })
+      .select("id")
+      .single();
+    const fresh = await admin
+      .from("applications")
+      .insert({
+        organization_id: orgA,
+        program_id: programAId,
+        creator_id: creator.data!.id,
+        status: "new",
+        form_version: 1,
+        submitted_at: new Date().toISOString(),
+      })
+      .select("id")
+      .single();
+    const id = fresh.data!.id;
+    const owner = await signedIn(users.ownerA.email, users.ownerA.password);
+    const readAt = async () =>
+      (
+        await admin
+          .from("applications")
+          .select("approved_at")
+          .eq("id", id)
+          .single()
+      ).data!.approved_at as string | null;
+
+    // 1. new -> approved sets approved_at
+    assert.ifError(
+      (await owner.rpc("transition_application_status", {
+        p_application_id: id,
+        p_to_status: "approved",
+      })).error,
+    );
+    const first = await readAt();
+    assert.ok(first, "1) new -> approved sets approved_at");
+
+    // 2. approved -> archived preserves approved_at
+    assert.ifError(
+      (await owner.rpc("transition_application_status", {
+        p_application_id: id,
+        p_to_status: "archived",
+      })).error,
+    );
+    assert.equal(await readAt(), first, "2) archived preserves approved_at");
+
+    // 3. archived -> awaiting_review clears approved_at
+    assert.ifError(
+      (await owner.rpc("transition_application_status", {
+        p_application_id: id,
+        p_to_status: "awaiting_review",
+      })).error,
+    );
+    assert.equal(await readAt(), null, "3) reopen clears approved_at");
+
+    // 4. awaiting_review -> approved sets a fresh approved_at
+    await new Promise((r) => setTimeout(r, 1100)); // ensure a distinct now()
+    assert.ifError(
+      (await owner.rpc("transition_application_status", {
+        p_application_id: id,
+        p_to_status: "approved",
+      })).error,
+    );
+    const second = await readAt();
+    assert.ok(second, "4) re-approval sets approved_at");
+    assert.notEqual(second, first, "4) it is a new timestamp");
+
+    // 5. the timeline kept every transition
+    const events = await admin
+      .from("creator_events")
+      .select("data")
+      .eq("application_id", id)
+      .eq("type", "application_status_changed")
+      .order("created_at", { ascending: true });
+    assert.deepEqual(
+      events.data!.map((e) => `${e.data.from}->${e.data.to}`),
+      [
+        "new->approved",
+        "approved->archived",
+        "archived->awaiting_review",
+        "awaiting_review->approved",
+      ],
+      "5) all four transitions are in the timeline",
+    );
   });
 
   test("add_creator_note: works for own org, blocked cross-tenant", async () => {
