@@ -108,6 +108,9 @@ Abra o **SQL Editor** no dashboard e cole o conteúdo de cada arquivo em
 4. `20260827000004_programs_forms_rls.sql` — RLS + policies das tabelas acima
 5. `20260827000005_public_submission.sql` — RPCs públicas
    `get_public_program` e `submit_application` (SECURITY DEFINER, escopo mínimo)
+6. `20260828000001_crm.sql` — máquina de estados da `applications`, view
+   `application_list_items`, RPCs `crm_counts` / `transition_application_status`
+   / `add_creator_note`, índices de busca (`pg_trgm`)
 
 ## Criar o primeiro usuário e a organização
 
@@ -146,6 +149,35 @@ Com a org Rare Way já criada, rode `supabase/seed_rare_creators.sql` no SQL
 Editor para criar o programa **Rare Creators** (`slug: creators`, em `draft`)
 com todos os campos do briefing. Ative pelo `/app/programs`. Não rode em
 produção.
+
+## CRM de creators (Fase 2)
+
+`/app/creators` é a tela operacional. Cada linha é uma **inscrição**
+(`application`) com a **creator** dela — a mesma creator pode ter várias
+inscrições em programas diferentes.
+
+- **Lista** e **Kanban** (por status), alternados no topo; a preferência de
+  view fica em `localStorage` + na URL.
+- Busca no servidor (nome, nome preferido, e-mail, telefone, @Instagram,
+  @TikTok) com debounce; filtros por programa, status, possível duplicidade,
+  cidade, estado, "tem Instagram", "tem TikTok"; ordenação; paginação
+  "Carregar mais" (50/página). Filtros e busca ficam na URL
+  (`/app/creators?program=…&status=new&q=…`).
+- Clicar numa linha/card abre um **Drawer** com abas Resumo / Cadastro / Redes
+  / Respostas / Histórico. As respostas são renderizadas a partir do snapshot
+  do formulário salvo na inscrição.
+- Ações de status (Aprovar / Solicitar informações / Arquivar / Reabrir) —
+  qualquer papel (owner, admin, analyst) pode operar. Toda mudança passa pela
+  RPC `transition_application_status` (atômica, valida a transição, grava
+  evento na timeline).
+- Notas internas na aba Histórico (nunca aparecem no formulário público).
+
+Script de checagem de performance (cria um tenant descartável, não toca nos
+dados reais):
+
+```bash
+node scripts/perf-check.mjs 1000
+```
 
 ### Teste manual ponta a ponta
 

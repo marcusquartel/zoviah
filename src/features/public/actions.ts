@@ -111,7 +111,7 @@ export async function submitApplication(
     platform: "instagram" | "tiktok",
     raw: unknown,
   ): void => {
-    const normalized = normalizeHandle(raw);
+    const normalized = normalizeHandle(raw, platform);
     if (!normalized) return;
     socials[platform] = {
       platform,

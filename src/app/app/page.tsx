@@ -1,85 +1,78 @@
 import type { Metadata } from "next";
-import { Building2, ShieldCheck, Users } from "lucide-react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
-import {
-  getCurrentOrganization,
-  getCurrentUser,
-} from "@/features/organizations/queries";
+import { ApplicationStatusBadge } from "@/features/applications/status-badge";
+import { formatDate } from "@/features/creators/format";
+import { getOverviewStats } from "@/features/creators/queries";
+import { getCurrentOrganization } from "@/features/organizations/queries";
 
 export const metadata: Metadata = { title: "Visão Geral · Creator Hub" };
 
 export default async function OverviewPage() {
-  const [user, current] = await Promise.all([
-    getCurrentUser(),
+  const [current, stats] = await Promise.all([
     getCurrentOrganization(),
+    getOverviewStats(),
   ]);
+  if (!current || !stats) return null;
 
-  if (!current) return null;
-  const { organization, role } = current;
+  const metrics = [
+    { label: "Creators cadastradas", value: stats.creators },
+    { label: "Inscrições totais", value: stats.applications },
+    { label: "Novas", value: stats.new },
+    { label: "Aprovadas", value: stats.approved },
+    { label: "Programas ativos", value: stats.activePrograms },
+  ];
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Visão Geral"
-        description="Fundação do Creator Hub. As áreas de produto serão liberadas nas próximas fases."
+        description={`${current.organization.name} · painel operacional`}
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Building2 className="size-4 text-muted-foreground" />
-              <CardTitle className="text-sm font-medium">Organização</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <p className="text-lg font-semibold">{organization.name}</p>
-            <p className="text-sm text-muted-foreground">/{organization.slug}</p>
-            <Badge
-              variant={organization.status === "active" ? "secondary" : "outline"}
-              className="mt-2 capitalize"
-            >
-              {organization.status}
-            </Badge>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <ShieldCheck className="size-4 text-muted-foreground" />
-              <CardTitle className="text-sm font-medium">Seu acesso</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <p className="text-lg font-semibold capitalize">{role}</p>
-            <p className="text-sm text-muted-foreground">{user?.email}</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Users className="size-4 text-muted-foreground" />
-              <CardTitle className="text-sm font-medium">Multiempresa</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <CardDescription>
-              Isolamento por <code className="text-foreground">organization_id</code>{" "}
-              com Row Level Security ativo no banco.
-            </CardDescription>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        {metrics.map((m) => (
+          <div key={m.label} className="rounded-lg border bg-card px-4 py-3">
+            <p className="text-2xl font-semibold tabular-nums">{m.value}</p>
+            <p className="text-xs text-muted-foreground">{m.label}</p>
+          </div>
+        ))}
       </div>
+
+      <section className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold">Últimas inscrições</h2>
+          <Link
+            href="/app/creators"
+            className="text-sm text-primary hover:underline"
+          >
+            Ver todas
+          </Link>
+        </div>
+
+        {stats.latest.length === 0 ? (
+          <p className="rounded-lg border border-dashed bg-surface p-6 text-center text-sm text-muted-foreground">
+            Nenhuma inscrição ainda.
+          </p>
+        ) : (
+          <ul className="divide-y rounded-lg border">
+            {stats.latest.map((a) => (
+              <li
+                key={a.id}
+                className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm"
+              >
+                <div className="min-w-0">
+                  <p className="truncate font-medium">{a.creator_name}</p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {a.program_name} · {formatDate(a.submitted_at)}
+                  </p>
+                </div>
+                <ApplicationStatusBadge status={a.status} />
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </div>
   );
 }

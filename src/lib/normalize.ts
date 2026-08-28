@@ -11,30 +11,72 @@ export function normalizeEmail(value: unknown): string | null {
   return v.length > 0 && v.includes("@") ? v : null;
 }
 
+export type HandlePlatform = "instagram" | "tiktok";
+
+/** Instagram / TikTok usernames: letters, digits, '.', '_'. */
+const HANDLE_ALLOWED = /[^a-z0-9._]/g;
+/** A leading / trailing '.' or '_' is never a valid username boundary. */
+const HANDLE_EDGE = /^[._]+|[._]+$/g;
+
+const HANDLE_MAX: Record<HandlePlatform, number> = {
+  instagram: 30, // IG usernames are ≤ 30
+  tiktok: 24, //     TikTok usernames are ≤ 24
+};
+
 /**
- * Social handle -> comparable form: strips a leading '@', pulls the handle out
- * of a full profile URL, drops query/hash and surrounding slashes, lowercases.
- * "@Marcus", "marcus", "https://instagram.com/Marcus/" -> "marcus".
+ * Social handle -> comparable form. Conservative: fixes what is unambiguously
+ * wrong (a leading '@', a pasted profile URL, a querystring, whitespace,
+ * characters that cannot appear in an IG/TikTok username, edge '.'/'_') but
+ * never rewrites the middle of an otherwise-valid username.
+ *
+ *   "@Marcus"                              -> "marcus"
+ *   "https://instagram.com/Marcus/"        -> "marcus"
+ *   "https://www.tiktok.com/@Marcus?x=1"   -> "marcus"
+ *   "@quarteldesign."                      -> "quarteldesign"   (edge '.' dropped)
+ *   "marcus.creator"                       -> "marcus.creator"  (kept intact)
+ *
+ * Pass `platform` to also cap the length to that network's limit.
  */
-export function normalizeHandle(value: unknown): string | null {
+export function normalizeHandle(
+  value: unknown,
+  platform?: HandlePlatform,
+): string | null {
   if (typeof value !== "string") return null;
   let v = value.trim();
   if (v === "") return null;
 
   if (/^https?:\/\//i.test(v) || v.includes("/")) {
     v = v.replace(/^https?:\/\//i, "").replace(/^www\./i, "");
-    // drop domain, keep the first meaningful path segment
     const parts = v.split(/[/?#]/).filter(Boolean);
+    // drop the domain, keep the first path segment (the handle)
     v = parts.length > 1 ? parts[1] : (parts[0] ?? "");
   }
 
   v = v
-    .replace(/^@+/, "")
-    .split(/[?#]/)[0]
-    .trim()
-    .toLowerCase();
+    .split(/[?#]/)[0] // querystring / hash
+    .replace(/@/g, "") // '@' anywhere, not just leading
+    .replace(/\s+/g, "") // internal whitespace
+    .toLowerCase()
+    .replace(HANDLE_ALLOWED, "") // characters that can't be in a username
+    .replace(HANDLE_EDGE, ""); // leading / trailing '.' or '_'
 
-  return v.length > 0 ? v : null;
+  if (v === "") return null;
+  if (platform) v = v.slice(0, HANDLE_MAX[platform]);
+  return v;
+}
+
+/**
+ * Soft validation for display / warnings — never used to reject a submission.
+ * `true` = looks like a real username for that platform.
+ */
+export function isPlausibleHandle(
+  handle: string,
+  platform: HandlePlatform,
+): boolean {
+  if (platform === "instagram") {
+    return /^[a-z0-9._]{1,30}$/.test(handle) && !handle.includes("..");
+  }
+  return /^[a-z0-9._]{2,24}$/.test(handle);
 }
 
 const PLATFORM_BASE: Record<string, string> = {

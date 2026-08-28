@@ -45,7 +45,12 @@ export type SocialPlatform =
   | "facebook"
   | "other";
 
-export type ApplicationStatus = "new";
+export type ApplicationStatus =
+  | "new"
+  | "awaiting_review"
+  | "information_requested"
+  | "approved"
+  | "archived";
 
 export interface FieldOption {
   value: string;
@@ -394,6 +399,7 @@ export interface Database {
           utm_content: string | null;
           utm_term: string | null;
           submitted_at: string;
+          approved_at: string | null;
           archived_at: string | null;
         } & Timestamps;
         Insert: {
@@ -418,6 +424,7 @@ export interface Database {
           utm_content?: string | null;
           utm_term?: string | null;
           submitted_at?: string;
+          approved_at?: string | null;
           archived_at?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -425,6 +432,7 @@ export interface Database {
         Update: {
           status?: ApplicationStatus;
           possible_duplicate?: boolean;
+          approved_at?: string | null;
           archived_at?: string | null;
           updated_at?: string;
         };
@@ -452,6 +460,7 @@ export interface Database {
           creator_id: string;
           application_id: string | null;
           type: string;
+          actor_user_id: string | null;
           data: Record<string, Json>;
           created_at: string;
         };
@@ -461,6 +470,7 @@ export interface Database {
           creator_id: string;
           application_id?: string | null;
           type: string;
+          actor_user_id?: string | null;
           data?: Record<string, Json>;
           created_at?: string;
         };
@@ -478,7 +488,36 @@ export interface Database {
         ];
       };
     };
-    Views: Record<string, never>;
+    Views: {
+      application_list_items: {
+        Row: {
+          id: string;
+          organization_id: string;
+          program_id: string;
+          creator_id: string;
+          status: ApplicationStatus;
+          possible_duplicate: boolean;
+          submitted_at: string;
+          created_at: string;
+          program_name: string;
+          creator_name: string;
+          creator_preferred_name: string | null;
+          creator_email: string | null;
+          creator_phone: string | null;
+          creator_city: string | null;
+          creator_state: string | null;
+          instagram_handle: string | null;
+          instagram_handle_normalized: string | null;
+          instagram_url: string | null;
+          instagram_followers: number | null;
+          tiktok_handle: string | null;
+          tiktok_handle_normalized: string | null;
+          tiktok_url: string | null;
+          tiktok_followers: number | null;
+        };
+        Relationships: [];
+      };
+    };
     Functions: {
       is_organization_member: {
         Args: { org_id: string };
@@ -507,6 +546,30 @@ export interface Database {
         };
         Returns: Json;
       };
+      crm_counts: {
+        Args: { p_program_id?: string | null };
+        Returns: Json;
+      };
+      is_valid_application_transition: {
+        Args: { p_from: string; p_to: string };
+        Returns: boolean;
+      };
+      transition_application_status: {
+        Args: {
+          p_application_id: string;
+          p_to_status: string;
+          p_note?: string | null;
+        };
+        Returns: Json;
+      };
+      add_creator_note: {
+        Args: {
+          p_creator_id: string;
+          p_text: string;
+          p_application_id?: string | null;
+        };
+        Returns: Json;
+      };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
@@ -524,3 +587,7 @@ export type Creator = Database["public"]["Tables"]["creators"]["Row"];
 export type CreatorSocialProfile =
   Database["public"]["Tables"]["creator_social_profiles"]["Row"];
 export type Application = Database["public"]["Tables"]["applications"]["Row"];
+export type CreatorEvent =
+  Database["public"]["Tables"]["creator_events"]["Row"];
+export type ApplicationListItem =
+  Database["public"]["Views"]["application_list_items"]["Row"];

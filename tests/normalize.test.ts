@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
+  isPlausibleHandle,
   normalizeEmail,
   normalizeHandle,
   normalizePhoneBR,
@@ -20,21 +21,65 @@ test("normalizeHandle strips @, URLs, case and slashes", () => {
   assert.equal(normalizeHandle("MARCUS"), "marcus");
   assert.equal(normalizeHandle("  marcus  "), "marcus");
   assert.equal(normalizeHandle("https://instagram.com/Marcus/"), "marcus");
-  assert.equal(normalizeHandle("https://www.tiktok.com/@Marcus?lang=pt"), "marcus");
-  assert.equal(normalizeHandle("instagram.com/marcus.creator"), "marcus.creator");
+  assert.equal(
+    normalizeHandle("https://www.tiktok.com/@Marcus?lang=pt"),
+    "marcus",
+  );
+  assert.equal(
+    normalizeHandle("instagram.com/marcus.creator"),
+    "marcus.creator",
+  );
   assert.equal(normalizeHandle(""), null);
 });
 
 test("normalizeHandle: the same person compares equal", () => {
   const forms = ["@Marcus", "marcus", "MARCUS", "https://instagram.com/marcus"];
-  const normalized = new Set(forms.map(normalizeHandle));
+  const normalized = new Set(forms.map((f) => normalizeHandle(f)));
   assert.equal(normalized.size, 1);
   assert.equal([...normalized][0], "marcus");
 });
 
+test("normalizeHandle hardening: drops edge '.'/'_' and invalid chars, keeps valid usernames", () => {
+  // the Phase 1 bug: "@quarteldesign." kept its trailing dot
+  assert.equal(normalizeHandle("@quarteldesign."), "quarteldesign");
+  assert.equal(normalizeHandle("_marcus_"), "marcus");
+  assert.equal(normalizeHandle("..marcus.."), "marcus");
+  // a dot in the middle is valid and must be preserved
+  assert.equal(normalizeHandle("marcus.creator"), "marcus.creator");
+  assert.equal(normalizeHandle("marcus_oficial"), "marcus_oficial");
+  // '@' anywhere, spaces, and clearly-invalid chars are stripped
+  assert.equal(normalizeHandle("mar cus"), "marcus");
+  assert.equal(normalizeHandle("marcus!!!"), "marcus");
+  assert.equal(normalizeHandle("maria@insta"), "mariainsta");
+  // nothing left -> null
+  assert.equal(normalizeHandle("...___..."), null);
+  assert.equal(normalizeHandle("@@@"), null);
+});
+
+test("normalizeHandle caps length per platform", () => {
+  const long = "a".repeat(60);
+  assert.equal(normalizeHandle(long, "instagram")?.length, 30);
+  assert.equal(normalizeHandle(long, "tiktok")?.length, 24);
+  assert.equal(normalizeHandle(long)?.length, 60); // no platform -> uncapped
+});
+
+test("isPlausibleHandle soft-validates without rejecting submissions", () => {
+  assert.equal(isPlausibleHandle("marcus.creator", "instagram"), true);
+  assert.equal(isPlausibleHandle("ab", "tiktok"), true);
+  assert.equal(isPlausibleHandle("a", "tiktok"), false); // too short for TikTok
+  assert.equal(isPlausibleHandle("marcus..creator", "instagram"), false); // ".."
+  assert.equal(isPlausibleHandle("a".repeat(31), "instagram"), false);
+});
+
 test("socialProfileUrl builds canonical URLs where known", () => {
-  assert.equal(socialProfileUrl("instagram", "marcus"), "https://instagram.com/marcus");
-  assert.equal(socialProfileUrl("tiktok", "marcus"), "https://www.tiktok.com/@marcus");
+  assert.equal(
+    socialProfileUrl("instagram", "marcus"),
+    "https://instagram.com/marcus",
+  );
+  assert.equal(
+    socialProfileUrl("tiktok", "marcus"),
+    "https://www.tiktok.com/@marcus",
+  );
   assert.equal(socialProfileUrl("youtube", "marcus"), null);
   assert.equal(socialProfileUrl("instagram", null), null);
 });

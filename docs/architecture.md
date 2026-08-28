@@ -222,3 +222,124 @@ validado no servidor. Erros ao usuário são amigáveis — nunca stack/SQL/UUID
 Mudança estrutural no builder (adicionar/remover/reordenar campo, mudar
 `required`/tipo/opções/chave) incrementa `programs.form_version`. Cada
 `applications` grava a versão vigente + o `field_snapshot`.
+
+---
+
+# Fase 2 — CRM operacional
+
+## Máquina de estados da `applications`
+
+`status` agora aceita: `new`, `awaiting_review`, `information_requested`,
+`approved`, `archived` (migration `20260828000001`). `awaiting_address`,
+`completed`, `analyzing` ficam para depois.
+
+Rótulos: Nova / Aguardando avaliação / Informações solicitadas / Aprovada /
+Arquivada.
+
+Transições válidas (fonte de verdade =
+`public.is_valid_application_transition(from, to)`, espelhada e testada em
+`src/features/applications/status.ts`):
+
+```
+new                    → awaiting_review | approved | information_requested | archived
+awaiting_review        → approved | information_requested | archived
+information_requested  → awaiting_review | approved | archived
+approved               → archived
+archived               → awaiting_review   (reabrir)
+```
+
+Colunas novas: `applications.approved_at` (setada ao aprovar, mantida ao
+arquivar), `creator_events.actor_user_id` (quem fez a ação; nulo na submissão
+pública).
+
+## Mudança de status — fonte única
+
+O frontend **nunca** faz `update applications set status = …`. Toda transição
+passa por `public.transition_application_status(p_application_id, p_to_status,
+p_note?)` — `SECURITY DEFINER`, `search_path = ''`:
+
+1. exige `auth.uid()`;
+2. deriva a org **da própria linha** da application (nunca confia em org vinda
+   do cliente);
+3. exige que o usuário seja **membro** dessa org (qualquer papel — owner, admin
+   ou analyst; a policy da Fase 1 só deixava owner/admin dar `UPDATE` direto,
+   por isso a operação de CRM vai por RPC);
+4. valida a transição na tabela;
+5. atualiza a linha + insere `creator_events` (`application_status_changed`,
+   `data = {from, to, actor_email}`, `actor_user_id`) — e, se veio nota, um
+   `note_added` — **atomicamente** (corpo plpgsql = 1 transação).
+
+`public.add_creator_note(p_creator_id, p_text, p_application_id?)` segue o mesmo
+padrão e grava `creator_events` tipo `note_added`. Nenhuma tabela nova para
+notas (§8).
+
+O server action `transitionApplicationStatus` / `addCreatorNote`
+(`src/features/creators/actions.ts`) valida o payload com Zod e chama a RPC com
+o client RLS-scoped. RLS continua sendo a última barreira.
+
+## Timeline
+
+`creator_events` (já existia) é o histórico. Tipos usados: `application_submitted`
+(Fase 1), `application_status_changed`, `note_added`. **Sem** eventos
+redundantes tipo `application_approved` — o `to` do `application_status_changed`
+já diz. Não é event sourcing: a tabela é só auditoria/histórico.
+`src/features/creators/components/timeline.tsx` renderiza (mais recente
+primeiro), limite 50.
+
+## Estratégia de consulta da lista
+
+`/app/creators` mostra **applications** (com a creator embutida) — uma linha =
+uma inscrição (§11).
+
+- **View `public.application_list_items`** (`security_invoker = true`) achata,
+  por application: creator (nome, contato, cidade/UF), programa, e o **top
+  perfil de Instagram e de TikTok** (via `left join lateral … limit 1`).
+  `security_invoker` é obrigatório: sem ele a view rodaria como `postgres` e
+  **furaria a RLS** entre tenants; com ele, as policies `_select_member` de
+  `applications`/`programs`/`creators`/`creator_social_profiles` valem para
+  quem consulta.
+- A listagem é **uma** `select` na view — sem N+1 por construção. Filtros
+  (`program`, `status`, `possible_duplicate`, `cidade`/`UF` via `ilike`,
+  tem-Instagram / tem-TikTok via `not is null`), busca (`or(ilike)` em nome /
+  preferido / e-mail / telefone / handles) e ordenação (recentes, antigas,
+  nome, maior IG, maior TikTok) são resolvidos no banco.
+- **Paginação**: offset (`range`), 50/página, botão "Carregar mais"; busca 51
+  para saber se há próxima. (Keyset é a otimização futura se a base passar de
+  algumas dezenas de milhares — a maioria do uso é filtrada.)
+- **Busca textual**: só PostgreSQL. Índices GIN `pg_trgm` em
+  `creators.full_name/email/phone_e164` e `creator_social_profiles.handle_normalized`.
+- **Contadores** (`/app/creators` e `/app`): RPC `public.crm_counts(program?)`
+  — `security invoker`, uma ida ao banco, `count(*) filter (…)` por status; RLS
+  limita ao tenant.
+- `answers` e a timeline **nunca** entram na listagem. O Drawer busca o detalhe
+  sob demanda (`loadDrawerData` server action).
+
+## Drawer
+
+`Sheet` lateral (tela cheia no mobile). Abas Resumo / Cadastro / Redes /
+Respostas / Histórico, cada uma um componente pequeno em
+`src/features/creators/components/drawer/`. A aba **Respostas** reconstrói
+`label → valor` a partir de `applications.field_snapshot` (capturado na
+submissão), então continua legível mesmo se o formulário do programa mudou
+depois (§24 — a Fase 1 já armazenava o snapshot, nenhuma migration foi
+necessária para isso).
+
+## Hardening de handles (§23)
+
+`normalizeHandle` agora também: remove `@` em qualquer posição, remove espaços
+internos, remove caracteres fora de `[a-z0-9._]` (inválidos em usernames de
+IG/TikTok) e **apara `.`/`_` das bordas** — foi o caso `@quarteldesign.` →
+antes `quarteldesign.`, agora `quarteldesign`. Um `.` no meio (`marcus.creator`)
+é preservado. `normalizeHandle(v, "instagram"|"tiktok")` também limita o
+comprimento. `isPlausibleHandle` faz validação **suave** (só para avisos na UI —
+nunca rejeita submissão). A migration faz um `update` pontual e seguro nos
+handles já gravados com borda inválida.
+
+## RLS da Fase 2
+
+Sem novas policies de tabela. Leitura do CRM usa as policies `_select_member`
+da Fase 1 (analyst já lia). Escrita (status, nota) vai pelas RPCs
+`SECURITY DEFINER` que checam **membership** (qualquer papel) — essa é a "menor
+migration necessária" do §34 para o analyst operar, sem enfraquecer nenhuma
+policy. `crm_counts` e a view são `security invoker` → RLS vale. Sem
+cross-tenant em nenhum caminho (provado por `tests/phase2.crm.test.ts`).
