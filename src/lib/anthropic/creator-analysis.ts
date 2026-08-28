@@ -54,11 +54,15 @@ export class QualitativeError extends Error {
 
 /** Real Anthropic call. */
 export function anthropicMessageFn(): MessageFn {
-  const { apiKey, model } = getAnthropicConfig();
+  const { apiKey, model, workspaceId } = getAnthropicConfig();
   const client = new Anthropic({
     apiKey,
     timeout: ANTHROPIC_TIMEOUT_MS,
     maxRetries: 1, // SDK retries transient 429/5xx once (§38)
+    // Identity-linked keys must name the workspace they act in.
+    defaultHeaders: workspaceId
+      ? { "anthropic-workspace-id": workspaceId }
+      : undefined,
   });
 
   return async (req) => {
