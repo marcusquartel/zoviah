@@ -6,15 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AnalysisResult } from "@/features/analysis/components/analysis-result";
 import { AnalysisHistory } from "@/features/analysis/components/analysis-history";
-import { AnalyzeButton } from "@/features/analysis/components/analyze-button";
 import type { DrawerAnalysis } from "@/features/creators/data-actions";
 import type { ApplicationAnalysisStatus } from "@/types/database";
 
 export function IntelligenceTab({
-  applicationId,
   analysisStatus,
   analysis,
-  onRefresh,
 }: {
   applicationId: string;
   analysisStatus: ApplicationAnalysisStatus;
@@ -54,12 +51,10 @@ export function IntelligenceTab({
 
   if (!current) {
     return (
-      <div className="space-y-4 text-center">
-        <p className="text-sm text-muted-foreground">
-          Esta creator ainda não foi analisada.
-        </p>
-        <AnalyzeButton applicationId={applicationId} onDone={onRefresh} />
-      </div>
+      <p className="rounded-lg border border-dashed bg-surface p-6 text-center text-sm text-muted-foreground">
+        Esta creator ainda não foi analisada. Use{" "}
+        <strong>Analisar creator</strong> no topo.
+      </p>
     );
   }
 
@@ -72,14 +67,8 @@ export function IntelligenceTab({
         </p>
       ) : null}
 
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <AnalyzeButton
-          applicationId={applicationId}
-          label="Reanalisar"
-          variant="outline"
-          onDone={onRefresh}
-        />
-        {analysis.history.length > 1 ? (
+      {analysis.history.length > 1 ? (
+        <div className="flex justify-end">
           <Button
             variant="ghost"
             size="sm"
@@ -87,8 +76,8 @@ export function IntelligenceTab({
           >
             <History className="size-4" /> Histórico ({analysis.history.length})
           </Button>
-        ) : null}
-      </div>
+        </div>
+      ) : null}
 
       <AnalysisResult analysis={current} />
     </div>

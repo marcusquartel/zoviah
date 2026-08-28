@@ -2,11 +2,11 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -18,6 +18,7 @@ import { AnswersTab } from "@/features/creators/components/drawer/answers";
 import { Timeline } from "@/features/creators/components/timeline";
 import { NoteForm } from "@/features/creators/components/note-form";
 import { IntelligenceTab } from "@/features/analysis/components/intelligence-tab";
+import { ScoreBar } from "@/features/analysis/components/score-bar";
 import {
   loadDrawerData,
   type DrawerData,
@@ -33,17 +34,17 @@ const TABS = [
 ] as const;
 type TabId = (typeof TABS)[number]["id"];
 
-interface CreatorDrawerProps {
+interface CreatorModalProps {
   applicationId: string | null;
   onClose: () => void;
   onStatusChanged: () => void;
 }
 
-export function CreatorDrawer({
+export function CreatorModal({
   applicationId,
   onClose,
   onStatusChanged,
-}: CreatorDrawerProps) {
+}: CreatorModalProps) {
   const [data, setData] = useState<DrawerData | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -58,7 +59,7 @@ export function CreatorDrawer({
 
   useEffect(() => {
     if (!applicationId) return;
-    // Fetch-on-open: syncing the drawer with server state for this application.
+    // Fetch-on-open: syncing the modal with server state for this application.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void load(applicationId);
   }, [applicationId, load]);
@@ -69,26 +70,26 @@ export function CreatorDrawer({
   }, [applicationId, load, onStatusChanged]);
 
   return (
-    <Sheet
+    <Dialog
       open={applicationId != null}
       onOpenChange={(open) => {
         if (!open) onClose();
       }}
     >
-      <SheetContent side="right" className="w-full gap-0 p-0 sm:max-w-xl">
+      <DialogContent className="flex max-h-[86vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl">
         {/* keyed by applicationId so tab state resets per creator */}
-        <DrawerBody
+        <ModalBody
           key={applicationId ?? "none"}
           data={data}
           loading={loading}
           onRefresh={refresh}
         />
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 }
 
-function DrawerBody({
+function ModalBody({
   data,
   loading,
   onRefresh,
@@ -99,53 +100,68 @@ function DrawerBody({
 }) {
   const [tab, setTab] = useState<TabId>("summary");
   const detail = data?.detail ?? null;
+  const analysis = data?.analysis ?? {
+    aiConfigured: false,
+    current: null,
+    history: [],
+  };
 
   return (
     <>
-      <SheetHeader className="border-b">
+      <DialogHeader className="shrink-0 border-b p-4">
         {detail ? (
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 pr-8">
             <Avatar className="size-9">
               <AvatarFallback>
                 {initialsOf(detail.creator.full_name)}
               </AvatarFallback>
             </Avatar>
             <div className="min-w-0">
-              <SheetTitle className="truncate">
+              <DialogTitle className="truncate">
                 {detail.creator.preferred_name || detail.creator.full_name}
-              </SheetTitle>
+              </DialogTitle>
               <p className="truncate text-xs text-muted-foreground">
                 {detail.creator.email ?? "sem e-mail"}
               </p>
             </div>
           </div>
         ) : (
-          <SheetTitle>{loading ? "Carregando…" : "Inscrição"}</SheetTitle>
+          <DialogTitle>{loading ? "Carregando…" : "Inscrição"}</DialogTitle>
         )}
-      </SheetHeader>
+      </DialogHeader>
 
       {detail ? (
-        <nav className="flex gap-1 overflow-x-auto border-b px-2">
-          {TABS.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              onClick={() => setTab(t.id)}
-              aria-current={tab === t.id ? "page" : undefined}
-              className={cn(
-                "-mb-px shrink-0 border-b-2 px-3 py-2 text-sm font-medium transition-colors",
-                tab === t.id
-                  ? "border-primary text-foreground"
-                  : "border-transparent text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {t.label}
-            </button>
-          ))}
-        </nav>
+        <>
+          <ScoreBar
+            applicationId={detail.application.id}
+            analysisStatus={detail.application.analysis_status}
+            current={analysis.current}
+            aiConfigured={analysis.aiConfigured}
+            onRefresh={onRefresh}
+          />
+
+          <nav className="flex shrink-0 gap-1 overflow-x-auto border-b px-2">
+            {TABS.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setTab(t.id)}
+                aria-current={tab === t.id ? "page" : undefined}
+                className={cn(
+                  "-mb-px shrink-0 border-b-2 px-3 py-2 text-sm font-medium transition-colors",
+                  tab === t.id
+                    ? "border-primary text-foreground"
+                    : "border-transparent text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {t.label}
+              </button>
+            ))}
+          </nav>
+        </>
       ) : null}
 
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="min-h-0 flex-1 overflow-y-auto p-4">
         {loading && !detail ? (
           <div className="space-y-3">
             <Skeleton className="h-6 w-40" />
@@ -162,13 +178,7 @@ function DrawerBody({
           <IntelligenceTab
             applicationId={detail.application.id}
             analysisStatus={detail.application.analysis_status}
-            analysis={
-              data?.analysis ?? {
-                aiConfigured: false,
-                current: null,
-                history: [],
-              }
-            }
+            analysis={analysis}
             onRefresh={onRefresh}
           />
         ) : tab === "registration" ? (

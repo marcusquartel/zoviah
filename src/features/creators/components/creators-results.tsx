@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { CreatorTable } from "@/features/creators/components/creator-table";
 import { CreatorKanban } from "@/features/creators/components/creator-kanban";
-import { CreatorDrawer } from "@/features/creators/components/creator-drawer";
+import { CreatorModal } from "@/features/creators/components/creator-modal";
 import { loadMoreApplications } from "@/features/creators/data-actions";
 import type {
   CreatorQuery,
@@ -89,7 +89,7 @@ export function CreatorsResults({ view, query, firstPage }: ResultsProps) {
         </div>
       ) : null}
 
-      <CreatorDrawer
+      <CreatorModal
         applicationId={selectedId}
         onClose={() => setSelectedId(null)}
         onStatusChanged={afterMutation}

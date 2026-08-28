@@ -27,22 +27,29 @@ export function AnalysisCell({
     return <span className="text-xs text-danger">Falhou</span>;
   }
   if (item.current_score == null || item.current_tier == null) {
-    return <span className="text-xs text-muted-foreground">—</span>;
+    return <span className="text-sm text-muted-foreground">—</span>;
   }
 
   return (
-    <div className="flex items-center gap-1.5 text-xs">
-      <span className="font-semibold tabular-nums">{item.current_score}</span>
+    <div className="flex items-center gap-1.5">
       <span
         className={cn(
-          "rounded px-1 font-medium",
+          "font-semibold tabular-nums",
+          compact ? "text-xs" : "text-base",
+        )}
+      >
+        {item.current_score}
+      </span>
+      <span
+        className={cn(
+          "rounded px-1 text-xs font-medium",
           TIER_STYLES[item.current_tier] ?? "bg-muted",
         )}
       >
         {TIER_SHORT[item.current_tier]}
       </span>
       {!compact && item.analysis_confidence ? (
-        <span className="text-muted-foreground">
+        <span className="text-xs text-muted-foreground">
           {CONFIDENCE_LABELS[item.analysis_confidence]}
         </span>
       ) : null}

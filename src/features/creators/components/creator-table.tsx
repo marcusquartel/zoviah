@@ -37,7 +37,7 @@ export function CreatorTable({
             <TableHead>Redes</TableHead>
             <TableHead>Programa</TableHead>
             <TableHead className="text-right">Seguidores</TableHead>
-            <TableHead>IA</TableHead>
+            <TableHead>Score</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Cadastro</TableHead>
             <TableHead className="text-right">Ações</TableHead>
