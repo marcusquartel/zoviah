@@ -82,6 +82,10 @@ export async function listApplicationItems(
   if (query.state) q = q.ilike("creator_state", `%${query.state}%`);
   if (query.hasInstagram) q = q.not("instagram_handle", "is", null);
   if (query.hasTiktok) q = q.not("tiktok_handle", "is", null);
+  if (query.analysisStatus) q = q.eq("analysis_status", query.analysisStatus);
+  if (query.tier) q = q.eq("current_tier", query.tier);
+  if (query.confidence) q = q.eq("analysis_confidence", query.confidence);
+  if (query.minScore != null) q = q.gte("current_score", query.minScore);
 
   const term = sanitizeSearch(query.q);
   if (term) {
@@ -115,6 +119,12 @@ export async function listApplicationItems(
       break;
     case "tt_desc":
       q = q.order("tiktok_followers", { ascending: false, nullsFirst: false });
+      break;
+    case "score_desc":
+      q = q.order("current_score", { ascending: false, nullsFirst: false });
+      break;
+    case "score_asc":
+      q = q.order("current_score", { ascending: true, nullsFirst: false });
       break;
     default:
       q = q.order("submitted_at", { ascending: false });

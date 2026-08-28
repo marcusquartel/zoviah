@@ -17,6 +17,7 @@ import { SocialsTab } from "@/features/creators/components/drawer/socials";
 import { AnswersTab } from "@/features/creators/components/drawer/answers";
 import { Timeline } from "@/features/creators/components/timeline";
 import { NoteForm } from "@/features/creators/components/note-form";
+import { IntelligenceTab } from "@/features/analysis/components/intelligence-tab";
 import {
   loadDrawerData,
   type DrawerData,
@@ -24,6 +25,7 @@ import {
 
 const TABS = [
   { id: "summary", label: "Resumo" },
+  { id: "intelligence", label: "Inteligência" },
   { id: "registration", label: "Cadastro" },
   { id: "socials", label: "Redes" },
   { id: "answers", label: "Respostas" },
@@ -156,6 +158,19 @@ function DrawerBody({
           </p>
         ) : tab === "summary" ? (
           <SummaryTab detail={detail} onChanged={onRefresh} />
+        ) : tab === "intelligence" ? (
+          <IntelligenceTab
+            applicationId={detail.application.id}
+            analysisStatus={detail.application.analysis_status}
+            analysis={
+              data?.analysis ?? {
+                aiConfigured: false,
+                current: null,
+                history: [],
+              }
+            }
+            onRefresh={onRefresh}
+          />
         ) : tab === "registration" ? (
           <RegistrationTab creator={detail.creator} />
         ) : tab === "socials" ? (

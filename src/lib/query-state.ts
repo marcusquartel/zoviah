@@ -1,7 +1,12 @@
 // Relative (not "@/") so this module stays importable by the node test runner,
 // which does not resolve the "@/" path alias.
 import { APPLICATION_STATUSES } from "../features/applications/status.ts";
-import type { ApplicationStatus } from "@/types/database";
+import type {
+  AnalysisConfidence,
+  AnalysisTier,
+  ApplicationAnalysisStatus,
+  ApplicationStatus,
+} from "@/types/database";
 
 export const CREATOR_SORTS = [
   "recent",
@@ -10,6 +15,8 @@ export const CREATOR_SORTS = [
   "name_desc",
   "ig_desc",
   "tt_desc",
+  "score_desc",
+  "score_asc",
 ] as const;
 export type CreatorSort = (typeof CREATOR_SORTS)[number];
 
@@ -20,9 +27,24 @@ export const SORT_LABELS: Record<CreatorSort, string> = {
   name_desc: "Nome Z–A",
   ig_desc: "Maior Instagram",
   tt_desc: "Maior TikTok",
+  score_desc: "Maior score",
+  score_asc: "Menor score",
 };
 
 export type CreatorView = "list" | "kanban";
+
+export const ANALYSIS_STATUS_VALUES: readonly ApplicationAnalysisStatus[] = [
+  "not_analyzed",
+  "processing",
+  "completed",
+  "failed",
+];
+export const TIER_VALUES: readonly AnalysisTier[] = ["A", "B", "C", "D"];
+export const CONFIDENCE_VALUES: readonly AnalysisConfidence[] = [
+  "low",
+  "medium",
+  "high",
+];
 
 export interface CreatorQuery {
   q: string;
@@ -33,6 +55,10 @@ export interface CreatorQuery {
   duplicate: boolean;
   hasInstagram: boolean;
   hasTiktok: boolean;
+  analysisStatus: ApplicationAnalysisStatus | null;
+  tier: AnalysisTier | null;
+  confidence: AnalysisConfidence | null;
+  minScore: number | null;
   sort: CreatorSort;
   view: CreatorView;
   page: number;
@@ -47,6 +73,10 @@ export const DEFAULT_CREATOR_QUERY: CreatorQuery = {
   duplicate: false,
   hasInstagram: false,
   hasTiktok: false,
+  analysisStatus: null,
+  tier: null,
+  confidence: null,
+  minScore: null,
   sort: "recent",
   view: "list",
   page: 1,
@@ -62,12 +92,16 @@ function get(sp: ParamInput, key: string): string | undefined {
   return Array.isArray(v) ? v[0] : v;
 }
 
-export function parseCreatorQuery(sp: ParamInput): CreatorQuery {
-  const rawStatus = get(sp, "status");
-  const status = APPLICATION_STATUSES.includes(rawStatus as ApplicationStatus)
-    ? (rawStatus as ApplicationStatus)
+function oneOf<T extends string>(
+  value: string | undefined,
+  allowed: readonly T[],
+): T | null {
+  return value && (allowed as readonly string[]).includes(value)
+    ? (value as T)
     : null;
+}
 
+export function parseCreatorQuery(sp: ParamInput): CreatorQuery {
   const rawSort = get(sp, "sort");
   const sort = (CREATOR_SORTS as readonly string[]).includes(rawSort ?? "")
     ? (rawSort as CreatorSort)
@@ -78,6 +112,12 @@ export function parseCreatorQuery(sp: ParamInput): CreatorQuery {
   const pageNum = Number.parseInt(get(sp, "page") ?? "1", 10);
   const page = Number.isFinite(pageNum) && pageNum > 0 ? pageNum : 1;
 
+  const minScoreNum = Number.parseInt(get(sp, "min_score") ?? "", 10);
+  const minScore =
+    Number.isFinite(minScoreNum) && minScoreNum > 0
+      ? Math.min(100, minScoreNum)
+      : null;
+
   const trim = (k: string) => {
     const v = get(sp, k)?.trim();
     return v ? v : null;
@@ -86,12 +126,16 @@ export function parseCreatorQuery(sp: ParamInput): CreatorQuery {
   return {
     q: get(sp, "q")?.trim() ?? "",
     program: trim("program"),
-    status,
+    status: oneOf(get(sp, "status"), APPLICATION_STATUSES),
     city: trim("city"),
     state: trim("state"),
     duplicate: get(sp, "duplicate") === "1",
     hasInstagram: get(sp, "has_ig") === "1",
     hasTiktok: get(sp, "has_tt") === "1",
+    analysisStatus: oneOf(get(sp, "analysis"), ANALYSIS_STATUS_VALUES),
+    tier: oneOf(get(sp, "tier"), TIER_VALUES),
+    confidence: oneOf(get(sp, "confidence"), CONFIDENCE_VALUES),
+    minScore,
     sort,
     view,
     page,
@@ -111,6 +155,10 @@ export function serializeCreatorQuery(q: Partial<CreatorQuery>): string {
   if (merged.duplicate) params.set("duplicate", "1");
   if (merged.hasInstagram) params.set("has_ig", "1");
   if (merged.hasTiktok) params.set("has_tt", "1");
+  if (merged.analysisStatus) params.set("analysis", merged.analysisStatus);
+  if (merged.tier) params.set("tier", merged.tier);
+  if (merged.confidence) params.set("confidence", merged.confidence);
+  if (merged.minScore != null) params.set("min_score", String(merged.minScore));
   if (merged.sort !== "recent") params.set("sort", merged.sort);
   if (merged.view !== "list") params.set("view", merged.view);
   if (merged.page > 1) params.set("page", String(merged.page));
@@ -128,6 +176,10 @@ export function hasActiveFilters(q: CreatorQuery): boolean {
       q.state ||
       q.duplicate ||
       q.hasInstagram ||
-      q.hasTiktok,
+      q.hasTiktok ||
+      q.analysisStatus ||
+      q.tier ||
+      q.confidence ||
+      q.minScore != null,
   );
 }

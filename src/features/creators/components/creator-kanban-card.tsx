@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { AnalysisCell } from "@/features/analysis/components/analysis-cell";
 import { nextStatuses, statusActionLabel } from "@/features/applications/status";
 import { transitionApplicationStatus } from "@/features/creators/actions";
 import { formatDate, formatFollowers } from "@/features/creators/format";
@@ -79,6 +80,7 @@ export function CreatorKanbanCard({
           </span>
         ) : null}
         <span>{formatDate(item.submitted_at)}</span>
+        <AnalysisCell item={item} compact />
       </div>
 
       <div className="mt-2 flex items-center justify-between gap-2">

@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc *)",
+      "Bash(echo \"TC:$?\")",
+      "Bash(npx eslint *)",
+      "Bash(echo \"LINT:$?\")"
+    ]
+  }
+}

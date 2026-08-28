@@ -113,6 +113,30 @@ Abra o **SQL Editor** no dashboard e cole o conteúdo de cada arquivo em
    / `add_creator_note`, índices de busca (`pg_trgm`)
 7. `20260828000002_approved_at_semantics.sql` — `create or replace` da função
    de transição: `approved_at` passa a refletir só a aprovação atual
+8. `20260828000003_creator_analysis.sql` — tabela `creator_analyses`
+   (histórico de análises), colunas de cache em `applications`, RPCs
+   `start`/`complete`/`fail_creator_analysis` + `analysis_stats`
+
+## IA / Creator Score (Fase 3A)
+
+`/app/creators` → abrir uma creator → aba **Inteligência** → **Analisar
+creator**. O score (0–100), tier, confidence e evidence coverage aparecem no
+drawer, na coluna **IA** da lista e no card do Kanban. Filtros por análise /
+tier / confidence / score mínimo.
+
+- O **score é calculado pelo backend** de forma determinística
+  (`src/features/analysis/score-engine.ts`). A IA só produz avaliação
+  qualitativa de 3 critérios — nunca uma nota geral. Critério sem evidência =
+  `null` (desconhecido), nunca 0.
+- **Score não aprova ninguém.** Aprovar / arquivar / solicitar informações
+  continua sendo decisão humana, na aba Resumo.
+- Requer `ANTHROPIC_API_KEY` e `ANTHROPIC_MODEL` no servidor (ver
+  `.env.example`). Sem elas o CRM funciona igual e a aba mostra "IA não
+  configurada".
+- Nenhuma submissão pública dispara IA — só o clique da equipe.
+
+Página **`/app/ai`**: status da integração, modelo, versões de prompt/scoring,
+pesos e estatísticas.
 
 ## Criar o primeiro usuário e a organização
 

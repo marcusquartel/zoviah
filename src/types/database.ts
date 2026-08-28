@@ -52,6 +52,15 @@ export type ApplicationStatus =
   | "approved"
   | "archived";
 
+export type AnalysisRunStatus = "processing" | "completed" | "failed";
+export type ApplicationAnalysisStatus =
+  | "not_analyzed"
+  | "processing"
+  | "completed"
+  | "failed";
+export type AnalysisTier = "A" | "B" | "C" | "D";
+export type AnalysisConfidence = "low" | "medium" | "high";
+
 export interface FieldOption {
   value: string;
   label: string;
@@ -401,6 +410,12 @@ export interface Database {
           submitted_at: string;
           approved_at: string | null;
           archived_at: string | null;
+          current_analysis_id: string | null;
+          current_score: number | null;
+          current_tier: AnalysisTier | null;
+          analysis_status: ApplicationAnalysisStatus;
+          analysis_confidence: AnalysisConfidence | null;
+          analysis_coverage: number | null;
         } & Timestamps;
         Insert: {
           id?: string;
@@ -487,6 +502,68 @@ export interface Database {
           },
         ];
       };
+      creator_analyses: {
+        Row: {
+          id: string;
+          organization_id: string;
+          creator_id: string;
+          application_id: string;
+          status: AnalysisRunStatus;
+          provider: string;
+          model: string | null;
+          prompt_version: string;
+          scoring_version: string;
+          score: number | null;
+          tier: AnalysisTier | null;
+          confidence: AnalysisConfidence | null;
+          evidence_coverage: number | null;
+          subscores: Record<string, Json>;
+          summary: string | null;
+          strengths: string[] | null;
+          attention_points: string[] | null;
+          suggested_tags: string[] | null;
+          input_snapshot: Record<string, Json> | null;
+          raw_result: Record<string, Json> | null;
+          input_tokens: number | null;
+          output_tokens: number | null;
+          latency_ms: number | null;
+          error_code: string | null;
+          error_message: string | null;
+          started_at: string | null;
+          completed_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          creator_id: string;
+          application_id: string;
+          status?: AnalysisRunStatus;
+          provider: string;
+          model?: string | null;
+          prompt_version: string;
+          scoring_version: string;
+        };
+        Update: {
+          status?: AnalysisRunStatus;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "creator_analyses_application_id_fkey";
+            columns: ["application_id"];
+            isOneToOne: false;
+            referencedRelation: "applications";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "creator_analyses_creator_id_fkey";
+            columns: ["creator_id"];
+            isOneToOne: false;
+            referencedRelation: "creators";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: {
       application_list_items: {
@@ -514,6 +591,11 @@ export interface Database {
           tiktok_handle_normalized: string | null;
           tiktok_url: string | null;
           tiktok_followers: number | null;
+          current_score: number | null;
+          current_tier: AnalysisTier | null;
+          analysis_status: ApplicationAnalysisStatus;
+          analysis_confidence: AnalysisConfidence | null;
+          analysis_coverage: number | null;
         };
         Relationships: [];
       };
@@ -570,6 +652,32 @@ export interface Database {
         };
         Returns: Json;
       };
+      start_creator_analysis: {
+        Args: {
+          p_application_id: string;
+          p_provider: string;
+          p_model: string;
+          p_prompt_version: string;
+          p_scoring_version: string;
+        };
+        Returns: Json;
+      };
+      complete_creator_analysis: {
+        Args: { p_analysis_id: string; p_result: Json };
+        Returns: Json;
+      };
+      fail_creator_analysis: {
+        Args: {
+          p_analysis_id: string;
+          p_error_code: string;
+          p_error_message: string;
+        };
+        Returns: Json;
+      };
+      analysis_stats: {
+        Args: Record<string, never>;
+        Returns: Json;
+      };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
@@ -589,5 +697,7 @@ export type CreatorSocialProfile =
 export type Application = Database["public"]["Tables"]["applications"]["Row"];
 export type CreatorEvent =
   Database["public"]["Tables"]["creator_events"]["Row"];
+export type CreatorAnalysis =
+  Database["public"]["Tables"]["creator_analyses"]["Row"];
 export type ApplicationListItem =
   Database["public"]["Views"]["application_list_items"]["Row"];

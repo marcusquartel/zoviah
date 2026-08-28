@@ -12,6 +12,7 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { ApplicationStatusBadge } from "@/features/applications/status-badge";
+import { AnalysisCell } from "@/features/analysis/components/analysis-cell";
 import { StatusMenu } from "@/features/creators/components/status-menu";
 import { formatDate, formatFollowers, initialsOf } from "@/features/creators/format";
 import type { ApplicationListItem, ApplicationStatus } from "@/types/database";
@@ -36,6 +37,7 @@ export function CreatorTable({
             <TableHead>Redes</TableHead>
             <TableHead>Programa</TableHead>
             <TableHead className="text-right">Seguidores</TableHead>
+            <TableHead>IA</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Cadastro</TableHead>
             <TableHead className="text-right">Ações</TableHead>
@@ -101,6 +103,10 @@ export function CreatorTable({
                 {it.instagram_followers == null && it.tiktok_followers == null
                   ? "—"
                   : null}
+              </TableCell>
+
+              <TableCell>
+                <AnalysisCell item={it} />
               </TableCell>
 
               <TableCell>
