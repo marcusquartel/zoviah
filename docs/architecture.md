@@ -473,3 +473,147 @@ análise; `input_tokens` / `output_tokens` / `latency_ms` também (§35).
 Botão "Reanalisar" cria uma **nova** `creator_analyses` (nunca sobrescreve).
 `current_analysis_id` passa a apontar para a mais recente **concluída**;
 histórico completo fica na aba Inteligência → Histórico.
+
+---
+
+# Fase 3B — Evidence Layer
+
+Fase de **coleta de evidência**, não de pontuação. O objetivo é acumular
+observações reais de métricas sociais (com proveniência e histórico) para,
+numa fase futura própria, calibrar o `creator-score-v2` a partir da
+distribuição real. **O score não muda nesta fase.**
+
+## O que NÃO mudou (garantido por teste — §68)
+
+`creator-score-v1` está congelado: `SCORING_VERSION = "creator-score-v1"`,
+pesos idênticos (25/20/15/10/10/10/5/5), `objective.ts` intacto —
+`performance` / `consistency` / `community_quality` / `growth_potential`
+continuam retornando `score: null, coverage: 0`. `tests/phase3b.regression.test.ts`
+fixa a saída do engine para um conjunto de critérios de referência.
+Só o **prompt** mudou de forma material (passou a reconhecer métricas
+observadas como contexto factual), então `PROMPT_VERSION` avançou para
+`"creator-analysis-v2"`; análises antigas mantêm o `v1` gravado e nada é
+reprocessado.
+
+## Metric Snapshots (migration `20260828000004`)
+
+**`social_metric_snapshots`** — uma observação de um perfil social num ponto
+no tempo. Uma linha por observação (append-only na prática; há `update` para
+correção). Campos: `followers`, `average_views`, `median_views`,
+`views_sample` (jsonb, array de contagens de views recentes), `average_likes`
+/`_comments`/`_shares`/`_saves`, `reach`, `interactions`, `posts_count`,
+`period_days` (1–365), `observed_at` (pode ser no passado; `default now()`;
+data absurda no futuro é rejeitada na RPC), `notes`. Constraint
+`social_metric_snapshots_has_metric` impede snapshot vazio. `platform` **não**
+é duplicado — deriva-se via `social_profile_id` (§9). Índices:
+`(social_profile_id, observed_at desc, created_at desc)` e
+`(organization_id, created_at desc)`.
+
+`views_sample` é a **única** entrada de views persistida como texto do
+usuário; `median_views` e `average_views` são **sempre** recalculados no
+servidor (SQL `percentile_cont` / `avg` via `jsonb_int_median` /
+`jsonb_int_avg`) — a preview no cliente é cosmética (§11). Mediana:
+ímpar → valor do meio; par → média dos dois centrais (`[10,20,30,40] → 25`).
+Amostra: 1–30 inteiros ≥ 0; NaN / string / negativo são descartados, nunca
+viram 0 (§14). O parser pt-BR (`parse-views.ts`) lê `"7.100"` como `7100`
+(separador de milhar), não `7.1`.
+
+`followers` do snapshot é o **valor observado**;
+`creator_social_profiles.followers_declared` **nunca** é sobrescrito — a
+distinção declarado × observado é preservada de propósito (§15).
+
+## Proveniência (`source`)
+
+Enum `declared | admin_manual | creator_provided | import | api`. É **só
+proveniência** — não é qualidade, não entra no score, não gera "Data Quality
+Score" (§7, §55). `admin_manual` é o fluxo principal desta fase. Múltiplos
+snapshots na mesma data são permitidos (a origem diferencia, §77).
+
+## Métricas derivadas (`src/features/evidence/metrics.ts` — puro)
+
+Sem I/O, sem score. Toda função retorna `null` quando falta a entrada
+(nunca 0, nunca chute): `viewRate` (= `median_views / followers`, **não** é
+"engajamento"), `engagementByFollowers` e `engagementByReach` (os dois
+denominadores são expostos lado a lado — nenhum é a taxa "oficial"),
+`postsPerWeek` (= `posts_count / period_days * 7`), `followerGrowth`
+(absoluto sempre; taxa só quando o snapshot anterior tem `followers > 0`;
+usa o snapshot anterior por `observed_at` do **mesmo** perfil — não mistura
+plataformas). Métricas nunca viram nota.
+
+## RLS e RPCs
+
+`social_metric_snapshots` com RLS: `select` para membros da org; **nenhuma
+policy de escrita** — só as RPCs `SECURITY DEFINER` (`search_path=''`)
+gravam. `create_metric_snapshot(p_social_profile_id, p_payload)` e
+`update_metric_snapshot(p_snapshot_id, p_payload)` derivam
+`organization_id` / `creator_id` / `platform` do próprio perfil (ou da linha
+do snapshot) — o cliente **não** envia `organization_id` (§58). Checam
+`auth.uid()` + membership de qualquer papel (owner/admin/analyst). Recalculam
+mediana/média. Escrevem um evento de timeline mínimo
+(`metric_snapshot_added` / `_updated` com `snapshot_id`, `social_profile_id`,
+`platform`, `source`, `observed_at` — sem PII). Timeline legível:
+"Métricas do Instagram adicionadas."
+
+View **`latest_metric_snapshots`** (`security_invoker`) — `distinct on
+(social_profile_id)` ordenado por `observed_at desc, created_at desc`.
+
+`evidence_stats()` (`security invoker`) — contadores de `/app/ai`: total de
+snapshots, creators com snapshot, perfis com 2+ snapshots.
+
+## Crescimento histórico
+
+`follower_growth_*` compara o snapshot mais recente com o anterior do mesmo
+perfil (por `observed_at`). Taxa só existe com base anterior > 0. A UI mostra
+"Atualizado há X dias"; badge "Dados antigos" quando > 90 dias — **efeito só
+de UX**, zero efeito no score (§54). Diferença grande entre observado e
+declarado exibe "Valor observado difere do valor informado no cadastro." —
+sem acusação de fraude, sem penalidade (§50).
+
+## Enriquecimento da análise (sem mudar o score)
+
+`analyzeApplication` busca o snapshot mais recente (+ o anterior, para
+crescimento) por plataforma e passa para `sanitizeEvidence`.
+`objective_metrics.social` no payload ganha só **números derivados**
+(`followers`, `median_views`, `median_view_rate`, `posts_per_week`,
+`engagement_by_followers`/`_by_reach`, `follower_growth_rate`,
+`snapshot_age_days`, `source`) — **sem** handle, nome, e-mail, telefone ou ID
+interno. `input_snapshot` continua sendo exatamente o que foi enviado ao
+modelo; a auditoria de *quais* snapshots alimentaram a análise fica separada
+em `creator_analyses.used_snapshot_ids uuid[]` (§49). O `SYSTEM_PROMPT`
+proíbe transformar métrica em nota, criar benchmark ou afirmar
+fraude/bot/seguidor falso — o modelo pode citar um valor como contexto
+factual e nada além disso.
+
+## UI
+
+Aba **Métricas** no modal do creator (ordem: Resumo · Inteligência · Cadastro
+· Redes · **Métricas** · Respostas · Histórico). Modal continua modal (não
+virou drawer); ScoreBar fixa no topo. Por perfil: handle, seguidores
+declarados, e do snapshot mais recente — seguidores observados, mediana/média
+de views, view rate, posts/semana, engajamento (quando houver), data e
+origem. `—` para ausente, nunca 0. Tabela de histórico (Data, Seguidores,
+Mediana views, View rate, Posts/sem, Origem; mais recente primeiro; sem
+gráficos; "Carregar mais" de 10 em 10, §73). Botão "Adicionar métricas" por
+perfil abre um `Dialog` **dentro** do modal, com preview ao vivo da amostra
+de views ("Amostra: 5 conteúdos · Mediana: 7.500 · Média: 7.780"). Snapshot
+é editável (mesmo formulário pré-preenchido); **sem** delete destrutivo no
+MVP (§75).
+
+Aba **Inteligência** ganhou "Evidências" (✓/— por tipo de dado) e "Dados que
+ainda faltam" (por critério `null`, com o porquê) — explica por que um
+critério está "dados insuficientes" sem inventar nota. A ScoreBar mostra
+"Novas evidências" quando `max(social_metric_snapshots.created_at) >
+current_analysis.created_at`; o botão é "Reanalisar" se já há análise, senão
+"Analisar creator". Adicionar snapshot **não** dispara o Claude (§43).
+
+Carregamento da aba Métricas é **sob demanda** — a lista do CRM não ganhou
+join de snapshot (§72).
+
+## Futuro — calibração do `creator-score-v2`
+
+Fase própria, não agora: com massa de snapshots, derivar percentis /
+benchmarks por plataforma e faixa de seguidores e então pontuar
+`performance` / `consistency` / `community_quality` / `growth_potential` a
+partir da distribuição real — substituindo os `null` atuais. O ponto de
+extensão é `objective.ts` (os quatro critérios já existem, só retornam
+`null`). Nada de thresholds arbitrários antes dessa fase.
