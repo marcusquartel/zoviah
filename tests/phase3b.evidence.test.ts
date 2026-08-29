@@ -55,6 +55,10 @@ async function signedIn(email: string, password: string): Promise<SupabaseClient
 
 describe("Phase 3B — Evidence Layer", { skip }, () => {
   let admin: SupabaseClient;
+  // Signed in ONCE in before() and reused — one auth call per user keeps the
+  // shared project's auth rate limit happy.
+  let ownerA: SupabaseClient;
+  let ownerB: SupabaseClient;
   let orgA = "";
   let orgB = "";
   let creatorId = "";
@@ -149,6 +153,9 @@ describe("Phase 3B — Evidence Layer", { skip }, () => {
       .single();
     assert.ifError(prof.error);
     profileId = prof.data!.id;
+
+    ownerA = await signedIn(users.ownerA.email, users.ownerA.password);
+    ownerB = await signedIn(users.ownerB.email, users.ownerB.password);
   });
 
   after(async () => {
@@ -171,8 +178,7 @@ describe("Phase 3B — Evidence Layer", { skip }, () => {
   });
 
   test("1) create_metric_snapshot computes median/average server-side from the sample", async () => {
-    const owner = await signedIn(users.ownerA.email, users.ownerA.password);
-    const res = await owner.rpc("create_metric_snapshot", {
+    const res = await ownerA.rpc("create_metric_snapshot", {
       p_social_profile_id: profileId,
       p_payload: {
         source: "admin_manual",
@@ -204,8 +210,7 @@ describe("Phase 3B — Evidence Layer", { skip }, () => {
   });
 
   test("2) odd-length sample -> exact middle; 3) declared followers untouched", async () => {
-    const owner = await signedIn(users.ownerA.email, users.ownerA.password);
-    const res = await owner.rpc("create_metric_snapshot", {
+    const res = await ownerA.rpc("create_metric_snapshot", {
       p_social_profile_id: profileId,
       p_payload: {
         source: "admin_manual",
@@ -227,8 +232,7 @@ describe("Phase 3B — Evidence Layer", { skip }, () => {
   });
 
   test("4) sample larger than 30 is rejected", async () => {
-    const owner = await signedIn(users.ownerA.email, users.ownerA.password);
-    const res = await owner.rpc("create_metric_snapshot", {
+    const res = await ownerA.rpc("create_metric_snapshot", {
       p_social_profile_id: profileId,
       p_payload: {
         source: "admin_manual",
@@ -240,8 +244,7 @@ describe("Phase 3B — Evidence Layer", { skip }, () => {
   });
 
   test("5) observed_at far in the future is rejected", async () => {
-    const owner = await signedIn(users.ownerA.email, users.ownerA.password);
-    const res = await owner.rpc("create_metric_snapshot", {
+    const res = await ownerA.rpc("create_metric_snapshot", {
       p_social_profile_id: profileId,
       p_payload: {
         source: "admin_manual",
@@ -254,8 +257,7 @@ describe("Phase 3B — Evidence Layer", { skip }, () => {
   });
 
   test("6) a member of another org cannot create a snapshot for this profile", async () => {
-    const outsider = await signedIn(users.ownerB.email, users.ownerB.password);
-    const res = await outsider.rpc("create_metric_snapshot", {
+    const res = await ownerB.rpc("create_metric_snapshot", {
       p_social_profile_id: profileId,
       p_payload: { source: "admin_manual", followers: 1 },
     });
@@ -264,8 +266,7 @@ describe("Phase 3B — Evidence Layer", { skip }, () => {
   });
 
   test("7) RLS: org B owner cannot read org A snapshots", async () => {
-    const outsider = await signedIn(users.ownerB.email, users.ownerB.password);
-    const rows = await outsider
+    const rows = await ownerB
       .from("social_metric_snapshots")
       .select("id")
       .eq("organization_id", orgA);
@@ -274,8 +275,7 @@ describe("Phase 3B — Evidence Layer", { skip }, () => {
   });
 
   test("8) latest_metric_snapshots returns the newest observation per profile", async () => {
-    const owner = await signedIn(users.ownerA.email, users.ownerA.password);
-    const view = await owner
+    const view = await ownerA
       .from("latest_metric_snapshots")
       .select("observed_at, followers")
       .eq("social_profile_id", profileId)
@@ -286,8 +286,7 @@ describe("Phase 3B — Evidence Layer", { skip }, () => {
   });
 
   test("9) update_metric_snapshot recomputes median and logs an event", async () => {
-    const owner = await signedIn(users.ownerA.email, users.ownerA.password);
-    const created = await owner.rpc("create_metric_snapshot", {
+    const created = await ownerA.rpc("create_metric_snapshot", {
       p_social_profile_id: profileId,
       p_payload: {
         source: "admin_manual",
@@ -298,7 +297,7 @@ describe("Phase 3B — Evidence Layer", { skip }, () => {
     assert.ifError(created.error);
     assert.equal(Number(created.data.median_views), 200);
 
-    const updated = await owner.rpc("update_metric_snapshot", {
+    const updated = await ownerA.rpc("update_metric_snapshot", {
       p_snapshot_id: created.data.snapshot_id,
       p_payload: {
         source: "admin_manual",
@@ -327,9 +326,8 @@ describe("Phase 3B — Evidence Layer", { skip }, () => {
   });
 
   test("10) multiple snapshots on the same date are allowed (source differentiates)", async () => {
-    const owner = await signedIn(users.ownerA.email, users.ownerA.password);
     for (const source of ["admin_manual", "creator_provided"]) {
-      const res = await owner.rpc("create_metric_snapshot", {
+      const res = await ownerA.rpc("create_metric_snapshot", {
         p_social_profile_id: profileId,
         p_payload: {
           source,
@@ -348,8 +346,7 @@ describe("Phase 3B — Evidence Layer", { skip }, () => {
   });
 
   test("11) empty snapshot (no metric at all) is rejected by the table constraint", async () => {
-    const owner = await signedIn(users.ownerA.email, users.ownerA.password);
-    const res = await owner.rpc("create_metric_snapshot", {
+    const res = await ownerA.rpc("create_metric_snapshot", {
       p_social_profile_id: profileId,
       p_payload: { source: "admin_manual", observed_at: "2026-05-01T00:00:00.000Z" },
     });
@@ -357,8 +354,7 @@ describe("Phase 3B — Evidence Layer", { skip }, () => {
   });
 
   test("12) evidence_stats counts snapshots, creators and multi-snapshot profiles", async () => {
-    const owner = await signedIn(users.ownerA.email, users.ownerA.password);
-    const res = await owner.rpc("evidence_stats");
+    const res = await ownerA.rpc("evidence_stats");
     assert.ifError(res.error);
     assert.ok(Number(res.data.snapshots) >= 5);
     assert.ok(Number(res.data.creators_with_snapshot) >= 1);
@@ -366,8 +362,7 @@ describe("Phase 3B — Evidence Layer", { skip }, () => {
   });
 
   test("13) complete_creator_analysis persists used_snapshot_ids", async () => {
-    const owner = await signedIn(users.ownerA.email, users.ownerA.password);
-    const snap = await owner.rpc("create_metric_snapshot", {
+    const snap = await ownerA.rpc("create_metric_snapshot", {
       p_social_profile_id: profileId,
       p_payload: {
         source: "admin_manual",
@@ -377,7 +372,7 @@ describe("Phase 3B — Evidence Layer", { skip }, () => {
     });
     assert.ifError(snap.error);
 
-    const started = await owner.rpc("start_creator_analysis", {
+    const started = await ownerA.rpc("start_creator_analysis", {
       p_application_id: appId,
       p_provider: "test",
       p_model: "test-model",
@@ -387,7 +382,7 @@ describe("Phase 3B — Evidence Layer", { skip }, () => {
     assert.ifError(started.error);
     const analysisId = started.data.analysis_id;
 
-    const done = await owner.rpc("complete_creator_analysis", {
+    const done = await ownerA.rpc("complete_creator_analysis", {
       p_analysis_id: analysisId,
       p_result: {
         model: "test-model",
