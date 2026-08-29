@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -59,8 +60,15 @@ export default async function ProgramApplicationsPage({
             </TableHeader>
             <TableBody>
               {rows.map((r) => (
-                <TableRow key={r.id}>
-                  <TableCell className="font-medium">{r.creator_name}</TableCell>
+                <TableRow key={r.id} className="hover:bg-muted/50">
+                  <TableCell className="font-medium">
+                    <Link
+                      href={`/app/creators?a=${r.id}`}
+                      className="hover:underline"
+                    >
+                      {r.creator_name}
+                    </Link>
+                  </TableCell>
                   <TableCell className="text-muted-foreground">
                     {r.creator_email ?? "—"}
                   </TableCell>

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useCallback, useState, useTransition } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { CreatorTable } from "@/features/creators/components/creator-table";
 import { CreatorKanban } from "@/features/creators/components/creator-kanban";
@@ -23,11 +23,26 @@ interface ResultsProps {
 
 export function CreatorsResults({ view, query, firstPage }: ResultsProps) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [items, setItems] = useState<ApplicationListItem[]>(firstPage.items);
   const [page, setPage] = useState(firstPage.page);
   const [hasMore, setHasMore] = useState(firstPage.hasMore);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [loadingMore, startLoadMore] = useTransition();
+
+  // The open creator is URL state (`?a=<applicationId>`) so it can be
+  // deep-linked from any other creator listing.
+  const selectedId = searchParams.get("a");
+  const setSelectedId = useCallback(
+    (id: string | null) => {
+      const next = new URLSearchParams(searchParams);
+      if (id) next.set("a", id);
+      else next.delete("a");
+      const qs = next.toString();
+      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    },
+    [searchParams, pathname, router],
+  );
 
   const search = serializeCreatorQuery({ ...query, page: 1, view: "list" });
 

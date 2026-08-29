@@ -57,17 +57,19 @@ export default async function OverviewPage() {
         ) : (
           <ul className="divide-y rounded-lg border">
             {stats.latest.map((a) => (
-              <li
-                key={a.id}
-                className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm"
-              >
-                <div className="min-w-0">
-                  <p className="truncate font-medium">{a.creator_name}</p>
-                  <p className="truncate text-xs text-muted-foreground">
-                    {a.program_name} · {formatDate(a.submitted_at)}
-                  </p>
-                </div>
-                <ApplicationStatusBadge status={a.status} />
+              <li key={a.id}>
+                <Link
+                  href={`/app/creators?a=${a.id}`}
+                  className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm transition-colors hover:bg-muted/50"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate font-medium">{a.creator_name}</p>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {a.program_name} · {formatDate(a.submitted_at)}
+                    </p>
+                  </div>
+                  <ApplicationStatusBadge status={a.status} />
+                </Link>
               </li>
             ))}
           </ul>

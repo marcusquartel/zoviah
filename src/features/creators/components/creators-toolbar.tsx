@@ -37,6 +37,36 @@ import {
 const VIEW_STORAGE_KEY = "creator-hub:creators-view";
 const ALL = "__all__";
 
+/** Base UI's <Select.Value> renders the raw value unless Root gets `items`. */
+type SelectItems = { value: string; label: string }[];
+
+const SORT_ITEMS: SelectItems = CREATOR_SORTS.map((s) => ({
+  value: s,
+  label: SORT_LABELS[s],
+}));
+const STATUS_ITEMS: SelectItems = [
+  { value: ALL, label: "Todos os status" },
+  ...APPLICATION_STATUSES.map((s) => ({
+    value: s,
+    label: APPLICATION_STATUS_LABELS[s],
+  })),
+];
+const ANALYSIS_ITEMS: SelectItems = [
+  { value: ALL, label: "Qualquer análise" },
+  ...ANALYSIS_STATUS_VALUES.map((s) => ({
+    value: s,
+    label: ANALYSIS_STATUS_LABELS[s],
+  })),
+];
+const TIER_ITEMS: SelectItems = [
+  { value: ALL, label: "Qualquer tier" },
+  ...TIER_VALUES.map((t) => ({ value: t, label: TIER_LABELS[t] })),
+];
+const CONFIDENCE_ITEMS: SelectItems = [
+  { value: ALL, label: "Qualquer confiança" },
+  ...CONFIDENCE_VALUES.map((c) => ({ value: c, label: CONFIDENCE_LABELS[c] })),
+];
+
 interface ToolbarProps {
   query: CreatorQuery;
   programs: { id: string; name: string }[];
@@ -84,6 +114,11 @@ export function CreatorsToolbar({ query, programs }: ToolbarProps) {
 
   const filtersActive = hasActiveFilters(query);
 
+  const programItems: SelectItems = [
+    { value: ALL, label: "Todos os programas" },
+    ...programs.map((p) => ({ value: p.id, label: p.name })),
+  ];
+
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
@@ -120,6 +155,7 @@ export function CreatorsToolbar({ query, programs }: ToolbarProps) {
         </div>
 
         <Select
+          items={SORT_ITEMS}
           value={query.sort}
           onValueChange={(v) => v && apply({ sort: v as CreatorQuery["sort"] })}
         >
@@ -138,11 +174,12 @@ export function CreatorsToolbar({ query, programs }: ToolbarProps) {
 
       <div className="flex flex-wrap items-center gap-2">
         <Select
+          items={programItems}
           value={query.program ?? ALL}
           onValueChange={(v) => apply({ program: v === ALL ? null : v })}
         >
           <SelectTrigger className="w-48" aria-label="Programa">
-            <SelectValue placeholder="Programa" />
+            <SelectValue />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value={ALL}>Todos os programas</SelectItem>
@@ -155,13 +192,14 @@ export function CreatorsToolbar({ query, programs }: ToolbarProps) {
         </Select>
 
         <Select
+          items={STATUS_ITEMS}
           value={query.status ?? ALL}
           onValueChange={(v) =>
             apply({ status: v === ALL ? null : (v as CreatorQuery["status"]) })
           }
         >
           <SelectTrigger className="w-48" aria-label="Status">
-            <SelectValue placeholder="Status" />
+            <SelectValue />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value={ALL}>Todos os status</SelectItem>
@@ -208,6 +246,7 @@ export function CreatorsToolbar({ query, programs }: ToolbarProps) {
         </ToggleChip>
 
         <Select
+          items={ANALYSIS_ITEMS}
           value={query.analysisStatus ?? ALL}
           onValueChange={(v) =>
             apply({
@@ -217,7 +256,7 @@ export function CreatorsToolbar({ query, programs }: ToolbarProps) {
           }
         >
           <SelectTrigger className="w-40" aria-label="Análise IA">
-            <SelectValue placeholder="Análise" />
+            <SelectValue />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value={ALL}>Qualquer análise</SelectItem>
@@ -230,13 +269,14 @@ export function CreatorsToolbar({ query, programs }: ToolbarProps) {
         </Select>
 
         <Select
+          items={TIER_ITEMS}
           value={query.tier ?? ALL}
           onValueChange={(v) =>
             apply({ tier: v === ALL ? null : (v as CreatorQuery["tier"]) })
           }
         >
           <SelectTrigger className="w-32" aria-label="Tier">
-            <SelectValue placeholder="Tier" />
+            <SelectValue />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value={ALL}>Qualquer tier</SelectItem>
@@ -249,6 +289,7 @@ export function CreatorsToolbar({ query, programs }: ToolbarProps) {
         </Select>
 
         <Select
+          items={CONFIDENCE_ITEMS}
           value={query.confidence ?? ALL}
           onValueChange={(v) =>
             apply({
@@ -258,7 +299,7 @@ export function CreatorsToolbar({ query, programs }: ToolbarProps) {
           }
         >
           <SelectTrigger className="w-36" aria-label="Confidence">
-            <SelectValue placeholder="Confidence" />
+            <SelectValue />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value={ALL}>Qualquer confiança</SelectItem>
