@@ -25,6 +25,7 @@ export const primaryNav: NavItem[] = [
   { title: "Visão Geral", href: "/app", icon: LayoutDashboard },
   { title: "Creators", href: "/app/creators", icon: Users },
   { title: "Programas", href: "/app/programs", icon: FolderKanban },
+  { title: "Envios", href: "/app/shipments", icon: Send },
   { title: "IA", href: "/app/ai", icon: Sparkles },
   { title: "Configurações", href: "/app/settings/appearance", icon: Settings },
 ];
@@ -37,7 +38,6 @@ export interface ComingSoonItem {
 /** Roadmap only — no routes, no tables, no APIs. */
 export const comingSoonNav: ComingSoonItem[] = [
   { title: "Campanhas", icon: Megaphone },
-  { title: "Envios", icon: Send },
   { title: "Performance", icon: BarChart3 },
   { title: "Comissões", icon: BadgeDollarSign },
   { title: "Portal Creator", icon: UserRound },

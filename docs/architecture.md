@@ -750,3 +750,104 @@ consciente).
 membros da org, escrita só pelas RPCs. Nenhuma policy anon. Anon só executa
 `get_public_address_request` e `complete_address_request`. Cross-tenant
 coberto: org B não vê/gera/revoga request ou endereço de org A.
+
+---
+
+# Fase 5 — Gestão de envios / product seeding
+
+Depois de `application.status = completed` e com endereço atual, a equipe cria e
+acompanha envios de brindes. **Não é ERP**: sem estoque, catálogo, transportadora,
+etiqueta ou frete. Responde "quem recebe o quê, em qual endereço, quando enviamos
+e se chegou". Nenhuma operação consome crédito de IA.
+
+## shipments / shipment_items (migration `20260829000004`)
+
+`shipments` é entidade própria — **nunca** mexe em `applications.status` (a
+inscrição segue `completed`). 1 application → N shipments (kit inicial,
+lançamento, reposição). Colunas: `source_address_id` + `address_snapshot jsonb`
+(cópia congelada do endereço), `status`, `carrier` / `tracking_code` /
+`tracking_url` (opcionais), `internal_notes`, `shipped_at` / `delivered_at` /
+`cancelled_at`, `created_by`. CHECK: `tracking_url ~* '^https?://'`,
+`internal_notes <= 2000`, e o `address_snapshot` precisa carregar as chaves de
+endereço sempre presentes.
+
+`shipment_items` é snapshot do que foi enviado (sem catálogo): `item_name`
+(1–200), `sku` opcional (≤100), `quantity` (1–999), `position`. Carrega
+`organization_id` para a policy de RLS. Máximo 50 itens por envio.
+
+Índices: `shipments(organization_id, status, created_at desc)`,
+`(application_id, created_at desc)`, `(creator_id, created_at desc)`,
+`shipment_items(shipment_id, position)`.
+
+## Máquina de estados
+
+`draft → preparing → shipped → delivered`, mais `→ cancelled` de draft/preparing
+e `cancelled → draft` (restaurar). Correções operacionais: `delivered → shipped`
+(limpa `delivered_at`) e `shipped → preparing` (limpa `shipped_at` +
+`delivered_at`). `transition_shipment_status` (SECURITY DEFINER) é a única via —
+o frontend nunca faz `update shipments set status`. Invariante: `preparing` /
+`shipped` exigem ≥ 1 item (`NO_ITEMS`). `is_valid_shipment_transition` (SQL,
+espelhada em `src/features/shipments/status.ts`).
+
+## Address snapshot
+
+- **Origem**: `create_shipment` copia `creator_addresses` (linha `is_current`)
+  para `address_snapshot` **no servidor**. A RPC não tem parâmetro de endereço —
+  o browser não consegue forjar o snapshot (`§30`). `build_address_snapshot`
+  valida que o endereço atual está completo antes (`NO_CURRENT_ADDRESS`).
+- **Imutabilidade**: se a creator trocar de endereço depois, o envio antigo
+  mantém o snapshot. Nada sincroniza automaticamente.
+- **Refresh explícito**: `refresh_shipment_address` re-copia o endereço atual —
+  só em `draft` / `preparing` (`ADDRESS_LOCKED` depois). A aba Endereço do modal
+  mostra o aviso "Há um endereço mais recente disponível" quando
+  `current_address.id ≠ shipment.source_address_id` e o envio ainda é editável.
+- **PII**: `address_snapshot` (com CPF) só carrega no detalhe do envio. Nunca na
+  `shipment_list_items`, nos `creator_events`, em log, em URL ou no Claude.
+
+## Tracking
+
+`carrier` é texto livre (sem enum de transportadora). `tracking_code` opcional
+(um envio pode ir a `shipped` sem código — motoboy, evento). `tracking_url`
+validada como `http(s)` (rejeita `javascript:` / `data:`); no render usa
+`target="_blank" rel="noopener noreferrer"`, nunca renderiza HTML. Editável em
+qualquer status exceto `cancelled`.
+
+## CRM / modal da creator
+
+Nova aba **Envios** (ordem: … · Endereço · **Envios** · Respostas · Histórico),
+carregada sob demanda. Lista os envios da inscrição; "Novo envio" só aparece com
+`application.status = completed` **e** endereço atual disponível. Criar não
+dispara Claude nem muda a inscrição.
+
+## /app/shipments
+
+Página operacional: contadores (Em aberto / Preparando / Enviados / Entregues /
+Cancelados), busca server-side (creator, e-mail, `tracking_code`), filtros
+(status, programa, data de criação), ordenação, paginação de 50 via
+`shipment_list_items` (`security_invoker`, uma query, sem N+1, **sem
+`address_snapshot` / `internal_notes`**). Visões **Lista** e **Kanban** (menu
+"Mover para…" chamando `transition_shipment_status`, sem lib de drag-and-drop).
+Clicar um envio abre o **modal central** (`?s=<id>`) com abas Resumo / Itens /
+Rastreio / Endereço; `address_snapshot` só é buscado quando o modal abre.
+
+## Timeline
+
+Eventos em `creator_events` (sem tabela nova): `shipment_created`,
+`shipment_status_changed` (`{shipment_id, from, to}`), `shipment_address_refreshed`.
+Formatter: "Envio criado.", "Envio passou de Preparando para Enviado.", "Endereço
+do envio atualizado." Nunca endereço / tracking / notas no `data`.
+
+## RLS / segurança
+
+`shipments` e `shipment_items`: RLS obrigatória, `select` só para membros da org,
+escrita só via RPC (nenhuma policy de write). Nenhuma policy anon. As RPCs são
+`SECURITY DEFINER SET search_path = ''`, exigem `auth.uid()`, derivam a org da
+entidade (nunca do cliente) e checam membership de qualquer papel
+(owner/admin/analyst). `shipment_list_items` e `shipment_counts` são
+`security_invoker` — a RLS das tabelas-base limita ao tenant.
+
+## Pontos de extensão futuros
+
+`campaign_id`, `product_id`, `shipping_cost`, integração de transportadora e
+webhook de tracking cabem no modelo, mas **nenhuma coluna/tabela foi criada sem
+uso**. Sem política de retenção automática nesta fase (documentado).

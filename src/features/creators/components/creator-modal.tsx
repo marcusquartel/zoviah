@@ -20,6 +20,7 @@ import { NoteForm } from "@/features/creators/components/note-form";
 import { IntelligenceTab } from "@/features/analysis/components/intelligence-tab";
 import { MetricsTab } from "@/features/evidence/components/metrics-tab";
 import { AddressTab } from "@/features/requests/components/address-tab";
+import { ShipmentsTab } from "@/features/shipments/components/shipments-tab";
 import { ScoreBar } from "@/features/analysis/components/score-bar";
 import {
   loadDrawerData,
@@ -33,6 +34,7 @@ const TABS = [
   { id: "socials", label: "Redes" },
   { id: "metrics", label: "Métricas" },
   { id: "address", label: "Endereço" },
+  { id: "shipments", label: "Envios" },
   { id: "answers", label: "Respostas" },
   { id: "history", label: "Histórico" },
 ] as const;
@@ -206,6 +208,12 @@ function ModalBody({
             creatorId={detail.creator.id}
             status={detail.application.status}
             onChanged={onRefresh}
+          />
+        ) : tab === "shipments" ? (
+          <ShipmentsTab
+            applicationId={detail.application.id}
+            creatorId={detail.creator.id}
+            applicationStatus={detail.application.status}
           />
         ) : tab === "answers" ? (
           <AnswersTab application={detail.application} />

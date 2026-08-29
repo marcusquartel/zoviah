@@ -61,6 +61,27 @@ export type AddressRequestStatus =
   | "expired"
   | "revoked";
 
+export type ShipmentStatus =
+  | "draft"
+  | "preparing"
+  | "shipped"
+  | "delivered"
+  | "cancelled";
+
+/** Frozen copy of a creator_addresses row at the moment a shipment was built. */
+export interface AddressSnapshot {
+  recipient_name: string;
+  cpf: string | null;
+  postal_code: string;
+  street: string;
+  number: string;
+  complement: string | null;
+  neighborhood: string;
+  city: string;
+  state: string;
+  country: string;
+}
+
 export type AnalysisRunStatus = "processing" | "completed" | "failed";
 export type ApplicationAnalysisStatus =
   | "not_analyzed"
@@ -720,6 +741,95 @@ export interface Database {
           },
         ];
       };
+      shipments: {
+        Row: {
+          id: string;
+          organization_id: string;
+          creator_id: string;
+          application_id: string;
+          source_address_id: string;
+          address_snapshot: AddressSnapshot;
+          status: ShipmentStatus;
+          carrier: string | null;
+          tracking_code: string | null;
+          tracking_url: string | null;
+          internal_notes: string | null;
+          shipped_at: string | null;
+          delivered_at: string | null;
+          cancelled_at: string | null;
+          created_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          creator_id: string;
+          application_id: string;
+          source_address_id: string;
+          address_snapshot: AddressSnapshot;
+          status: ShipmentStatus;
+        };
+        Update: {
+          status?: ShipmentStatus;
+          carrier?: string | null;
+          tracking_code?: string | null;
+          tracking_url?: string | null;
+          internal_notes?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "shipments_application_id_fkey";
+            columns: ["application_id"];
+            isOneToOne: false;
+            referencedRelation: "applications";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "shipments_creator_id_fkey";
+            columns: ["creator_id"];
+            isOneToOne: false;
+            referencedRelation: "creators";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      shipment_items: {
+        Row: {
+          id: string;
+          shipment_id: string;
+          organization_id: string;
+          item_name: string;
+          sku: string | null;
+          quantity: number;
+          position: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          shipment_id: string;
+          organization_id: string;
+          item_name: string;
+          sku?: string | null;
+          quantity: number;
+          position: number;
+        };
+        Update: {
+          item_name?: string;
+          sku?: string | null;
+          quantity?: number;
+          position?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "shipment_items_shipment_id_fkey";
+            columns: ["shipment_id"];
+            isOneToOne: false;
+            referencedRelation: "shipments";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: {
       latest_metric_snapshots: {
@@ -756,6 +866,29 @@ export interface Database {
           analysis_status: ApplicationAnalysisStatus;
           analysis_confidence: AnalysisConfidence | null;
           analysis_coverage: number | null;
+        };
+        Relationships: [];
+      };
+      shipment_list_items: {
+        Row: {
+          id: string;
+          organization_id: string;
+          creator_id: string;
+          application_id: string;
+          status: ShipmentStatus;
+          carrier: string | null;
+          tracking_code: string | null;
+          tracking_url: string | null;
+          created_at: string;
+          shipped_at: string | null;
+          delivered_at: string | null;
+          program_id: string;
+          program_name: string;
+          creator_name: string;
+          creator_email: string | null;
+          item_count: number;
+          total_quantity: number;
+          first_item_name: string | null;
         };
         Relationships: [];
       };
@@ -870,6 +1003,44 @@ export interface Database {
         Args: { p_token_hash: string; p_payload: Json };
         Returns: Json;
       };
+      is_valid_shipment_transition: {
+        Args: { p_from: string; p_to: string };
+        Returns: boolean;
+      };
+      shipment_counts: {
+        Args: { p_program_id?: string | null };
+        Returns: Json;
+      };
+      create_shipment: {
+        Args: {
+          p_application_id: string;
+          p_items: Json;
+          p_internal_notes?: string | null;
+        };
+        Returns: Json;
+      };
+      update_shipment_items: {
+        Args: { p_shipment_id: string; p_items: Json };
+        Returns: Json;
+      };
+      update_shipment_tracking: {
+        Args: {
+          p_shipment_id: string;
+          p_carrier: string | null;
+          p_tracking_code: string | null;
+          p_tracking_url: string | null;
+          p_internal_notes: string | null;
+        };
+        Returns: Json;
+      };
+      transition_shipment_status: {
+        Args: { p_shipment_id: string; p_to_status: string };
+        Returns: Json;
+      };
+      refresh_shipment_address: {
+        Args: { p_shipment_id: string };
+        Returns: Json;
+      };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
@@ -897,5 +1068,10 @@ export type ApplicationRequest =
   Database["public"]["Tables"]["application_requests"]["Row"];
 export type CreatorAddress =
   Database["public"]["Tables"]["creator_addresses"]["Row"];
+export type Shipment = Database["public"]["Tables"]["shipments"]["Row"];
+export type ShipmentItem =
+  Database["public"]["Tables"]["shipment_items"]["Row"];
 export type ApplicationListItem =
   Database["public"]["Views"]["application_list_items"]["Row"];
+export type ShipmentListItem =
+  Database["public"]["Views"]["shipment_list_items"]["Row"];

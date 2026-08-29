@@ -25,6 +25,12 @@ import {
   getAddressTabData,
   type AddressTabData,
 } from "@/features/requests/queries";
+import {
+  getShipmentsForApplication,
+  type CreatorShipment,
+} from "@/features/shipments/queries";
+import { createClient } from "@/lib/supabase/server";
+import { getCurrentOrganization } from "@/features/organizations/queries";
 import type {
   CreatorAnalysis,
   CreatorEvent,
@@ -101,6 +107,32 @@ export async function loadAddressTab(
   creatorId: string,
 ): Promise<AddressTabData> {
   return getAddressTabData(applicationId, creatorId);
+}
+
+export interface ShipmentsTabData {
+  shipments: CreatorShipment[];
+  hasCurrentAddress: boolean;
+}
+
+/** "Envios" tab — loaded on demand. `hasCurrentAddress` gates "Novo envio". */
+export async function loadShipmentsTab(
+  applicationId: string,
+  creatorId: string,
+): Promise<ShipmentsTabData> {
+  const current = await getCurrentOrganization();
+  if (!current) return { shipments: [], hasCurrentAddress: false };
+  const supabase = await createClient();
+  const [shipments, { data: addr }] = await Promise.all([
+    getShipmentsForApplication(applicationId),
+    supabase
+      .from("creator_addresses")
+      .select("id")
+      .eq("organization_id", current.organization.id)
+      .eq("creator_id", creatorId)
+      .eq("is_current", true)
+      .maybeSingle(),
+  ]);
+  return { shipments, hasCurrentAddress: Boolean(addr?.id) };
 }
 
 /** "Carregar mais" in a profile's snapshot history (§73). */

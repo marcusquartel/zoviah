@@ -277,6 +277,11 @@ test("87) no shipping-address field ever appears in the Claude payload", () => {
     "source_request_id",
     "creator_address",
     "shipping_address",
+    "address_snapshot",
+    "tracking_code",
+    "tracking_url",
+    "internal_notes",
+    "shipment",
   ]) {
     assert.ok(!json.includes(forbidden), `payload leaked "${forbidden}"`);
   }
