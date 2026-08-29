@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AnalysisResult } from "@/features/analysis/components/analysis-result";
 import { AnalysisHistory } from "@/features/analysis/components/analysis-history";
+import { EvidencePanel } from "@/features/analysis/components/evidence-panel";
 import type { DrawerAnalysis } from "@/features/creators/data-actions";
 import type { ApplicationAnalysisStatus } from "@/types/database";
 
@@ -80,6 +81,10 @@ export function IntelligenceTab({
       ) : null}
 
       <AnalysisResult analysis={current} />
+
+      <div className="rounded-lg border bg-surface p-4">
+        <EvidencePanel analysis={current} />
+      </div>
     </div>
   );
 }

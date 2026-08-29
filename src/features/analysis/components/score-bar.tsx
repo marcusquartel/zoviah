@@ -31,12 +31,15 @@ export function ScoreBar({
   analysisStatus,
   current,
   aiConfigured,
+  hasNewSnapshots = false,
   onRefresh,
 }: {
   applicationId: string;
   analysisStatus: ApplicationAnalysisStatus;
   current: CreatorAnalysis | null;
   aiConfigured: boolean;
+  /** New metric snapshots exist since the current analysis ran (§43). */
+  hasNewSnapshots?: boolean;
   onRefresh: () => void;
 }) {
   const lowConfidence = current?.confidence === "low";
@@ -78,6 +81,11 @@ export function ScoreBar({
             {lowConfidence ? (
               <span className="inline-flex items-center gap-1 text-xs text-warning-foreground">
                 <AlertTriangle className="size-3" /> preliminar
+              </span>
+            ) : null}
+            {hasNewSnapshots ? (
+              <span className="rounded bg-primary/10 px-1.5 py-0.5 text-xs font-medium text-primary">
+                Novas evidências
               </span>
             ) : null}
           </div>

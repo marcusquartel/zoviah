@@ -18,6 +18,7 @@ import { AnswersTab } from "@/features/creators/components/drawer/answers";
 import { Timeline } from "@/features/creators/components/timeline";
 import { NoteForm } from "@/features/creators/components/note-form";
 import { IntelligenceTab } from "@/features/analysis/components/intelligence-tab";
+import { MetricsTab } from "@/features/evidence/components/metrics-tab";
 import { ScoreBar } from "@/features/analysis/components/score-bar";
 import {
   loadDrawerData,
@@ -29,6 +30,7 @@ const TABS = [
   { id: "intelligence", label: "Inteligência" },
   { id: "registration", label: "Cadastro" },
   { id: "socials", label: "Redes" },
+  { id: "metrics", label: "Métricas" },
   { id: "answers", label: "Respostas" },
   { id: "history", label: "Histórico" },
 ] as const;
@@ -105,6 +107,7 @@ function ModalBody({
     current: null,
     history: [],
   };
+  const hasNewSnapshots = data?.evidence.hasNewSnapshots ?? false;
 
   return (
     <>
@@ -137,6 +140,7 @@ function ModalBody({
             analysisStatus={detail.application.analysis_status}
             current={analysis.current}
             aiConfigured={analysis.aiConfigured}
+            hasNewSnapshots={hasNewSnapshots}
             onRefresh={onRefresh}
           />
 
@@ -185,6 +189,11 @@ function ModalBody({
           <RegistrationTab creator={detail.creator} />
         ) : tab === "socials" ? (
           <SocialsTab socials={detail.socials} />
+        ) : tab === "metrics" ? (
+          <MetricsTab
+            applicationId={detail.application.id}
+            onEvidenceChanged={onRefresh}
+          />
         ) : tab === "answers" ? (
           <AnswersTab application={detail.application} />
         ) : (

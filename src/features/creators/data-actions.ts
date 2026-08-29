@@ -15,7 +15,17 @@ import {
   type AnalysisHistoryItem,
 } from "@/features/analysis/queries";
 import { isAnthropicConfigured } from "@/lib/anthropic/env";
-import type { CreatorAnalysis, CreatorEvent } from "@/types/database";
+import {
+  getApplicationMetrics,
+  getLatestEvidenceAt,
+  getSnapshotHistoryPage,
+  type ApplicationMetrics,
+} from "@/features/evidence/queries";
+import type {
+  CreatorAnalysis,
+  CreatorEvent,
+  SocialMetricSnapshot,
+} from "@/types/database";
 
 /** Next page of the CRM list (client "load more"). */
 export async function loadMoreApplications(
@@ -36,6 +46,8 @@ export interface DrawerData {
   detail: ApplicationDetail | null;
   timeline: CreatorEvent[];
   analysis: DrawerAnalysis;
+  /** Evidence Layer signal only — never a score input (§43). */
+  evidence: { hasNewSnapshots: boolean };
 }
 
 /** Everything the Creator drawer needs, fetched on open. */
@@ -49,14 +61,42 @@ export async function loadDrawerData(
       detail: null,
       timeline: [],
       analysis: { aiConfigured, current: null, history: [] },
+      evidence: { hasNewSnapshots: false },
     };
   }
-  const [timeline, current, history] = await Promise.all([
+  const [timeline, current, history, latestEvidenceAt] = await Promise.all([
     getCreatorTimeline(detail.creator.id),
     getLatestCompletedAnalysis(applicationId),
     getAnalysisHistory(applicationId),
+    getLatestEvidenceAt(detail.socials.map((s) => s.id)),
   ]);
-  return { detail, timeline, analysis: { aiConfigured, current, history } };
+  const hasNewSnapshots = Boolean(
+    latestEvidenceAt &&
+      current &&
+      new Date(latestEvidenceAt).getTime() >
+        new Date(current.created_at).getTime(),
+  );
+  return {
+    detail,
+    timeline,
+    analysis: { aiConfigured, current, history },
+    evidence: { hasNewSnapshots },
+  };
+}
+
+/** Métricas tab — loaded on demand, never part of the CRM list (§40, §72). */
+export async function loadMetricsForApplication(
+  applicationId: string,
+): Promise<ApplicationMetrics | null> {
+  return getApplicationMetrics(applicationId);
+}
+
+/** "Carregar mais" in a profile's snapshot history (§73). */
+export async function loadSnapshotHistoryPage(
+  profileId: string,
+  page: number,
+): Promise<{ items: SocialMetricSnapshot[]; hasMore: boolean }> {
+  return getSnapshotHistoryPage(profileId, Math.max(1, page));
 }
 
 /** A single historical analysis snapshot (for the drawer history view). */

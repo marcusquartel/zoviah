@@ -26,6 +26,7 @@ import {
   TOTAL_WEIGHT,
 } from "@/features/analysis/criteria";
 import { getAnalysisStats } from "@/features/analysis/queries";
+import { getEvidenceStats } from "@/features/evidence/queries";
 import { getCurrentOrganization } from "@/features/organizations/queries";
 
 export const metadata: Metadata = { title: "IA · Creator Hub" };
@@ -37,6 +38,7 @@ export default async function AiPage() {
   const configured = isAnthropicConfigured();
   const model = getAnthropicModelName();
   const stats = await getAnalysisStats();
+  const evidence = await getEvidenceStats();
 
   return (
     <div className="space-y-6">
@@ -105,6 +107,32 @@ export default async function AiPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm font-medium">Evidence Layer</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="grid grid-cols-3 gap-3 text-sm">
+            <Stat label="Snapshots" value={evidence.snapshots} />
+            <Stat
+              label="Creators com snapshot"
+              value={evidence.creators_with_snapshot}
+            />
+            <Stat
+              label="Perfis com 2+ snapshots"
+              value={evidence.profiles_multi_snapshot}
+            />
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Métricas observadas de redes sociais (seguidores, views, alcance,
+            engajamento) com proveniência e histórico. Nesta fase são apenas
+            evidência — <strong>não alteram o Creator Score</strong>. O conjunto
+            de dados servirá para calibrar o <code>creator-score-v2</code> (fase
+            própria: percentis e benchmarks).
+          </p>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
