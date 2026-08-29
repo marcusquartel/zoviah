@@ -48,10 +48,16 @@ function client(): SupabaseClient {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 }
+// Memoized: one auth call per user for the whole file (keeps the shared
+// project's auth rate limit happy when the full suite runs).
+const _signedIn = new Map<string, SupabaseClient>();
 async function signedIn(email: string, password: string): Promise<SupabaseClient> {
+  const hit = _signedIn.get(email);
+  if (hit) return hit;
   const c = client();
   const { error } = await c.auth.signInWithPassword({ email, password });
   assert.ifError(error);
+  _signedIn.set(email, c);
   return c;
 }
 
