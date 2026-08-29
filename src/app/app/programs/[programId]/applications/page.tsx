@@ -1,7 +1,5 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { AlertTriangle } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -55,7 +53,6 @@ export default async function ProgramApplicationsPage({
                 <TableHead>E-mail</TableHead>
                 <TableHead>Enviada em</TableHead>
                 <TableHead>Form</TableHead>
-                <TableHead />
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -77,14 +74,6 @@ export default async function ProgramApplicationsPage({
                   </TableCell>
                   <TableCell className="text-muted-foreground tabular-nums">
                     v{r.form_version}
-                  </TableCell>
-                  <TableCell>
-                    {r.possible_duplicate ? (
-                      <Badge variant="secondary" className="gap-1">
-                        <AlertTriangle className="size-3" />
-                        Possível duplicidade
-                      </Badge>
-                    ) : null}
                   </TableCell>
                 </TableRow>
               ))}

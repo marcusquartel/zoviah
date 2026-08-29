@@ -3,7 +3,6 @@ import { ExternalLink, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ApplicationStatusBadge } from "@/features/applications/status-badge";
 import { ApplicationActions } from "@/features/creators/components/application-actions";
-import { DuplicateWarning } from "@/features/creators/components/duplicate-warning";
 import { FieldRow } from "@/features/creators/components/drawer/field-row";
 import { formatDate, formatFollowers } from "@/features/creators/format";
 import type { ApplicationDetail } from "@/features/creators/queries";
@@ -23,8 +22,6 @@ export function SummaryTab({
 
   return (
     <div className="space-y-5">
-      {application.possible_duplicate ? <DuplicateWarning /> : null}
-
       <div className="flex flex-wrap items-center gap-2">
         <ApplicationStatusBadge status={application.status} />
         <span className="text-sm text-muted-foreground">

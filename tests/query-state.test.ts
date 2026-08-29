@@ -14,14 +14,13 @@ test("parse: empty params -> defaults", () => {
 test("parse: reads and validates known params", () => {
   const q = parseCreatorQuery(
     new URLSearchParams(
-      "q=  mariana  &program=abc&status=approved&city=Belo&duplicate=1&has_ig=1&sort=name_asc&view=kanban&page=3",
+      "q=  mariana  &program=abc&status=approved&city=Belo&has_ig=1&sort=name_asc&view=kanban&page=3",
     ),
   );
   assert.equal(q.q, "mariana");
   assert.equal(q.program, "abc");
   assert.equal(q.status, "approved");
   assert.equal(q.city, "Belo");
-  assert.equal(q.duplicate, true);
   assert.equal(q.hasInstagram, true);
   assert.equal(q.hasTiktok, false);
   assert.equal(q.sort, "name_asc");

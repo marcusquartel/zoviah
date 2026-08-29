@@ -10,7 +10,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { ApplicationStatusBadge } from "@/features/applications/status-badge";
 import { AnalysisCell } from "@/features/analysis/components/analysis-cell";
 import { StatusMenu } from "@/features/creators/components/status-menu";
@@ -63,11 +62,6 @@ export function CreatorTable({
                       {it.creator_email ?? "—"}
                     </p>
                   </div>
-                  {it.possible_duplicate ? (
-                    <Badge variant="secondary" className="shrink-0 gap-1">
-                      Poss. dup.
-                    </Badge>
-                  ) : null}
                 </div>
               </TableCell>
 

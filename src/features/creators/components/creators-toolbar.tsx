@@ -227,12 +227,6 @@ export function CreatorsToolbar({ query, programs }: ToolbarProps) {
         />
 
         <ToggleChip
-          active={query.duplicate}
-          onClick={() => apply({ duplicate: !query.duplicate })}
-        >
-          Possível duplicidade
-        </ToggleChip>
-        <ToggleChip
           active={query.hasInstagram}
           onClick={() => apply({ hasInstagram: !query.hasInstagram })}
         >

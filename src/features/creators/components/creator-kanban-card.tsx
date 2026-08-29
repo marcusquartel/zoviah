@@ -1,9 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
-import { Camera, Music2 } from "lucide-react";
-import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
+import { Camera, GripVertical, Music2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,58 +10,55 @@ import {
 import { cn } from "@/lib/utils";
 import { AnalysisCell } from "@/features/analysis/components/analysis-cell";
 import { nextStatuses, statusActionLabel } from "@/features/applications/status";
-import { transitionApplicationStatus } from "@/features/creators/actions";
 import { formatDate, formatFollowers } from "@/features/creators/format";
 import type { ApplicationListItem, ApplicationStatus } from "@/types/database";
 
 interface CardProps {
   item: ApplicationListItem;
+  moving: boolean;
   onSelect: () => void;
-  onOptimisticMove: (to: ApplicationStatus) => void;
-  onRevert: (to: ApplicationStatus) => void;
+  onMove: (to: ApplicationStatus) => void;
+  onDragStart: () => void;
+  onDragEnd: () => void;
 }
 
 export function CreatorKanbanCard({
   item,
+  moving,
   onSelect,
-  onOptimisticMove,
-  onRevert,
+  onMove,
+  onDragStart,
+  onDragEnd,
 }: CardProps) {
-  const [pending, startTransition] = useTransition();
   const options = nextStatuses(item.status);
-
-  function move(to: ApplicationStatus) {
-    const from = item.status;
-    onOptimisticMove(to);
-    startTransition(async () => {
-      const res = await transitionApplicationStatus({
-        applicationId: item.id,
-        toStatus: to,
-      });
-      if (!res.ok) {
-        onRevert(from);
-        toast.error(res.error ?? "Não foi possível mover o card.");
-      }
-    });
-  }
 
   return (
     <div
+      draggable
+      onDragStart={(e) => {
+        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.setData("text/plain", item.id);
+        onDragStart();
+      }}
+      onDragEnd={onDragEnd}
       className={cn(
-        "rounded-lg border bg-card p-3 text-sm shadow-xs transition-opacity",
-        pending && "opacity-60",
+        "group rounded-lg border bg-card p-3 text-sm shadow-xs transition-opacity",
+        moving ? "opacity-60" : "cursor-grab active:cursor-grabbing",
       )}
     >
-      <button
-        type="button"
-        onClick={onSelect}
-        className="block w-full text-left"
-      >
-        <p className="font-medium leading-tight">{item.creator_name}</p>
-        <p className="truncate text-xs text-muted-foreground">
-          {item.program_name}
-        </p>
-      </button>
+      <div className="flex items-start gap-1.5">
+        <GripVertical className="mt-0.5 size-4 shrink-0 text-muted-foreground/40 group-hover:text-muted-foreground" />
+        <button
+          type="button"
+          onClick={onSelect}
+          className="block w-full text-left"
+        >
+          <p className="font-medium leading-tight">{item.creator_name}</p>
+          <p className="truncate text-xs text-muted-foreground">
+            {item.program_name}
+          </p>
+        </button>
+      </div>
 
       <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
         {item.instagram_handle ? (
@@ -83,19 +77,12 @@ export function CreatorKanbanCard({
         <AnalysisCell item={item} compact />
       </div>
 
-      <div className="mt-2 flex items-center justify-between gap-2">
-        {item.possible_duplicate ? (
-          <Badge variant="secondary" className="gap-1 text-[0.65rem]">
-            Poss. dup.
-          </Badge>
-        ) : (
-          <span />
-        )}
-        {options.length > 0 ? (
+      {options.length > 0 ? (
+        <div className="mt-2 flex justify-end">
           <DropdownMenu>
             <DropdownMenuTrigger
               className="rounded border px-2 py-0.5 text-xs text-muted-foreground hover:bg-muted disabled:opacity-50"
-              disabled={pending}
+              disabled={moving}
             >
               Mover
             </DropdownMenuTrigger>
@@ -103,7 +90,7 @@ export function CreatorKanbanCard({
               {options.map((to) => (
                 <DropdownMenuItem
                   key={to}
-                  onClick={() => move(to)}
+                  onClick={() => onMove(to)}
                   variant={to === "archived" ? "destructive" : "default"}
                 >
                   {statusActionLabel(item.status, to)}
@@ -111,8 +98,8 @@ export function CreatorKanbanCard({
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
-        ) : null}
-      </div>
+        </div>
+      ) : null}
     </div>
   );
 }

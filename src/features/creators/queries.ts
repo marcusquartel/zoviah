@@ -21,7 +21,6 @@ export interface CrmCounts {
   awaiting_address: number;
   completed: number;
   archived: number;
-  possible_duplicate: number;
 }
 
 const EMPTY_COUNTS: CrmCounts = {
@@ -33,7 +32,6 @@ const EMPTY_COUNTS: CrmCounts = {
   awaiting_address: 0,
   completed: 0,
   archived: 0,
-  possible_duplicate: 0,
 };
 
 export async function getCrmCounts(
@@ -81,7 +79,6 @@ export async function listApplicationItems(
 
   if (query.program) q = q.eq("program_id", query.program);
   if (query.status) q = q.eq("status", query.status);
-  if (query.duplicate) q = q.eq("possible_duplicate", true);
   if (query.city) q = q.ilike("creator_city", `%${query.city}%`);
   if (query.state) q = q.ilike("creator_state", `%${query.state}%`);
   if (query.hasInstagram) q = q.not("instagram_handle", "is", null);

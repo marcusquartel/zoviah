@@ -52,7 +52,6 @@ export interface CreatorQuery {
   status: ApplicationStatus | null;
   city: string | null;
   state: string | null;
-  duplicate: boolean;
   hasInstagram: boolean;
   hasTiktok: boolean;
   analysisStatus: ApplicationAnalysisStatus | null;
@@ -70,7 +69,6 @@ export const DEFAULT_CREATOR_QUERY: CreatorQuery = {
   status: null,
   city: null,
   state: null,
-  duplicate: false,
   hasInstagram: false,
   hasTiktok: false,
   analysisStatus: null,
@@ -129,7 +127,6 @@ export function parseCreatorQuery(sp: ParamInput): CreatorQuery {
     status: oneOf(get(sp, "status"), APPLICATION_STATUSES),
     city: trim("city"),
     state: trim("state"),
-    duplicate: get(sp, "duplicate") === "1",
     hasInstagram: get(sp, "has_ig") === "1",
     hasTiktok: get(sp, "has_tt") === "1",
     analysisStatus: oneOf(get(sp, "analysis"), ANALYSIS_STATUS_VALUES),
@@ -152,7 +149,6 @@ export function serializeCreatorQuery(q: Partial<CreatorQuery>): string {
   if (merged.status) params.set("status", merged.status);
   if (merged.city) params.set("city", merged.city);
   if (merged.state) params.set("state", merged.state);
-  if (merged.duplicate) params.set("duplicate", "1");
   if (merged.hasInstagram) params.set("has_ig", "1");
   if (merged.hasTiktok) params.set("has_tt", "1");
   if (merged.analysisStatus) params.set("analysis", merged.analysisStatus);
@@ -174,7 +170,6 @@ export function hasActiveFilters(q: CreatorQuery): boolean {
       q.status ||
       q.city ||
       q.state ||
-      q.duplicate ||
       q.hasInstagram ||
       q.hasTiktok ||
       q.analysisStatus ||
