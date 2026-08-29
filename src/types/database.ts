@@ -61,6 +61,13 @@ export type ApplicationAnalysisStatus =
 export type AnalysisTier = "A" | "B" | "C" | "D";
 export type AnalysisConfidence = "low" | "medium" | "high";
 
+export type MetricSource =
+  | "declared"
+  | "admin_manual"
+  | "creator_provided"
+  | "import"
+  | "api";
+
 export interface FieldOption {
   value: string;
   label: string;
@@ -529,6 +536,7 @@ export interface Database {
           latency_ms: number | null;
           error_code: string | null;
           error_message: string | null;
+          used_snapshot_ids: string[];
           started_at: string | null;
           completed_at: string | null;
           created_at: string;
@@ -564,8 +572,58 @@ export interface Database {
           },
         ];
       };
+      social_metric_snapshots: {
+        Row: {
+          id: string;
+          organization_id: string;
+          creator_id: string;
+          social_profile_id: string;
+          source: MetricSource;
+          observed_at: string;
+          period_days: number | null;
+          followers: number | null;
+          average_views: number | null;
+          median_views: number | null;
+          views_sample: number[] | null;
+          average_likes: number | null;
+          average_comments: number | null;
+          average_shares: number | null;
+          average_saves: number | null;
+          reach: number | null;
+          interactions: number | null;
+          posts_count: number | null;
+          notes: string | null;
+          created_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          creator_id: string;
+          social_profile_id: string;
+          source: MetricSource;
+          observed_at?: string;
+        };
+        Update: {
+          notes?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "social_metric_snapshots_social_profile_id_fkey";
+            columns: ["social_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "creator_social_profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: {
+      latest_metric_snapshots: {
+        Row: Database["public"]["Tables"]["social_metric_snapshots"]["Row"];
+        Relationships: [];
+      };
       application_list_items: {
         Row: {
           id: string;
@@ -678,6 +736,18 @@ export interface Database {
         Args: Record<string, never>;
         Returns: Json;
       };
+      create_metric_snapshot: {
+        Args: { p_social_profile_id: string; p_payload: Json };
+        Returns: Json;
+      };
+      update_metric_snapshot: {
+        Args: { p_snapshot_id: string; p_payload: Json };
+        Returns: Json;
+      };
+      evidence_stats: {
+        Args: Record<string, never>;
+        Returns: Json;
+      };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
@@ -699,5 +769,7 @@ export type CreatorEvent =
   Database["public"]["Tables"]["creator_events"]["Row"];
 export type CreatorAnalysis =
   Database["public"]["Tables"]["creator_analyses"]["Row"];
+export type SocialMetricSnapshot =
+  Database["public"]["Tables"]["social_metric_snapshots"]["Row"];
 export type ApplicationListItem =
   Database["public"]["Views"]["application_list_items"]["Row"];
