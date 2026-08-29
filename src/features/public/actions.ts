@@ -14,6 +14,7 @@ import {
   normalizeEmail,
   normalizeHandle,
   normalizePhoneBR,
+  parseCount,
   socialProfileUrl,
 } from "@/lib/normalize";
 import { getPublicProgram } from "@/features/public/queries";
@@ -136,11 +137,11 @@ export async function submitApplication(
     } else if (field.field_type === "tiktok" || mapping === "tiktok") {
       ensureSocial("tiktok", value);
     } else if (mapping === "instagram_followers") {
-      const n = Number(value);
-      if (Number.isFinite(n)) followers.instagram = Math.trunc(n);
+      const n = parseCount(value);
+      if (n != null) followers.instagram = n;
     } else if (mapping === "tiktok_followers") {
-      const n = Number(value);
-      if (Number.isFinite(n)) followers.tiktok = Math.trunc(n);
+      const n = parseCount(value);
+      if (n != null) followers.tiktok = n;
     } else if (mapping === "email") {
       creator.email = normalizeEmail(value);
     } else if (mapping === "phone") {

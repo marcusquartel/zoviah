@@ -5,6 +5,7 @@ import {
   normalizeEmail,
   normalizeHandle,
   normalizePhoneBR,
+  parseCount,
   socialProfileUrl,
 } from "../src/lib/normalize.ts";
 import { slugify, fieldKeyify, isValidSlug } from "../src/lib/slug.ts";
@@ -91,6 +92,33 @@ test("normalizePhoneBR: unambiguous digits only, else null", () => {
   assert.equal(normalizePhoneBR("988887777"), null); // no DDD
   assert.equal(normalizePhoneBR("123"), null);
   assert.equal(normalizePhoneBR(""), null);
+});
+
+test("parseCount: pt-BR thousands separator — '137.000' is 137000, not 137", () => {
+  assert.equal(parseCount("137.000"), 137000);
+  assert.equal(parseCount("2.000"), 2000);
+  assert.equal(parseCount("1.234.567"), 1234567);
+  assert.equal(parseCount("137000"), 137000);
+  assert.equal(parseCount("137,000"), 137000); // comma grouping too
+});
+
+test("parseCount: k / mil / mi suffixes, incl. decimal with a suffix", () => {
+  assert.equal(parseCount("12k"), 12000);
+  assert.equal(parseCount("137 mil"), 137000);
+  assert.equal(parseCount("1,5mi"), 1500000);
+  assert.equal(parseCount("1.5 mi"), 1500000);
+  assert.equal(parseCount("3m"), 3000000);
+});
+
+test("parseCount: numbers pass through, junk and blanks are null", () => {
+  assert.equal(parseCount(70000), 70000);
+  assert.equal(parseCount(137000.9), 137000);
+  assert.equal(parseCount(-5), null);
+  assert.equal(parseCount(""), null);
+  assert.equal(parseCount("  "), null);
+  assert.equal(parseCount("abc"), null);
+  assert.equal(parseCount("10 pessoas"), null);
+  assert.equal(parseCount("01310-000"), null); // a CEP is not a count
 });
 
 test("slugify / fieldKeyify / isValidSlug", () => {

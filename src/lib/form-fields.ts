@@ -1,4 +1,6 @@
 import { z } from "zod";
+// Relative (not "@/") so this module stays importable by the node test runner.
+import { parseCount } from "./normalize.ts";
 import type { FieldMapping, FieldOption, FieldType } from "@/types/database";
 
 /** All field types the MVP form builder supports. */
@@ -159,7 +161,7 @@ function schemaForField(field: PublicFieldDef): z.ZodTypeAny {
         .string()
         .trim()
         .refine((v) => (req ? v !== "" : true), { error: "Campo obrigatório." })
-        .refine((v) => v === "" || !Number.isNaN(Number(v)), {
+        .refine((v) => v === "" || parseCount(v) != null || !Number.isNaN(Number(v)), {
           error: "Informe um número.",
         });
     }

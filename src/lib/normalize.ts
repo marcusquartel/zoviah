@@ -11,6 +11,49 @@ export function normalizeEmail(value: unknown): string | null {
   return v.length > 0 && v.includes("@") ? v : null;
 }
 
+/**
+ * A follower / view count typed by a person -> integer. pt-BR aware: "." and
+ * "," are thousands separators, so "137.000" is 137000 (NOT 137). A trailing
+ * "k" / "mil" (×1_000) or "mi" / "m" (×1_000_000) suffix is honoured, and only
+ * there is a single "."/"," read as a decimal ("1,5 mi" -> 1_500_000).
+ * Returns null for blank or anything that isn't a plain count — never guesses.
+ *
+ *   "137.000"  -> 137000        "137000"   -> 137000
+ *   "137 mil"  -> 137000        "1,5mi"    -> 1500000
+ *   "12k"      -> 12000         "abc"/""   -> null
+ */
+export function parseCount(value: unknown): number | null {
+  if (typeof value === "number") {
+    return Number.isFinite(value) && value >= 0 ? Math.trunc(value) : null;
+  }
+  if (typeof value !== "string") return null;
+  const v = value.trim().toLowerCase().replace(/\s+/g, "");
+  if (v === "") return null;
+
+  const m = v.match(/^([0-9.,]+)(k|mil|mi|mm|m)?$/);
+  if (!m) return null;
+  const [, rawNum, suffix] = m;
+
+  const factor =
+    suffix === "k" || suffix === "mil"
+      ? 1_000
+      : suffix === "mi" || suffix === "m" || suffix === "mm"
+        ? 1_000_000
+        : 1;
+
+  let n: number;
+  if (factor > 1 && /^[0-9]{1,3}[.,][0-9]{1,2}$/.test(rawNum)) {
+    // decimal only makes sense with a magnitude suffix: "1,5 mi"
+    n = Math.round(Number(rawNum.replace(",", ".")) * factor);
+  } else {
+    const digits = rawNum.replace(/[.,]/g, ""); // separators are grouping
+    if (!/^[0-9]+$/.test(digits)) return null;
+    n = Number(digits) * factor;
+  }
+
+  return Number.isSafeInteger(n) && n >= 0 ? n : null;
+}
+
 export type HandlePlatform = "instagram" | "tiktok";
 
 /** Instagram / TikTok usernames: letters, digits, '.', '_'. */
