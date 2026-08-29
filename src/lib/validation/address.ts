@@ -1,4 +1,7 @@
 import { z } from "zod";
+// Relative (not "@/") so this schema stays importable by the node test runner.
+import { normalizeCpf } from "../cpf.ts";
+import { BR_UFS } from "../br-locations.ts";
 
 /**
  * Shared shipping-address schema (Phase 4 §82). Used by the public form
@@ -17,6 +20,11 @@ const trimmed = (max: number, label: string) =>
 
 export const addressSchema = z.object({
   recipientName: trimmed(150, "o nome do destinatário"),
+  cpf: z
+    .string()
+    .trim()
+    .transform((v) => normalizeCpf(v) ?? v.replace(/\D/g, ""))
+    .refine((v) => normalizeCpf(v) !== null, { error: "CPF inválido." }),
   postalCode: z
     .string()
     .trim()
@@ -36,7 +44,9 @@ export const addressSchema = z.object({
     .string()
     .trim()
     .transform((v) => v.toUpperCase())
-    .refine((v) => /^[A-Z]{2}$/.test(v), { error: "UF inválida." }),
+    .refine((v) => (BR_UFS as readonly string[]).includes(v), {
+      error: "Selecione o estado.",
+    }),
   consent: z.literal(true, {
     error: "É necessário confirmar o consentimento.",
   }),
@@ -48,6 +58,7 @@ export type AddressInput = z.infer<typeof addressSchema>;
 export function toAddressPayload(a: AddressInput) {
   return {
     recipient_name: a.recipientName,
+    cpf: a.cpf,
     postal_code: a.postalCode,
     street: a.street,
     number: a.number,

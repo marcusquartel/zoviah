@@ -676,6 +676,7 @@ export interface Database {
           organization_id: string;
           creator_id: string;
           recipient_name: string;
+          cpf: string | null;
           postal_code: string;
           street: string;
           number: string;
@@ -694,6 +695,7 @@ export interface Database {
           organization_id: string;
           creator_id: string;
           recipient_name: string;
+          cpf?: string | null;
           postal_code: string;
           street: string;
           number: string;

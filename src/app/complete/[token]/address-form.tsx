@@ -2,16 +2,27 @@
 
 import { forwardRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { addressSchema } from "@/lib/validation/address";
+import { BR_STATES } from "@/lib/br-locations";
+import { lookupCep } from "@/lib/viacep";
+import { formatCpf } from "@/lib/cpf";
 import { submitAddress } from "@/features/requests/public-actions";
 
 interface FormValues {
   recipientName: string;
+  cpf: string;
   postalCode: string;
   street: string;
   number: string;
@@ -27,16 +38,24 @@ interface FormValues {
 const CONSENT_TEXT =
   "Confirmo que os dados informados estão corretos e autorizo seu uso para fins de envio relacionado a esta parceria.";
 
+const STATE_ITEMS = BR_STATES.map((s) => ({
+  value: s.uf,
+  label: `${s.uf} — ${s.name}`,
+}));
+
 export function AddressForm({ token }: { token: string }) {
   const {
     register,
     control,
     handleSubmit,
     setError,
+    setValue,
+    getValues,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     defaultValues: {
       recipientName: "",
+      cpf: "",
       postalCode: "",
       street: "",
       number: "",
@@ -51,6 +70,25 @@ export function AddressForm({ token }: { token: string }) {
 
   const [done, setDone] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [cepLoading, setCepLoading] = useState(false);
+  const [cepFilled, setCepFilled] = useState(false);
+
+  async function resolveCep(value: string) {
+    const digits = value.replace(/\D/g, "");
+    if (digits.length !== 8) return;
+    setCepLoading(true);
+    const found = await lookupCep(digits);
+    setCepLoading(false);
+    if (!found) {
+      setCepFilled(false);
+      return;
+    }
+    if (!getValues("street")) setValue("street", found.street);
+    if (!getValues("neighborhood")) setValue("neighborhood", found.neighborhood);
+    setValue("city", found.city, { shouldValidate: true });
+    setValue("state", found.state, { shouldValidate: true });
+    setCepFilled(true);
+  }
 
   async function onSubmit(raw: FormValues) {
     setFormError(null);
@@ -95,14 +133,48 @@ export function AddressForm({ token }: { token: string }) {
         {...register("recipientName")}
       />
       <Field
-        id="postalCode"
-        label="CEP"
+        id="cpf"
+        label="CPF"
         inputMode="numeric"
-        autoComplete="postal-code"
-        placeholder="00000-000"
-        error={errors.postalCode?.message}
-        {...register("postalCode")}
+        autoComplete="off"
+        placeholder="000.000.000-00"
+        maxLength={14}
+        error={errors.cpf?.message}
+        {...register("cpf", {
+          onChange: (e) => {
+            e.target.value = formatCpf(e.target.value);
+          },
+        })}
       />
+      <div className="space-y-1">
+        <Label htmlFor="postalCode">CEP</Label>
+        <div className="relative">
+          <Input
+            id="postalCode"
+            inputMode="numeric"
+            autoComplete="postal-code"
+            placeholder="00000-000"
+            maxLength={9}
+            aria-invalid={errors.postalCode ? true : undefined}
+            aria-describedby={errors.postalCode ? "postalCode-error" : undefined}
+            {...register("postalCode", {
+              onBlur: (e) => void resolveCep(e.target.value),
+            })}
+          />
+          {cepLoading ? (
+            <Loader2 className="absolute right-2.5 top-1/2 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+          ) : null}
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Preenchemos cidade e estado pelo CEP — confira abaixo.
+        </p>
+        {errors.postalCode?.message ? (
+          <p id="postalCode-error" className="text-xs text-danger">
+            {errors.postalCode.message}
+          </p>
+        ) : null}
+      </div>
+
       <div className="grid grid-cols-[1fr_5rem] gap-3">
         <Field
           id="street"
@@ -132,23 +204,48 @@ export function AddressForm({ token }: { token: string }) {
         error={errors.neighborhood?.message}
         {...register("neighborhood")}
       />
-      <div className="grid grid-cols-[1fr_5rem] gap-3">
+
+      <div className="grid grid-cols-[1fr_9rem] gap-3">
         <Field
           id="city"
           label="Cidade"
           autoComplete="address-level2"
+          readOnly={cepFilled}
+          className={cepFilled ? "bg-muted/40" : undefined}
           error={errors.city?.message}
           {...register("city")}
         />
-        <Field
-          id="state"
-          label="Estado"
-          autoComplete="address-level1"
-          placeholder="UF"
-          maxLength={2}
-          error={errors.state?.message}
-          {...register("state")}
-        />
+        <div className="space-y-1">
+          <Label htmlFor="state">Estado</Label>
+          <Controller
+            control={control}
+            name="state"
+            render={({ field: f }) => (
+              <Select
+                items={STATE_ITEMS}
+                value={f.value || undefined}
+                onValueChange={(v) => f.onChange(v ?? "")}
+              >
+                <SelectTrigger
+                  id="state"
+                  aria-invalid={errors.state ? true : undefined}
+                >
+                  <SelectValue placeholder="UF" />
+                </SelectTrigger>
+                <SelectContent>
+                  {STATE_ITEMS.map((s) => (
+                    <SelectItem key={s.value} value={s.value}>
+                      {s.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
+          {errors.state?.message ? (
+            <p className="text-xs text-danger">{errors.state.message}</p>
+          ) : null}
+        </div>
       </div>
 
       {/* honeypot — visually hidden, not tab-reachable */}
