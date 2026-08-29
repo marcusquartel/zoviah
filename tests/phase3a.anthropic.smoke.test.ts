@@ -69,6 +69,7 @@ const evidence = {
   socialHandles: [
     { platform: "instagram", handle: "synthetic_handle", plausible: true },
   ],
+  socialMetrics: {},
 };
 
 describe("Phase 3A — Anthropic smoke", { skip }, () => {

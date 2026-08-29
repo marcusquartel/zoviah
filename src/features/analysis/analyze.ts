@@ -95,10 +95,13 @@ export function toCompletionResult(
     latencyMs: number;
     inputSnapshot: ClaudePayload;
     rawResult: QualitativeOutput;
+    /** Metric snapshots that fed this analysis — internal audit only (§49). */
+    usedSnapshotIds?: string[];
   },
 ): Record<string, unknown> {
   return {
     model: meta.model,
+    used_snapshot_ids: meta.usedSnapshotIds ?? [],
     score: combined.score,
     tier: combined.tier,
     confidence: combined.confidence,

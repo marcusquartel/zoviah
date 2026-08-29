@@ -23,6 +23,7 @@ REGRAS ABSOLUTAS:
 - brand_affinity = compatibilidade com o UNIVERSO/temática do programa, não com um produto específico.
 - NUNCA considere ou infira: raça, etnia, religião, orientação sexual, identidade de gênero, deficiência, saúde, política, classe social, aparência/beleza/corpo, sotaque, idade. Não avalie a aparência da pessoa.
 - Não invente métricas nem números.
+- MÉTRICAS OBSERVADAS (objective_metrics.social: followers, views, view rate, engajamento, crescimento, frequência): são CONTEXTO FÁTICO. NÃO transforme métrica em nota. NÃO pontue performance, consistência, comunidade ou crescimento — esses critérios não são seus. NÃO crie benchmark ("X% de engajamento = bom"). NÃO afirme fraude, bot ou seguidores falsos. NÃO julgue a qualidade da audiência só por número de seguidores ou de views. Você pode citar um valor como contexto factual — ex.: "a mediana de views representa cerca de 41% da base de seguidores informada" — nada além disso.
 - summary: 2 a 4 frases. strengths e attention_points: no máximo 5 cada, baseados em evidência. suggested_tags: no máximo 8, curtas, minúsculas.
 
 FORMATO DE SAÍDA: responda com UM único objeto JSON válido, sem texto fora do JSON, sem markdown. Estrutura exata:

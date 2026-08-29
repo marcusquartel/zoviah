@@ -6,6 +6,37 @@ import {
   type AnalysisInput,
 } from "../src/features/analysis/sanitize.ts";
 import { computeObjectiveCriteria } from "../src/features/analysis/objective.ts";
+import type { SocialMetricSnapshot } from "../src/types/database.ts";
+
+function makeSnapshot(
+  over: Partial<SocialMetricSnapshot> = {},
+): SocialMetricSnapshot {
+  return {
+    id: "snap-ig-1",
+    organization_id: "o1",
+    creator_id: "c1",
+    social_profile_id: "s1",
+    source: "admin_manual",
+    observed_at: "2026-08-01T00:00:00.000Z",
+    period_days: 30,
+    followers: 41000,
+    average_views: 5200,
+    median_views: 4800,
+    views_sample: [4000, 4800, 6000],
+    average_likes: 300,
+    average_comments: 20,
+    average_shares: null,
+    average_saves: null,
+    reach: 9000,
+    interactions: null,
+    posts_count: 12,
+    notes: "conferido no painel",
+    created_by: "u1",
+    created_at: "2026-08-02T00:00:00.000Z",
+    updated_at: "2026-08-02T00:00:00.000Z",
+    ...over,
+  };
+}
 
 function makeInput(over: Partial<AnalysisInput> = {}): AnalysisInput {
   return {
@@ -123,13 +154,63 @@ test("78) a prompt-injection answer enters as DATA, not as an instruction", () =
   assert.ok(!("instructions" in payload));
 });
 
-test("objective_metrics are non-PII aggregates only", () => {
+test("objective_metrics are non-PII aggregates only (no snapshots -> no social key)", () => {
   const payload = buildClaudePayload(sanitizeEvidence(makeInput()));
   assert.deepEqual(Object.keys(payload.objective_metrics).sort(), [
     "content_links_provided",
     "registration_completeness",
     "social_profiles_count",
   ]);
+});
+
+test("67) observed metrics enter objective_metrics.social as derived numbers", () => {
+  const input = makeInput({
+    snapshots: {
+      instagram: { latest: makeSnapshot(), previous: null },
+    },
+  });
+  const payload = buildClaudePayload(sanitizeEvidence(input));
+  const social = payload.objective_metrics.social;
+  assert.ok(social?.instagram, "instagram social metrics present");
+  const m = social.instagram;
+  assert.equal(m.followers, 41000);
+  assert.equal(m.median_views, 4800);
+  assert.equal(m.sample_size, 3);
+  // median_view_rate = 4800 / 41000 rounded to 3 decimals
+  assert.equal(m.median_view_rate, 0.117);
+  assert.equal(m.posts_per_week, 2.8);
+  assert.equal(m.source, "admin_manual");
+});
+
+test("67) objective_metrics.social carries NO handle / name / id / notes", () => {
+  const input = makeInput({
+    snapshots: {
+      instagram: { latest: makeSnapshot(), previous: null },
+    },
+  });
+  const payload = buildClaudePayload(sanitizeEvidence(input));
+  const json = JSON.stringify(payload.objective_metrics.social).toLowerCase();
+
+  assert.ok(!json.includes("fulana"), "creator name/handle leaked");
+  assert.ok(!json.includes("snap-ig-1"), "snapshot id leaked");
+  assert.ok(!json.includes("s1"), "social_profile_id leaked");
+  assert.ok(!json.includes("conferido"), "free-text notes leaked");
+  assert.ok(!json.includes("observed_at"), "raw timestamp leaked");
+});
+
+test("67/68) observed metrics do NOT feed the deterministic score", () => {
+  const withMetrics = computeObjectiveCriteria(
+    sanitizeEvidence(
+      makeInput({
+        snapshots: { instagram: { latest: makeSnapshot(), previous: null } },
+      }),
+    ),
+  );
+  const without = computeObjectiveCriteria(sanitizeEvidence(makeInput()));
+  // performance / consistency / community / growth stay null either way
+  const pick = (rs: typeof withMetrics) =>
+    Object.fromEntries(rs.map((r) => [r.id, r.score]));
+  assert.deepEqual(pick(withMetrics), pick(without));
 });
 
 test("objective criteria: performance/consistency/community/growth = null (unknown, not 0)", () => {

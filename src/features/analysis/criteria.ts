@@ -8,8 +8,12 @@
  * (`score-engine.ts`) combines them — the model never returns a total.
  */
 
+// SCORING_VERSION is NOT changed by Phase 3B — the deterministic engine and
+// weights are identical to Phase 3A. Only the PROMPT changed (it now
+// acknowledges observed metrics), so PROMPT_VERSION advances to v2. Old
+// analyses keep their stored "creator-analysis-v1" — nothing is reprocessed.
 export const SCORING_VERSION = "creator-score-v1";
-export const PROMPT_VERSION = "creator-analysis-v1";
+export const PROMPT_VERSION = "creator-analysis-v2";
 
 export type CriterionSource = "deterministic" | "ai";
 

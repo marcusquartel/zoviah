@@ -7,6 +7,7 @@
  * mapping / type / label is dropped here. Large free-text is truncated.
  */
 import { isPlausibleHandle } from "../../lib/normalize.ts";
+import { deriveSnapshotMetrics } from "../evidence/metrics.ts";
 import type {
   Application,
   Creator,
@@ -14,6 +15,7 @@ import type {
   FieldMapping,
   FormField,
   Program,
+  SocialMetricSnapshot,
 } from "@/types/database";
 
 export const MAX_FIELD_CHARS = 800;
@@ -38,6 +40,11 @@ const PARTNERSHIP_LABEL_RE =
   /(marca|parceria|m[ íi]dia ?kit|media ?kit|colabora|publi)/i;
 const LINK_LABEL_RE = /(link|url|portf[óo]lio)/i;
 
+export interface PlatformSnapshots {
+  latest: SocialMetricSnapshot;
+  previous: SocialMetricSnapshot | null;
+}
+
 export interface AnalysisInput {
   program: Pick<
     Program,
@@ -47,6 +54,26 @@ export interface AnalysisInput {
   socials: CreatorSocialProfile[];
   application: Pick<Application, "answers" | "field_snapshot">;
   formFields: Pick<FormField, "field_key" | "field_type" | "configuration">[];
+  /** Latest (+ previous, for growth) metric snapshot per platform (§45). */
+  snapshots?: Partial<Record<"instagram" | "tiktok", PlatformSnapshots>>;
+}
+
+/** Metric evidence for the model — derived numbers only, no handle/id/name. */
+export interface SocialMetricEvidence {
+  followers: number | null;
+  median_views: number | null;
+  average_views: number | null;
+  median_view_rate: number | null;
+  sample_size: number;
+  posts_per_week: number | null;
+  engagement_by_followers: number | null;
+  engagement_by_reach: number | null;
+  reach: number | null;
+  interactions: number | null;
+  follower_growth_rate: number | null;
+  growth_period_days: number | null;
+  snapshot_age_days: number;
+  source: string;
 }
 
 export interface SanitizedEvidence {
@@ -69,6 +96,33 @@ export interface SanitizedEvidence {
     hasState: boolean;
   };
   socialHandles: { platform: string; handle: string; plausible: boolean }[];
+  /** Derived, PII-free metric evidence keyed by platform (§45). */
+  socialMetrics: Partial<Record<"instagram" | "tiktok", SocialMetricEvidence>>;
+}
+
+const round3 = (n: number | null): number | null =>
+  n == null ? null : Math.round(n * 1000) / 1000;
+const roundInt = (n: number | null): number | null =>
+  n == null ? null : Math.round(n);
+
+function toMetricEvidence(snaps: PlatformSnapshots): SocialMetricEvidence {
+  const d = deriveSnapshotMetrics(snaps.latest, snaps.previous);
+  return {
+    followers: d.followers,
+    median_views: d.medianViews,
+    average_views: d.averageViews,
+    median_view_rate: round3(d.medianViewRate),
+    sample_size: d.sampleSize,
+    posts_per_week: round3(d.postsPerWeek),
+    engagement_by_followers: round3(d.engagementByFollowers),
+    engagement_by_reach: round3(d.engagementByReach),
+    reach: d.reach,
+    interactions: roundInt(d.interactions),
+    follower_growth_rate: round3(d.followerGrowthRate),
+    growth_period_days: d.growthPeriodDays,
+    snapshot_age_days: d.snapshotAgeDays,
+    source: d.source,
+  };
 }
 
 function truncate(value: string): string {
@@ -161,6 +215,14 @@ export function sanitizeEvidence(input: AnalysisInput): SanitizedEvidence {
   const ig = topSocial(socials, "instagram");
   const tt = topSocial(socials, "tiktok");
 
+  const socialMetrics: SanitizedEvidence["socialMetrics"] = {};
+  if (input.snapshots?.instagram) {
+    socialMetrics.instagram = toMetricEvidence(input.snapshots.instagram);
+  }
+  if (input.snapshots?.tiktok) {
+    socialMetrics.tiktok = toMetricEvidence(input.snapshots.tiktok);
+  }
+
   const purposeRaw = (
     input.program.public_description ??
     input.program.description ??
@@ -199,6 +261,7 @@ export function sanitizeEvidence(input: AnalysisInput): SanitizedEvidence {
           ? isPlausibleHandle(s.handle_normalized, s.platform)
           : true,
     })),
+    socialMetrics,
   };
 }
 
@@ -236,6 +299,8 @@ export interface ClaudePayload {
     registration_completeness: number;
     social_profiles_count: number;
     content_links_provided: number;
+    /** Observed metric evidence (§45). Absent when there are no snapshots. */
+    social?: Partial<Record<"instagram" | "tiktok", SocialMetricEvidence>>;
   };
 }
 
@@ -249,6 +314,7 @@ export function buildClaudePayload(ev: SanitizedEvidence): ClaudePayload {
       reg.hasState,
     ].filter(Boolean).length / 4;
 
+  const hasMetrics = Object.keys(ev.socialMetrics).length > 0;
   const payload: ClaudePayload = {
     program: ev.program,
     creator_evidence: {
@@ -261,6 +327,7 @@ export function buildClaudePayload(ev: SanitizedEvidence): ClaudePayload {
       registration_completeness: Math.round(regScore * 100) / 100,
       social_profiles_count: ev.socialHandles.length,
       content_links_provided: ev.contentLinks.length,
+      ...(hasMetrics ? { social: ev.socialMetrics } : {}),
     },
   };
 

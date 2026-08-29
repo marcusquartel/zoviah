@@ -22,6 +22,7 @@ import {
 } from "@/features/analysis/sanitize";
 import { computeObjectiveCriteria } from "@/features/analysis/objective";
 import { combineAnalysis, toCompletionResult } from "@/features/analysis/analyze";
+import { getSnapshotsForAnalysis } from "@/features/evidence/queries";
 
 export interface AnalyzeResult {
   ok: boolean;
@@ -61,6 +62,13 @@ export async function analyzeApplication(
   const supabase = await createClient();
   const model = getAnthropicModelName() ?? "";
 
+  // Observed metric snapshots (latest + previous per platform) enrich the
+  // payload but never change the deterministic score (§45, §68).
+  const snapshots = await getSnapshotsForAnalysis(detail.socials);
+  const usedSnapshotIds = Object.values(snapshots)
+    .flatMap((s) => (s ? [s.latest.id, s.previous?.id] : []))
+    .filter((id): id is string => Boolean(id));
+
   // 1. sanitize + deterministic criteria (before reserving the slot)
   const evidence = sanitizeEvidence({
     program: {
@@ -72,6 +80,7 @@ export async function analyzeApplication(
     socials: detail.socials,
     application: detail.application,
     formFields,
+    snapshots,
   });
   const payload = buildClaudePayload(evidence);
   const objective = computeObjectiveCriteria(evidence);
@@ -104,6 +113,7 @@ export async function analyzeApplication(
       latencyMs: qualitative.latencyMs,
       inputSnapshot: payload,
       rawResult: qualitative.output,
+      usedSnapshotIds,
     });
 
     // 4. persist + update cache atomically
