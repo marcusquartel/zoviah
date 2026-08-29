@@ -307,6 +307,37 @@ describe("Phase 1 — programs, forms, public submission", { skip }, () => {
     assert.equal(first.data.creator_id, second.data.creator_id);
   });
 
+  test("phone-only match does NOT merge — new creator, flagged possible_duplicate", async () => {
+    // Two different people who happen to share a WhatsApp number.
+    const first = await submit({
+      p_creator: {
+        full_name: "Fatima Alves",
+        email: "fatima@example.com",
+        phone_e164: "+5511955550000",
+      },
+      p_socials: [],
+    });
+    const second = await submit({
+      p_creator: {
+        full_name: "Gustavo Reis",
+        email: "gustavo@example.com",
+        phone_e164: "+5511955550000",
+      },
+      p_socials: [
+        { platform: "instagram", handle: "gustavoreis", handle_normalized: "gustavoreis" },
+      ],
+    });
+    assert.notEqual(second.data.creator_id, first.data.creator_id);
+    assert.equal(second.data.possible_duplicate, true);
+
+    const created = await admin
+      .from("creators")
+      .select("full_name")
+      .eq("id", second.data.creator_id)
+      .single();
+    assert.equal(created.data!.full_name, "Gustavo Reis"); // own name kept
+  });
+
   test("conflicting identity -> possible_duplicate, no destructive merge", async () => {
     const c1 = await submit({
       p_creator: { full_name: "Eva One", email: "eva1@example.com" },
