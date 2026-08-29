@@ -6,12 +6,14 @@ const ITEMS: { key: keyof CrmCounts; label: string; accent?: boolean }[] = [
   { key: "new", label: "Novas" },
   { key: "awaiting_review", label: "Aguardando" },
   { key: "approved", label: "Aprovadas" },
+  { key: "awaiting_address", label: "Aguardando endereço" },
+  { key: "completed", label: "Cadastros completos" },
   { key: "possible_duplicate", label: "Poss. duplicidade", accent: true },
 ];
 
 export function CrmCounters({ counts }: { counts: CrmCounts }) {
   return (
-    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
       {ITEMS.map((item) => (
         <div
           key={item.key}

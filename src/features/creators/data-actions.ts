@@ -21,6 +21,10 @@ import {
   getSnapshotHistoryPage,
   type ApplicationMetrics,
 } from "@/features/evidence/queries";
+import {
+  getAddressTabData,
+  type AddressTabData,
+} from "@/features/requests/queries";
 import type {
   CreatorAnalysis,
   CreatorEvent,
@@ -89,6 +93,14 @@ export async function loadMetricsForApplication(
   applicationId: string,
 ): Promise<ApplicationMetrics | null> {
   return getApplicationMetrics(applicationId);
+}
+
+/** "Endereço" tab — loaded on demand; never part of the CRM list (§99, §100). */
+export async function loadAddressTab(
+  applicationId: string,
+  creatorId: string,
+): Promise<AddressTabData> {
+  return getAddressTabData(applicationId, creatorId);
 }
 
 /** "Carregar mais" in a profile's snapshot history (§73). */

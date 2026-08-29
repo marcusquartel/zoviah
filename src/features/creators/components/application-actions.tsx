@@ -20,6 +20,10 @@ const CONFIG: Record<
     icon: HelpCircle,
     variant: "outline",
   },
+  // Never surfaced here — these transitions run through the address-request
+  // flow (Endereço tab), not a manual button. Entries exist for type coverage.
+  awaiting_address: { label: "Aguardando endereço", icon: RotateCcw, variant: "outline" },
+  completed: { label: "Cadastro completo", icon: CheckCircle2, variant: "outline" },
   archived: {
     label: "Arquivar",
     icon: Archive,

@@ -19,6 +19,7 @@ import { Timeline } from "@/features/creators/components/timeline";
 import { NoteForm } from "@/features/creators/components/note-form";
 import { IntelligenceTab } from "@/features/analysis/components/intelligence-tab";
 import { MetricsTab } from "@/features/evidence/components/metrics-tab";
+import { AddressTab } from "@/features/requests/components/address-tab";
 import { ScoreBar } from "@/features/analysis/components/score-bar";
 import {
   loadDrawerData,
@@ -31,6 +32,7 @@ const TABS = [
   { id: "registration", label: "Cadastro" },
   { id: "socials", label: "Redes" },
   { id: "metrics", label: "Métricas" },
+  { id: "address", label: "Endereço" },
   { id: "answers", label: "Respostas" },
   { id: "history", label: "Histórico" },
 ] as const;
@@ -177,7 +179,11 @@ function ModalBody({
             Inscrição não encontrada.
           </p>
         ) : tab === "summary" ? (
-          <SummaryTab detail={detail} onChanged={onRefresh} />
+          <SummaryTab
+            detail={detail}
+            onChanged={onRefresh}
+            onOpenAddress={() => setTab("address")}
+          />
         ) : tab === "intelligence" ? (
           <IntelligenceTab
             applicationId={detail.application.id}
@@ -193,6 +199,13 @@ function ModalBody({
           <MetricsTab
             applicationId={detail.application.id}
             onEvidenceChanged={onRefresh}
+          />
+        ) : tab === "address" ? (
+          <AddressTab
+            applicationId={detail.application.id}
+            creatorId={detail.creator.id}
+            status={detail.application.status}
+            onChanged={onRefresh}
           />
         ) : tab === "answers" ? (
           <AnswersTab application={detail.application} />

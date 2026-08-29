@@ -18,6 +18,8 @@ export interface CrmCounts {
   awaiting_review: number;
   information_requested: number;
   approved: number;
+  awaiting_address: number;
+  completed: number;
   archived: number;
   possible_duplicate: number;
 }
@@ -28,6 +30,8 @@ const EMPTY_COUNTS: CrmCounts = {
   awaiting_review: 0,
   information_requested: 0,
   approved: 0,
+  awaiting_address: 0,
+  completed: 0,
   archived: 0,
   possible_duplicate: 0,
 };

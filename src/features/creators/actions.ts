@@ -25,6 +25,8 @@ const noteSchema = z.object({
 });
 
 const TRANSITION_ERRORS: Record<string, string> = {
+  USE_ADDRESS_REQUEST_FLOW:
+    "Use a aba Endereço para solicitar ou concluir o endereço.",
   INVALID_TRANSITION: "Essa mudança de status não é permitida.",
   FORBIDDEN: "Você não tem acesso a esta inscrição.",
   APPLICATION_NOT_FOUND: "Inscrição não encontrada.",

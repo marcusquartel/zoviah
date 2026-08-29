@@ -50,7 +50,16 @@ export type ApplicationStatus =
   | "awaiting_review"
   | "information_requested"
   | "approved"
+  | "awaiting_address"
+  | "completed"
   | "archived";
+
+export type AddressRequestType = "shipping_address";
+export type AddressRequestStatus =
+  | "pending"
+  | "completed"
+  | "expired"
+  | "revoked";
 
 export type AnalysisRunStatus = "processing" | "completed" | "failed";
 export type ApplicationAnalysisStatus =
@@ -618,6 +627,97 @@ export interface Database {
           },
         ];
       };
+      application_requests: {
+        Row: {
+          id: string;
+          organization_id: string;
+          application_id: string;
+          creator_id: string;
+          request_type: AddressRequestType;
+          status: AddressRequestStatus;
+          token_hash: string;
+          expires_at: string;
+          completed_at: string | null;
+          revoked_at: string | null;
+          consent_at: string | null;
+          created_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          application_id: string;
+          creator_id: string;
+          request_type: AddressRequestType;
+          status: AddressRequestStatus;
+          token_hash: string;
+          expires_at: string;
+        };
+        Update: {
+          status?: AddressRequestStatus;
+          completed_at?: string | null;
+          revoked_at?: string | null;
+          consent_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "application_requests_application_id_fkey";
+            columns: ["application_id"];
+            isOneToOne: false;
+            referencedRelation: "applications";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      creator_addresses: {
+        Row: {
+          id: string;
+          organization_id: string;
+          creator_id: string;
+          recipient_name: string;
+          postal_code: string;
+          street: string;
+          number: string;
+          complement: string | null;
+          neighborhood: string;
+          city: string;
+          state: string;
+          country: string;
+          source_request_id: string;
+          is_current: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          creator_id: string;
+          recipient_name: string;
+          postal_code: string;
+          street: string;
+          number: string;
+          complement?: string | null;
+          neighborhood: string;
+          city: string;
+          state: string;
+          country?: string;
+          source_request_id: string;
+          is_current?: boolean;
+        };
+        Update: {
+          is_current?: boolean;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "creator_addresses_creator_id_fkey";
+            columns: ["creator_id"];
+            isOneToOne: false;
+            referencedRelation: "creators";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: {
       latest_metric_snapshots: {
@@ -748,6 +848,26 @@ export interface Database {
         Args: Record<string, never>;
         Returns: Json;
       };
+      create_address_request: {
+        Args: { p_application_id: string; p_token_hash: string };
+        Returns: Json;
+      };
+      regenerate_address_request: {
+        Args: { p_application_id: string; p_token_hash: string };
+        Returns: Json;
+      };
+      revoke_address_request: {
+        Args: { p_application_id: string };
+        Returns: Json;
+      };
+      get_public_address_request: {
+        Args: { p_token_hash: string };
+        Returns: Json;
+      };
+      complete_address_request: {
+        Args: { p_token_hash: string; p_payload: Json };
+        Returns: Json;
+      };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
@@ -771,5 +891,9 @@ export type CreatorAnalysis =
   Database["public"]["Tables"]["creator_analyses"]["Row"];
 export type SocialMetricSnapshot =
   Database["public"]["Tables"]["social_metric_snapshots"]["Row"];
+export type ApplicationRequest =
+  Database["public"]["Tables"]["application_requests"]["Row"];
+export type CreatorAddress =
+  Database["public"]["Tables"]["creator_addresses"]["Row"];
 export type ApplicationListItem =
   Database["public"]["Views"]["application_list_items"]["Row"];

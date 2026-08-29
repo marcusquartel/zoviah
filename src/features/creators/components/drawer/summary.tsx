@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, MapPin } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { ApplicationStatusBadge } from "@/features/applications/status-badge";
 import { ApplicationActions } from "@/features/creators/components/application-actions";
 import { DuplicateWarning } from "@/features/creators/components/duplicate-warning";
@@ -10,9 +11,11 @@ import type { ApplicationDetail } from "@/features/creators/queries";
 export function SummaryTab({
   detail,
   onChanged,
+  onOpenAddress,
 }: {
   detail: ApplicationDetail;
   onChanged: () => void;
+  onOpenAddress: () => void;
 }) {
   const { application, program, creator, socials, otherApplications } = detail;
   const ig = socials.find((s) => s.platform === "instagram");
@@ -34,6 +37,28 @@ export function SummaryTab({
         status={application.status}
         onDone={onChanged}
       />
+
+      {application.status === "approved" ? (
+        <Button size="sm" onClick={onOpenAddress}>
+          <MapPin className="size-4" /> Solicitar endereço
+        </Button>
+      ) : application.status === "awaiting_address" ? (
+        <button
+          type="button"
+          onClick={onOpenAddress}
+          className="text-sm text-primary hover:underline"
+        >
+          Aguardando endereço — ver solicitação
+        </button>
+      ) : application.status === "completed" ? (
+        <button
+          type="button"
+          onClick={onOpenAddress}
+          className="text-sm text-primary hover:underline"
+        >
+          Cadastro completo — ver endereço
+        </button>
+      ) : null}
 
       <dl className="divide-y">
         <FieldRow label="Nome" value={creator.full_name} />

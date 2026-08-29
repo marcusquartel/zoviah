@@ -617,3 +617,121 @@ benchmarks por plataforma e faixa de seguidores e então pontuar
 partir da distribuição real — substituindo os `null` atuais. O ponto de
 extensão é `objective.ts` (os quatro critérios já existem, só retornam
 `null`). Nada de thresholds arbitrários antes dessa fase.
+
+---
+
+# Fase 4 — Aprovação → solicitação segura de endereço → cadastro completo
+
+Fecha o ciclo operacional do MVP: uma creator aprovada recebe um link privado,
+preenche o endereço de envio numa página pública fora do painel, e a
+`application` chega a `completed`. Nenhuma logística, transportadora, e-mail ou
+WhatsApp — só a coleta segura do dado.
+
+## Status da application
+
+Dois estados novos: `awaiting_address` ("Aguardando endereço") e `completed`
+("Cadastro completo"). Fluxo principal:
+
+```
+new → awaiting_review → approved → awaiting_address → completed
+```
+
+`is_valid_application_transition` (migration `20260829000002`) conhece o grafo
+completo, incluindo `approved → awaiting_address`, `awaiting_address →
+completed` e `awaiting_address → approved`. **Essas três arestas são
+"secure-only"**: `transition_application_status` as recusa para um chamador
+manual (`USE_ADDRESS_REQUEST_FLOW`) — só acontecem dentro das RPCs de
+solicitação de endereço, atômicas com a criação/revogação do token. A UI
+espelha isso: `nextStatuses()` remove as arestas secure-only dos dropdowns.
+
+`approved_at` é preservado em `approved → awaiting_address → completed`. Só a
+reabertura para avaliação (fluxo da Fase 2) o zera. Arquivar uma application em
+`awaiting_address` também revoga a request pendente (invariante
+"`awaiting_address` ⟺ request `pending` viva").
+
+## application_requests
+
+Uma solicitação suplementar com token. `request_type` só admite
+`shipping_address` nesta fase (não é motor genérico de formulários privados).
+`status`: `pending | completed | expired | revoked`. Índices: `unique
+(token_hash)`; `unique (application_id, request_type) where status = 'pending'`
+(no máximo uma request viva); `(application_id, created_at desc)` e
+`(organization_id, status, created_at desc)`. RLS: membros leem as da própria
+org; escrita só via RPC. `expires_at` = `now() + 7 dias`
+(`ADDRESS_REQUEST_TTL_DAYS`, centralizado na migration).
+
+## Segurança do token
+
+- **Entropia**: `crypto.randomBytes(32)` → base64url (~256 bits). Nunca
+  application UUID, creator UUID, e-mail, telefone ou slug previsível.
+- **Hash**: o banco só guarda `sha256(raw)` em hex (`application_requests.token_hash`).
+  O raw existe apenas no escopo da server action, na URL mostrada ao admin e na
+  URL que a creator recebe. **Não é recuperável** — perdeu, gera outro.
+- **Expiração**: 7 dias. `get_public_address_request` / `complete_address_request`
+  marcam um `pending` vencido como `expired` na hora e recusam.
+- **Revogação**: `revoke_address_request` → request `revoked`, application volta
+  a `approved`.
+- **Regeneração**: `regenerate_address_request` revoga o token anterior e cria
+  um novo numa única transação; a application continua em `awaiting_address`
+  (sem bounce artificial de status).
+- **Uso único**: depois de `completed`, o token é idempotente — uma nova
+  submissão retorna `already_completed` e não cria segundo endereço.
+
+## creator_addresses
+
+O endereço pertence à **creator** (atributo da pessoa no tenant), não à
+application; `source_request_id` registra de qual request veio. Histórico
+versionado: `unique (organization_id, creator_id) where is_current`. CHECK de
+tamanho em cada campo, `postal_code ~ '^[0-9]{8}$'`, `state ~ '^[A-Z]{2}$'`,
+`country = 'BR'`. RLS: membros leem os da própria org; escrita só via RPC.
+
+## Fluxo público
+
+Rota `/complete/[token]` (sem IDs na URL). O Server Component resolve
+`sha256(token)` e chama `get_public_address_request` (SECURITY DEFINER, anon) —
+que devolve **só** branding da org, nome do programa, `expires_at` e um status
+grosseiro. Token inexistente / inválido / revogado / expirado colapsam todos em
+`invalid` com a mesma mensagem ("Este link não está mais disponível ou
+expirou"), sem enumeração.
+
+`next.config.ts` serve `/complete/:token*` com `Cache-Control: no-store`,
+`Referrer-Policy: no-referrer` e `X-Robots-Tag: noindex`. O formulário
+(mobile-first, labels reais, `autocomplete`, honeypot) envia via
+`complete_address_request` (SECURITY DEFINER, anon, rate-limit por IP):
+
+1. lock da request pelo hash; 2. valida status/expiração/tipo; 3. valida
+`application.status = awaiting_address`; 4. normaliza (CEP → 8 dígitos, UF →
+2 maiúsculas, trim) e valida; 5. exige consentimento; 6. marca o endereço
+current anterior como `is_current = false`; 7. insere o novo; 8. request →
+`completed` (+ `completed_at`, `consent_at`); 9. application → `completed`;
+10. evento `address_submitted` (`actor_user_id = null`, `source =
+public_secure_request`, **sem endereço**). Tudo ou nada.
+
+## CRM / Modal
+
+Nova aba **Endereço** no modal (ordem: Resumo · Inteligência · Cadastro · Redes
+· Métricas · **Endereço** · Respostas · Histórico), carregada sob demanda — a
+lista do CRM nunca toca `application_requests` / `creator_addresses`. Estados:
+`approved` → botão "Solicitar endereço" (mostra o link uma vez, com aviso de
+não-recuperável); `awaiting_address` → "Gerar novo link" / "Revogar
+solicitação" + data de criação/expiração; `completed` → endereço atual em
+layout copiável. Histórico de solicitações (Criada / Status / Expira /
+Concluída / Revogada / Criada por) — **nunca** o token/hash. Contadores da CRM
+e colunas do Kanban ganham "Aguardando endereço" e "Cadastros completos".
+
+## PII
+
+`creator_addresses` é PII operacional: **nunca** vai para logs, analytics,
+`creator_events`, Anthropic, mensagens de erro ou URL. `buildClaudePayload` não
+tem caminho para endereço (teste de regressão em `analysis-sanitize.test.ts`).
+`city` / `state` do cadastro inicial seguem a política de privacidade que já
+existia; `creator_addresses` jamais entra automaticamente em qualquer payload.
+Sem política de retenção automática nesta fase (documentado como pendência
+consciente).
+
+## RLS / anon
+
+`application_requests` e `creator_addresses`: RLS obrigatória, `select` só para
+membros da org, escrita só pelas RPCs. Nenhuma policy anon. Anon só executa
+`get_public_address_request` e `complete_address_request`. Cross-tenant
+coberto: org B não vê/gera/revoga request ou endereço de org A.

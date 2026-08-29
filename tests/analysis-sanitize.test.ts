@@ -259,3 +259,24 @@ test("professionalism never penalizes 'never worked with brands' / no media kit 
   // unaffected by "no brands / no media kit / 300 followers".
   assert.ok(pro.score! >= 80, `expected >=80, got ${pro.score}`);
 });
+
+test("87) no shipping-address field ever appears in the Claude payload", () => {
+  // Even with metrics + a fully-populated creator, the sanitizer has no path
+  // to creator_addresses. Guard against a future regression that wires one in.
+  const input = makeInput({
+    snapshots: { instagram: { latest: makeSnapshot(), previous: null } },
+  });
+  const json = JSON.stringify(buildClaudePayload(sanitizeEvidence(input)));
+  for (const forbidden of [
+    "recipient_name",
+    "postal_code",
+    "street",
+    "neighborhood",
+    "complement",
+    "source_request_id",
+    "creator_address",
+    "shipping_address",
+  ]) {
+    assert.ok(!json.includes(forbidden), `payload leaked "${forbidden}"`);
+  }
+});

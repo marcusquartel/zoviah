@@ -1,5 +1,6 @@
 import {
   FileText,
+  MapPin,
   MessageSquare,
   RefreshCw,
   UserPlus,
@@ -37,6 +38,26 @@ function describe(event: CreatorEvent): {
         title: "Nota adicionada",
         detail: typeof data.text === "string" ? data.text : undefined,
       };
+    case "address_request_created":
+      return {
+        icon: MapPin,
+        title: "Solicitação de endereço criada",
+        detail: actor ? `por ${actor}` : undefined,
+      };
+    case "address_request_regenerated":
+      return {
+        icon: MapPin,
+        title: "Link de endereço regenerado",
+        detail: actor ? `por ${actor}` : undefined,
+      };
+    case "address_request_revoked":
+      return {
+        icon: MapPin,
+        title: "Solicitação de endereço revogada",
+        detail: actor ? `por ${actor}` : undefined,
+      };
+    case "address_submitted":
+      return { icon: MapPin, title: "Endereço enviado pela creator" };
     default:
       return { icon: FileText, title: event.type };
   }

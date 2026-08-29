@@ -8,6 +8,8 @@ const STYLES: Record<ApplicationStatus, string> = {
   awaiting_review: "bg-warning/15 text-warning-foreground",
   information_requested: "bg-accent text-accent-foreground",
   approved: "bg-success/15 text-success",
+  awaiting_address: "bg-warning/15 text-warning-foreground",
+  completed: "bg-success/20 text-success",
   archived: "bg-muted text-muted-foreground",
 };
 
