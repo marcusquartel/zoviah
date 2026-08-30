@@ -8,11 +8,12 @@ import { login, type LoginState } from "@/features/auth/actions";
 
 const initialState: LoginState = {};
 
-export function LoginForm() {
+export function LoginForm({ next }: { next?: string }) {
   const [state, formAction, pending] = useActionState(login, initialState);
 
   return (
     <form action={formAction} className="space-y-4">
+      {next ? <input type="hidden" name="next" value={next} /> : null}
       <div className="space-y-2">
         <Label htmlFor="email">E-mail</Label>
         <Input

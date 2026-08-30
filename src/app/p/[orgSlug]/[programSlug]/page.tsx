@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ThemeStyle } from "@/components/theme-style";
+import { LegalFooter } from "@/components/legal-footer";
 import { getPublicProgram } from "@/features/public/queries";
 import { PublicForm } from "./public-form";
 
@@ -84,6 +85,7 @@ export default async function PublicProgramPage({
         <p className="mt-10 text-center text-xs text-muted-foreground">
           {organization.name} · Creator Hub
         </p>
+        <LegalFooter />
       </main>
     </>
   );

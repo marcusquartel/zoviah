@@ -17,14 +17,24 @@ export const metadata: Metadata = { title: "Entrar · Creator Hub" };
 // Reads the session cookie to bounce already-authenticated users.
 export const dynamic = "force-dynamic";
 
-export default async function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   if (!isSupabaseConfigured()) {
     return <SetupNotice />;
   }
 
+  const sp = await searchParams;
+  const next =
+    typeof sp.next === "string" && sp.next.startsWith("/") && !sp.next.startsWith("//")
+      ? sp.next
+      : undefined;
+
   const user = await getCurrentUser();
   if (user) {
-    redirect("/app");
+    redirect(next ?? "/app");
   }
 
   return (
@@ -35,7 +45,7 @@ export default async function LoginPage() {
           <CardDescription>Acesse o painel administrativo.</CardDescription>
         </CardHeader>
         <CardContent>
-          <LoginForm />
+          <LoginForm next={next} />
         </CardContent>
       </Card>
     </div>

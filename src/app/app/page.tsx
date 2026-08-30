@@ -5,13 +5,16 @@ import { ApplicationStatusBadge } from "@/features/applications/status-badge";
 import { formatDate } from "@/features/creators/format";
 import { getOverviewStats } from "@/features/creators/queries";
 import { getCurrentOrganization } from "@/features/organizations/queries";
+import { getOnboardingState } from "@/features/onboarding/queries";
+import { OnboardingChecklist } from "@/features/onboarding/components/onboarding-checklist";
 
 export const metadata: Metadata = { title: "Visão Geral · Creator Hub" };
 
 export default async function OverviewPage() {
-  const [current, stats] = await Promise.all([
+  const [current, stats, onboarding] = await Promise.all([
     getCurrentOrganization(),
     getOverviewStats(),
+    getOnboardingState(),
   ]);
   if (!current || !stats) return null;
 
@@ -29,6 +32,8 @@ export default async function OverviewPage() {
         title="Visão Geral"
         description={`${current.organization.name} · painel operacional`}
       />
+
+      {onboarding ? <OnboardingChecklist state={onboarding} /> : null}
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         {metrics.map((m) => (

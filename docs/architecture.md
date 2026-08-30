@@ -845,3 +845,124 @@ entidade (nunca do cliente) e checam membership de qualquer papel
 `campaign_id`, `product_id`, `shipping_cost`, integração de transportadora e
 webhook de tracking cabem no modelo, mas **nenhuma coluna/tabela foi criada sem
 uso**. Sem política de retenção automática nesta fase (documentado).
+
+---
+
+# Fase 6A — SaaS commercial readiness
+
+Transforma "um sistema que funciona para a Rare Way" em "um SaaS onde um
+operador provisiona novos tenants pagantes". **Sem cobrança, sem signup público
+self-service** — os primeiros clientes (Founding Customers) são provisionados à
+mão. Rare Way continua sendo o cliente #1, sem hard-code.
+
+## Platform Administration
+
+`platform_admins (user_id, created_by, created_at)` — um privilégio **fora** de
+qualquer tenant (não é uma `organization_members` com role especial). RLS
+habilitada **sem policy**: só o operador (SQL direto / service_role) escreve, e
+só o helper `is_platform_admin()` (`SECURITY DEFINER`, `search_path=''`,
+`(select auth.uid())`) lê. O frontend nunca envia uma flag — a autoridade é a
+função. `/admin` é validada server-side em `src/app/admin/layout.tsx` a cada
+request (esconder o link nunca é o controle); tenant comum em `/admin` →
+`redirect('/app')`.
+
+## Tenant Provisioning
+
+`admin_create_organization(name, slug, owner_email, plan_code, status,
+owner_token_hash)` (`SECURITY DEFINER`, gate `is_platform_admin()`) é atômica:
+cria `organizations` (triggers criam `organization_settings` +
+`organization_subscriptions`), fixa o `plan_code`, e —
+
+- se `owner_email` já tem conta → insere `organization_members` role `owner`;
+- se não → cria um `organization_invites` role `owner` com o hash fornecido. O
+  raw token só existe na server action e na URL retornada (`/invite/<token>`).
+
+Nunca cria usuário direto em `auth` via SQL (§14). `platform_audit_events`
+registra `organization_created`.
+
+## Organization Invites
+
+`organization_invites (id, organization_id, email, role, token_hash, status,
+expires_at, invited_by, accepted_at, revoked_at, …)` — mesma disciplina de token
+da Fase 4: `crypto.randomBytes(32)` → base64url; o banco guarda só
+`sha256(raw)`; `unique(token_hash)`; `unique(organization_id, lower(email))
+where status='pending'`; TTL 14 dias (`ORG_INVITE_TTL_DAYS`). RLS: `select` para
+owner/admin da org; escrita só via RPC.
+
+- `create_org_invite` / `revoke_org_invite` — owner/admin da org; varre pending
+  vencido; recusa `ALREADY_MEMBER`.
+- `get_public_org_invite(token_hash)` — anon; devolve **só** nome da org, role,
+  `email_masked` (`ma***@…`) e um status grosseiro; inválido/revogado/expirado
+  colapsam em `invalid`.
+- `accept_org_invite(token_hash)` — **authenticated**; o e-mail verificado do
+  chamador precisa bater com o do convite (`EMAIL_MISMATCH`); recusa org
+  suspensa; idempotente (2ª vez → `already_member`, sem segunda membership).
+
+`/invite/[token]` (público, `noindex`): não autenticado → link para
+`/login?next=/invite/<token>` (o `login` só honra `next` relativo same-origin).
+
+## Team Management
+
+`Configurações → Equipe`: owner/admin veem membros + convites, convidam
+(mostra o link para copiar — **sem e-mail automático**, §19), revogam, removem,
+trocam role. `list_org_members(org)` (`SECURITY DEFINER`) traz os e-mails
+(`auth.users` não é alcançável por RLS). **Invariante do último owner** (§22):
+`remove_org_member` e `set_org_member_role` recusam remover/rebaixar o único
+owner (`LAST_OWNER`). Roles reaproveitados: owner / admin / analyst.
+
+## Commercial Metadata
+
+`organization_subscriptions (organization_id, plan_code, started_at,
+expires_at, notes, updated_by, …)`. `plan_code ∈ {founding, starter, pro,
+agency, enterprise}` — condição comercial, **não** verdade financeira (preços
+são decisão de negócio, não schema). Um trigger cria a linha (default
+`founding`) para toda org. RLS: membros leem a da própria org (badge de plano em
+`Configurações → Plano`, read-only). `admin_set_organization_plan` (operador)
+muda o plano + audita `organization_plan_changed`. Sem enforcement de limites
+por plano ainda (§12) — primeiro observar uso real. `creator_analyses` já
+registra tokens: fonte futura de usage/credits (documentado, sem mudança).
+
+## Suspension
+
+`organizations.status ∈ {active, inactive, suspended}` — o **único** gate de
+acesso (sem `past_due` / `grace_period` sem billing, §44). `active ↔ suspended`
+por `admin_set_organization_status` (operador), auditado. Dois níveis de
+enforcement:
+
+1. **Layout** (`src/app/app/layout.tsx`): status `suspended` → renderiza
+   `SuspendedNotice` no lugar do app (dados preservados, mensagem de suporte).
+2. **Banco**: trigger `block_if_org_suspended()` (`BEFORE`) em
+   `applications` (UPDATE), `shipments`, `shipment_items`,
+   `organization_settings` (UPDATE), `organization_invites`,
+   `social_metric_snapshots`, `application_requests`, `creator_analyses`,
+   `organization_members` (UPDATE) → `raise 'ORGANIZATION_SUSPENDED'`. Um
+   painel-write de tenant suspenso falha mesmo com uma página pré-carregada.
+
+**Submissão pública (`submit_application`) NÃO é gated**: suspensão congela o
+*painel*, não descarta leads nem apaga nada (§31). Sem delete de tenant nesta
+fase (§45).
+
+## Onboarding
+
+Checklist na Visão Geral, **derivado** do estado real (§26) — `hasBrand`
+(settings tem cor/logo), `hasProgram`, `hasPublishedProgram` (program `active`),
+`teamInvited` (>1 membership OU algum invite), `hasApplication`. Módulo puro
+`deriveOnboardingState()`. "X de 5 concluídos" + barra; "Ocultar" persiste em
+`localStorage`; some quando completo.
+
+## Security Boundaries
+
+- **platform_admin ≠ tenant user**: privilégio em tabela própria, sem policy,
+  lido só por `is_platform_admin()`. Não desliga RLS de tenant — o `/admin`
+  opera por RPCs `SECURITY DEFINER` gated, nunca por acesso irrestrito às
+  tabelas (§6). Sem "entrar como cliente" (impersonation, §36).
+- **Invites**: raw token nunca no DB / log / audit / report (§50). Anon não faz
+  `select` em `organization_invites` / `platform_*` / `organizations` /
+  `organization_members` — só executa `get_public_org_invite` e (autenticado)
+  `accept_org_invite`.
+- **Cross-tenant**: inalterado. Org B não lê/gera/opera nada de org A. O
+  operador não ganha acesso a PII de tenant para "suporte" (§37) — só
+  metadados operacionais (contagens) via `admin_get_organization`.
+- **Multi-org**: `organization_members` já é N:N. `getCurrentOrganization()`
+  pega a membership mais antiga — ponto único para um seletor futuro. Nenhum
+  seletor de org foi criado (sem uso, §33).

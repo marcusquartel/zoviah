@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Lock } from "lucide-react";
+import { Lock, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { comingSoonNav, primaryNav } from "@/components/app-shell/nav";
 
@@ -13,9 +13,10 @@ function isActive(pathname: string, href: string): boolean {
 
 interface NavListProps {
   onNavigate?: () => void;
+  isPlatformAdmin?: boolean;
 }
 
-export function NavList({ onNavigate }: NavListProps) {
+export function NavList({ onNavigate, isPlatformAdmin }: NavListProps) {
   const pathname = usePathname();
 
   return (
@@ -43,6 +44,21 @@ export function NavList({ onNavigate }: NavListProps) {
           );
         })}
       </ul>
+
+      {isPlatformAdmin ? (
+        <ul className="space-y-1 border-t pt-4">
+          <li>
+            <Link
+              href="/admin"
+              onClick={onNavigate}
+              className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
+            >
+              <ShieldCheck className="size-4 shrink-0" />
+              Admin SaaS
+            </Link>
+          </li>
+        </ul>
+      ) : null}
 
       <div className="space-y-2">
         <p className="px-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground/70">

@@ -16,8 +16,16 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[];
 
-export type OrganizationStatus = "active" | "inactive";
+export type OrganizationStatus = "active" | "inactive" | "suspended";
 export type OrganizationRole = "owner" | "admin" | "analyst";
+
+export type PlanCode =
+  | "founding"
+  | "starter"
+  | "pro"
+  | "agency"
+  | "enterprise";
+export type OrgInviteStatus = "pending" | "accepted" | "expired" | "revoked";
 
 export type ProgramStatus = "draft" | "active" | "paused" | "archived";
 
@@ -218,6 +226,98 @@ export interface Database {
             referencedColumns: ["id"];
           },
         ];
+      };
+      platform_admins: {
+        Row: { user_id: string; created_by: string | null; created_at: string };
+        Insert: { user_id: string; created_by?: string | null };
+        Update: { created_by?: string | null };
+        Relationships: [];
+      };
+      organization_subscriptions: {
+        Row: {
+          organization_id: string;
+          plan_code: PlanCode;
+          started_at: string;
+          expires_at: string | null;
+          notes: string | null;
+          updated_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: { organization_id: string; plan_code?: PlanCode };
+        Update: {
+          plan_code?: PlanCode;
+          expires_at?: string | null;
+          notes?: string | null;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "organization_subscriptions_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: true;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      organization_invites: {
+        Row: {
+          id: string;
+          organization_id: string;
+          email: string;
+          role: OrganizationRole;
+          token_hash: string;
+          status: OrgInviteStatus;
+          expires_at: string;
+          invited_by: string | null;
+          accepted_at: string | null;
+          revoked_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          email: string;
+          role: OrganizationRole;
+          token_hash: string;
+          status: OrgInviteStatus;
+          expires_at: string;
+        };
+        Update: {
+          status?: OrgInviteStatus;
+          accepted_at?: string | null;
+          revoked_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "organization_invites_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      platform_audit_events: {
+        Row: {
+          id: string;
+          actor_user_id: string | null;
+          organization_id: string | null;
+          event_type: string;
+          metadata: Record<string, Json>;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          actor_user_id?: string | null;
+          organization_id?: string | null;
+          event_type: string;
+          metadata?: Record<string, Json>;
+        };
+        Update: { metadata?: Record<string, Json> };
+        Relationships: [];
       };
       programs: {
         Row: {
@@ -1038,6 +1138,82 @@ export interface Database {
         Args: { p_shipment_id: string };
         Returns: Json;
       };
+      is_platform_admin: {
+        Args: Record<string, never>;
+        Returns: boolean;
+      };
+      admin_create_organization: {
+        Args: {
+          p_name: string;
+          p_slug: string;
+          p_owner_email: string;
+          p_plan_code: string;
+          p_status: string;
+          p_owner_token_hash: string;
+        };
+        Returns: Json;
+      };
+      admin_list_organizations: {
+        Args: { p_search?: string | null; p_limit?: number; p_offset?: number };
+        Returns: Json;
+      };
+      admin_get_organization: {
+        Args: { p_organization_id: string };
+        Returns: Json;
+      };
+      admin_set_organization_status: {
+        Args: { p_organization_id: string; p_status: string };
+        Returns: Json;
+      };
+      admin_set_organization_plan: {
+        Args: {
+          p_organization_id: string;
+          p_plan_code: string;
+          p_notes?: string | null;
+        };
+        Returns: Json;
+      };
+      admin_list_platform_audit: {
+        Args: { p_limit?: number; p_offset?: number };
+        Returns: Json;
+      };
+      create_org_invite: {
+        Args: {
+          p_organization_id: string;
+          p_email: string;
+          p_role: string;
+          p_token_hash: string;
+        };
+        Returns: Json;
+      };
+      revoke_org_invite: {
+        Args: { p_invite_id: string };
+        Returns: Json;
+      };
+      get_public_org_invite: {
+        Args: { p_token_hash: string };
+        Returns: Json;
+      };
+      accept_org_invite: {
+        Args: { p_token_hash: string };
+        Returns: Json;
+      };
+      remove_org_member: {
+        Args: { p_organization_id: string; p_user_id: string };
+        Returns: Json;
+      };
+      set_org_member_role: {
+        Args: {
+          p_organization_id: string;
+          p_user_id: string;
+          p_role: string;
+        };
+        Returns: Json;
+      };
+      list_org_members: {
+        Args: { p_organization_id: string };
+        Returns: Json;
+      };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
@@ -1072,3 +1248,9 @@ export type ApplicationListItem =
   Database["public"]["Views"]["application_list_items"]["Row"];
 export type ShipmentListItem =
   Database["public"]["Views"]["shipment_list_items"]["Row"];
+export type OrganizationSubscription =
+  Database["public"]["Tables"]["organization_subscriptions"]["Row"];
+export type OrganizationInvite =
+  Database["public"]["Tables"]["organization_invites"]["Row"];
+export type PlatformAuditEvent =
+  Database["public"]["Tables"]["platform_audit_events"]["Row"];

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { ThemeStyle } from "@/components/theme-style";
+import { LegalFooter } from "@/components/legal-footer";
 import { hashToken } from "@/lib/secure-token";
 import { getPublicAddressRequest } from "@/features/requests/queries";
 import { AddressForm } from "./address-form";
@@ -77,6 +78,7 @@ export default async function CompleteAddressPage({
         <p className="mt-8 text-center text-xs text-muted-foreground">
           {request.organization.name}
         </p>
+        <LegalFooter className="mt-2 text-center text-xs text-muted-foreground" />
       </main>
     </>
   );

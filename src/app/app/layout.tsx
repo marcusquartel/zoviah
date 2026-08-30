@@ -8,6 +8,8 @@ import {
   getCurrentOrganization,
   getCurrentUser,
 } from "@/features/organizations/queries";
+import { getIsPlatformAdmin } from "@/features/platform/queries";
+import { SuspendedNotice } from "@/features/platform/components/suspended-notice";
 
 // Every /app route is per-user (auth + tenant), never static.
 export const dynamic = "force-dynamic";
@@ -42,6 +44,17 @@ export default async function AppLayout({
   }
 
   const { organization, settings, role } = current;
+  const isPlatformAdmin = await getIsPlatformAdmin();
+
+  if (organization.status === "suspended") {
+    return (
+      <SuspendedNotice
+        orgName={organization.name}
+        userEmail={user.email ?? ""}
+        isPlatformAdmin={isPlatformAdmin}
+      />
+    );
+  }
 
   return (
     <>
@@ -50,7 +63,11 @@ export default async function AppLayout({
         secondaryColor={settings?.secondary_color}
       />
       <div className="flex min-h-svh">
-        <Sidebar orgName={organization.name} logoUrl={settings?.logo_url} />
+        <Sidebar
+          orgName={organization.name}
+          logoUrl={settings?.logo_url}
+          isPlatformAdmin={isPlatformAdmin}
+        />
         <div className="flex min-w-0 flex-1 flex-col">
           <Topbar
             orgName={organization.name}

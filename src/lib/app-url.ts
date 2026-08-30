@@ -45,3 +45,8 @@ export function getAppBaseUrl(): string {
 export function buildSecureLinkUrl(rawToken: string): string {
   return `${getAppBaseUrl()}/complete/${rawToken}`;
 }
+
+/** Absolute URL of the team-invite acceptance page for a raw token. */
+export function buildInviteUrl(rawToken: string): string {
+  return `${getAppBaseUrl()}/invite/${rawToken}`;
+}

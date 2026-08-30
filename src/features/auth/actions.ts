@@ -33,7 +33,11 @@ export async function login(
     return { error: "E-mail ou senha incorretos." };
   }
 
-  redirect("/app");
+  // Only same-origin relative paths are honoured as a post-login destination.
+  const rawNext = String(formData.get("next") ?? "");
+  const next =
+    rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/app";
+  redirect(next);
 }
 
 export async function logout(): Promise<void> {
