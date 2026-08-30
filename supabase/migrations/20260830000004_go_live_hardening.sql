@@ -114,20 +114,18 @@ begin
   delete from public.public_submission_throttle
   where window_start < v_now - v_window - interval '1 hour';
 
-  insert into public.public_submission_throttle (ip_hash, window_start, count)
+  insert into public.public_submission_throttle as t (ip_hash, window_start, count)
   values (p_ip_hash, v_now, 1)
   on conflict (ip_hash) do update
     set count = case
-          when public.public_submission_throttle.window_start < v_now - v_window
-            then 1
-          else public.public_submission_throttle.count + 1
+          when t.window_start < v_now - v_window then 1
+          else t.count + 1
         end,
         window_start = case
-          when public.public_submission_throttle.window_start < v_now - v_window
-            then v_now
-          else public.public_submission_throttle.window_start
+          when t.window_start < v_now - v_window then v_now
+          else t.window_start
         end
-  returning * into v_row;
+  returning t.* into v_row;
 
   if v_row.count > v_max then
     return jsonb_build_object(
@@ -168,10 +166,10 @@ begin
     raise exception 'ORGANIZATION_NOT_FOUND';
   end if;
   -- Only http(s) absolute URLs. No javascript:/data:/relative.
-  if v_logo is not null and v_logo !~* '^https?://[^\s]+$' then
+  if v_logo is not null and v_logo !~* '^https?://\S+$' then
     raise exception 'INVALID_LOGO_URL';
   end if;
-  if v_favicon is not null and v_favicon !~* '^https?://[^\s]+$' then
+  if v_favicon is not null and v_favicon !~* '^https?://\S+$' then
     raise exception 'INVALID_FAVICON_URL';
   end if;
 
