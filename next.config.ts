@@ -36,6 +36,19 @@ const nextConfig: NextConfig = {
           { key: "X-Robots-Tag", value: "noindex, nofollow" },
         ],
       },
+      // Password-recovery surfaces: /auth/callback carries a one-time code in
+      // the URL; /reset-password holds the recovery session; keep all three
+      // uncached, unindexed and referrer-free.
+      ...["/auth/callback", "/reset-password", "/forgot-password"].map(
+        (source) => ({
+          source,
+          headers: [
+            { key: "Cache-Control", value: "no-store, max-age=0" },
+            { key: "Referrer-Policy", value: "no-referrer" },
+            { key: "X-Robots-Tag", value: "noindex, nofollow" },
+          ],
+        }),
+      ),
     ];
   },
 };

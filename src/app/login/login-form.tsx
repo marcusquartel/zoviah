@@ -1,10 +1,12 @@
 "use client";
 
 import { useActionState } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { login, type LoginState } from "@/features/auth/actions";
+import { FORGOT_PASSWORD_PATH } from "@/features/auth/messages";
 
 const initialState: LoginState = {};
 
@@ -26,7 +28,15 @@ export function LoginForm({ next }: { next?: string }) {
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="password">Senha</Label>
+        <div className="flex items-center justify-between">
+          <Label htmlFor="password">Senha</Label>
+          <Link
+            href={FORGOT_PASSWORD_PATH}
+            className="text-xs text-muted-foreground transition-colors hover:text-foreground"
+          >
+            Esqueci minha senha
+          </Link>
+        </div>
         <Input
           id="password"
           name="password"

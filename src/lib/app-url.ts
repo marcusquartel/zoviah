@@ -50,3 +50,13 @@ export function buildSecureLinkUrl(rawToken: string): string {
 export function buildInviteUrl(rawToken: string): string {
   return `${getAppBaseUrl()}/invite/${rawToken}`;
 }
+
+/**
+ * Absolute URL Supabase Auth redirects the browser to after it verifies a
+ * recovery link. The route handler there exchanges the code for a session and
+ * forwards to `next` (a same-origin relative path).
+ */
+export function buildAuthCallbackUrl(next: string): string {
+  const rel = next.startsWith("/") && !next.startsWith("//") ? next : "/app";
+  return `${getAppBaseUrl()}/auth/callback?next=${encodeURIComponent(rel)}`;
+}
