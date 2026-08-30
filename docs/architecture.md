@@ -1173,3 +1173,57 @@ Puros (em `npm test`): `env.test.ts`, `security-headers.test.ts`,
 `scrub.test.ts`. Integração real-Supabase/no-Claude (skip até `20260830000004`):
 `phase7a.signup.test.ts` (12 casos §27), `phase7a.branding.test.ts` (5 §28),
 `phase7a.public-security.test.ts` (rate limit + anon §29).
+
+# Fase 7B — UI/UX refresh pre-launch (Design System V2)
+
+Fase exclusivamente visual. **Nenhuma regra de negócio, RLS, Creator Score,
+Address Flow ou Shipment Flow tocada. Nenhuma RPC/view/migration nova.**
+
+## Design System V2
+
+`src/app/globals.css` — tokens semânticos reescritos:
+- Neutros com leve tint frio (oklch hue 265, chroma muito baixo) em vez de
+  cinza puro — sensação premium/proprietária sem depender de accent.
+- Paleta de gráfico coesa e levemente dessaturada (`--chart-1..5`).
+- Tokens de elevação (`--elevation-xs/sm/md/lg` → `--shadow-*`), `--border-strong`.
+- `--radius` 0.7rem, `.eyebrow` (label uppercase pequeno), `tabular-nums` e
+  `tracking-tight` em headings no `@layer base`.
+- `--primary`/`--secondary` continuam sobrescritos em runtime pelo
+  `<ThemeStyle>` a partir de `organization_settings`; a chrome estrutural
+  apoia-se nos neutros e na paleta fixa, então uma cor de tenant não quebra
+  layout.
+
+## Primitivos
+
+- `<StatCard>` (`components/ui/stat-card.tsx`): eyebrow + figura tabular + chip
+  de delta assinado + slot de visual + affordance de link.
+- `<Panel>` (`components/ui/panel.tsx`): região titulada padrão (borda única,
+  header com ação opcional).
+- Gráficos **sem dependência** (SVG/divs, cor via token): `<SparkArea>`
+  (sparkline), `<RankBars>` (top-N horizontal), `<FunnelBars>` (funil com
+  conversão entre etapas). Sem recharts/d3 — CSP e controle total.
+- `Card`: `ring` → `border` + `shadow-xs`. `Table`: header em faixa `muted`,
+  colunas em eyebrow, células mais espaçadas.
+
+## Visão Geral
+
+`src/features/dashboard/queries.ts` (`getDashboardOverview(periodDays)`) +
+`src/features/dashboard/aggregate.ts` (puro, testado). Métricas: total de
+creators (com sparkline), novos no período + delta vs período anterior,
+aprovadas, cadastro completo, envios ativos; crescimento da base; funil de
+inscrições; pontos de atenção (possíveis duplicadas / aguardando endereço /
+análises falhas — só quando > 0); top 5 cidades / estados / programas; últimas
+inscrições; seletor 7/30/90 dias (`?period=`).
+
+**Sem banco novo:** SELECTs org-scoped (RLS aplica) + RPC `crm_counts`
+existente. As métricas "agrupadas" (crescimento, tops) são agregadas em JS a
+partir de um fetch de coluna com cap de 5.000 linhas — surfaced na UI quando
+atingido. Volume atual: unidades a milhares de linhas por tenant.
+
+## Shell e superfícies
+
+Sidebar sticky com eyebrows de seção e estado ativo refinado; topbar sticky com
+backdrop-blur; conteúdo em `bg-surface` (cards brancos destacam). Admin: `AdminNav`
+client com estado ativo + chip "Admin SaaS"; overview de suporte em `<StatCard>`.
+Form público envolto em card sobre `bg-surface`. CRM/Shipment counters em
+`rounded-xl` + `shadow-xs` + eyebrow.
