@@ -7,7 +7,7 @@ import {
   ROADMAP_STATUS_ORDER,
 } from "@/features/product/labels";
 
-export const metadata: Metadata = { title: "Roadmap · Creator Hub" };
+export const metadata: Metadata = { title: "Roadmap" };
 
 // §39 — the roadmap shows direction, never a date or a promised deadline.
 export default async function RoadmapPage() {

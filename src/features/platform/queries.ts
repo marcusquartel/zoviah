@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import type { OrganizationStatus, PlanCode } from "@/types/database";
 
-/** Whether the current user is a Creator Hub platform operator. */
+/** Whether the current user is a Zoviah platform operator. */
 export const getIsPlatformAdmin = cache(async (): Promise<boolean> => {
   if (!isSupabaseConfigured()) return false;
   const supabase = await createClient();

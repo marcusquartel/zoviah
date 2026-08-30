@@ -5,7 +5,7 @@ import { getCurrentUser } from "@/features/organizations/queries";
 import { getTeam } from "@/features/team/queries";
 import { TeamManager } from "@/features/team/components/team-manager";
 
-export const metadata: Metadata = { title: "Equipe · Creator Hub" };
+export const metadata: Metadata = { title: "Equipe" };
 
 export default async function TeamPage() {
   const [current, user] = await Promise.all([

@@ -10,7 +10,7 @@ export function SetupNotice() {
         </CardHeader>
         <CardContent className="space-y-3 text-sm text-muted-foreground">
           <p>
-            O Creator Hub precisa das credenciais do Supabase para funcionar.
+            A Zoviah precisa das credenciais do Supabase para funcionar.
             Crie um arquivo <code className="text-foreground">.env.local</code> na
             raiz do projeto com:
           </p>

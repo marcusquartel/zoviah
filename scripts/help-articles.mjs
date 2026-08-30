@@ -14,7 +14,7 @@ export const HELP_ARTICLES = [
   {
     slug: "primeiros-passos-visao-geral",
     category: "Primeiros passos",
-    title: "Visão geral do Creator Hub",
+    title: "Visão geral da Zoviah",
     summary: "O que você encontra em cada área do painel.",
     keywords: ["início", "painel", "navegação", "visão geral"],
     content:
@@ -104,7 +104,7 @@ export const HELP_ARTICLES = [
     summary: "Como os handles são tratados.",
     keywords: ["instagram", "tiktok", "handle", "arroba", "seguidores"],
     content:
-      "Ao adicionar um campo de Instagram ou TikTok, o Creator Hub normaliza o handle (remove o @, deixa minúsculo) e monta a URL do perfil.\n\n" +
+      "Ao adicionar um campo de Instagram ou TikTok, a Zoviah normaliza o handle (remove o @, deixa minúsculo) e monta a URL do perfil.\n\n" +
       "Se você também pedir a contagem de seguidores, ela entra como número declarado — usada como contexto na análise, nunca convertida em nota sozinha.",
   },
   {
@@ -207,7 +207,7 @@ export const HELP_ARTICLES = [
     content:
       "A creator precisa estar Aprovada.\n\n" +
       "1. Na ficha da creator, abra a área de endereço e gere a solicitação.\n" +
-      "2. O Creator Hub cria um link seguro e único.\n" +
+      "2. A Zoviah cria um link seguro e único.\n" +
       "3. Copie o link e envie para a creator.\n" +
       "4. Ela preenche o endereço na página, com consentimento.\n" +
       "5. A inscrição passa para Aguardando endereço e depois Cadastro completo quando ela concluir.\n\n" +
@@ -435,7 +435,7 @@ export const HELP_ARTICLES = [
     keywords: ["aparência", "cores", "tema", "branding", "cor primária"],
     content:
       "Em Configurações → Aparência, defina a cor primária e a secundária (em hexadecimal, ex.: #1E90FF). Elas são aplicadas ao painel e às páginas públicas do seu programa.\n\n" +
-      "O logo e o favicon são configurados pela equipe Creator Hub — peça pelo suporte se precisar ajustar.",
+      "O logo e o favicon são configurados pela equipe Zoviah — peça pelo suporte se precisar ajustar.",
   },
   {
     slug: "plano-da-organizacao",
@@ -444,7 +444,7 @@ export const HELP_ARTICLES = [
     summary: "A aba Plano em Configurações.",
     keywords: ["plano", "assinatura", "condição comercial"],
     content:
-      "Configurações → Plano mostra o plano atual e desde quando ele vale. Mudanças de plano são feitas pela equipe Creator Hub.",
+      "Configurações → Plano mostra o plano atual e desde quando ele vale. Mudanças de plano são feitas pela equipe Zoviah.",
   },
   {
     slug: "organizacao-suspensa",

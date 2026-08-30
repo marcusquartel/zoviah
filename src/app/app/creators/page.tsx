@@ -10,7 +10,7 @@ import { CreatorsToolbar } from "@/features/creators/components/creators-toolbar
 import { CrmCounters } from "@/features/creators/components/crm-counters";
 import { CreatorsResults } from "@/features/creators/components/creators-results";
 
-export const metadata: Metadata = { title: "Creators · Creator Hub" };
+export const metadata: Metadata = { title: "Creators" };
 
 export default async function CreatorsPage({
   searchParams,

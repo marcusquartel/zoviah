@@ -18,7 +18,7 @@ import {
   type DashboardPeriodDays,
 } from "@/features/dashboard/queries";
 
-export const metadata: Metadata = { title: "Visão Geral · Creator Hub" };
+export const metadata: Metadata = { title: "Visão Geral" };
 
 const PERIODS: { days: DashboardPeriodDays; label: string }[] = [
   { days: 7, label: "7 dias" },

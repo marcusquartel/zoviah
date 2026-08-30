@@ -29,7 +29,7 @@ import { getAnalysisStats } from "@/features/analysis/queries";
 import { getEvidenceStats } from "@/features/evidence/queries";
 import { getCurrentOrganization } from "@/features/organizations/queries";
 
-export const metadata: Metadata = { title: "IA · Creator Hub" };
+export const metadata: Metadata = { title: "IA" };
 
 export default async function AiPage() {
   const current = await getCurrentOrganization();

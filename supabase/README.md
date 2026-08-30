@@ -1,6 +1,6 @@
 # supabase/
 
-SQL versionado do Creator Hub.
+SQL versionado da Zoviah.
 
 ```
 migrations/

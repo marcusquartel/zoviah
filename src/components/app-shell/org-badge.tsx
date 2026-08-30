@@ -1,4 +1,5 @@
 import { Building2 } from "lucide-react";
+import { PRODUCT } from "@/config/product";
 
 interface OrgBadgeProps {
   name: string;
@@ -19,7 +20,7 @@ export function OrgBadge({ name, logoUrl }: OrgBadgeProps) {
       <div className="min-w-0">
         <p className="truncate text-sm font-semibold tracking-tight">{name}</p>
         <p className="text-[0.6875rem] uppercase tracking-[0.08em] text-muted-foreground">
-          Creator Hub
+          {PRODUCT.name}
         </p>
       </div>
     </div>

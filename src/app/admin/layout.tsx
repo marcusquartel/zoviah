@@ -6,6 +6,9 @@ import { getCurrentUser } from "@/features/organizations/queries";
 import { getIsPlatformAdmin } from "@/features/platform/queries";
 import { UserMenu } from "@/components/app-shell/user-menu";
 import { AdminNav } from "@/app/admin/admin-nav";
+import { PRODUCT } from "@/config/product";
+
+export const metadata = { title: `${PRODUCT.name} Admin` };
 
 // The /admin area is validated server-side on every request — hiding the nav
 // link is never the control (§55).
@@ -32,7 +35,7 @@ export default async function AdminLayout({
           className="flex items-center gap-2 font-heading font-semibold tracking-tight"
         >
           <ShieldCheck className="size-5 text-primary" />
-          Creator Hub
+          {PRODUCT.name}
           <span className="rounded-md bg-secondary px-1.5 py-0.5 text-[0.6875rem] font-medium uppercase tracking-[0.06em] text-secondary-foreground">
             Admin SaaS
           </span>

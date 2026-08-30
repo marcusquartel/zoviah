@@ -1,6 +1,6 @@
 # Backup & restore runbook
 
-Creator Hub has **no backup engine of its own**. All durable state is in the
+Zoviah has **no backup engine of its own**. All durable state is in the
 Supabase Postgres database; backups are a Supabase-plan feature. This document
 is the operator procedure — it does not automate anything.
 

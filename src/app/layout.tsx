@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
+import { PRODUCT } from "@/config/product";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -15,8 +16,18 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Creator Hub",
-  description: "Plataforma da Quartel para gestão de creators.",
+  title: {
+    default: PRODUCT.name,
+    template: `%s · ${PRODUCT.name}`,
+  },
+  description: `${PRODUCT.name} — ${PRODUCT.description}. Gestão de creators, programas, Creator Score e envios.`,
+  applicationName: PRODUCT.name,
+  openGraph: {
+    title: PRODUCT.name,
+    description: `${PRODUCT.name} — ${PRODUCT.description}`,
+    siteName: PRODUCT.name,
+    type: "website",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

@@ -21,8 +21,25 @@ stated evidence.
 | 12 | (optional) **Set `SENTRY_ORG` / `SENTRY_PROJECT` / `SENTRY_AUTH_TOKEN` in CI** for source-map upload | Sentry auth token | Readable stack traces in Sentry | P2 |
 | 13 | (later) **Adopt `supabase db push`** — link project, `migration repair` the 18 existing files | CLI auth + operator process | `supabase migration list` clean | P2 — see `docs/migration-workflow.md` |
 
+## Naming for external services
+
+The product brand is **Zoviah** (intended domains `zoviah.app` primary,
+`zoviah.com.br` protection). When you create these, name them for the brand —
+the code does not depend on the names:
+
+- Sentry project / org: **Zoviah**
+- GitHub org + repo: **Zoviah** (the local folder / npm `name` stay
+  `creator-hub` for now — see the Phase report; safe to rename later)
+- Vercel team / project: **Zoviah**
+- Auth sender: `no-reply@zoviah.app` (or `@zoviah.com.br`), display name
+  `Zoviah` — see `docs/auth-email-setup.md`
+
+Do NOT register a legal entity name ("Zoviah Ltda" etc.) anywhere — Terms /
+Privacy must later name the legally correct controlling entity; "Zoviah" as a
+product/brand name is fine.
+
 ## Not in this phase (do not start)
 
 Branded subdomains, custom domains, impersonation, billing/checkout, public
 signup, free trial, Campanhas / Performance / Comissões / Portal Creator /
-Shopify / TikTok Shop, the UI refresh (Phase 7B).
+Shopify / TikTok Shop.

@@ -8,7 +8,7 @@ import { InviteSignup } from "./invite-signup";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
-  title: "Convite · Creator Hub",
+  title: "Convite",
   robots: { index: false },
 };
 

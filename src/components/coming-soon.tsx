@@ -21,7 +21,7 @@ export function ComingSoon({ title, description }: ComingSoonProps) {
       <div className="rounded-lg border border-dashed bg-surface p-10 text-center">
         <p className="text-sm text-muted-foreground">
           {description ??
-            "Esta área será implementada nas próximas fases do Creator Hub."}
+            "Esta área será implementada nas próximas fases da Zoviah."}
         </p>
       </div>
     </div>

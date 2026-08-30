@@ -87,7 +87,7 @@ export default async function PublicProgramPage({
         )}
 
         <p className="mt-auto pt-10 text-center text-xs text-muted-foreground">
-          {organization.name} · Creator Hub
+          {organization.name} · Zoviah
         </p>
         <LegalFooter />
       </main>

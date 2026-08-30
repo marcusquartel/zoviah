@@ -1,5 +1,5 @@
 /**
- * Types for the Creator Hub schema (Phase 0 + Phase 1).
+ * Types for the Zoviah schema (Phase 0 + Phase 1).
  *
  * Hand-written, mirroring the shape `supabase gen types typescript` emits
  * (Tables/Views/Functions/Enums/CompositeTypes + per-table Relationships), so

@@ -13,7 +13,7 @@ import { PLAN_LABELS } from "@/features/platform/plans";
 import { formatDate } from "@/features/creators/format";
 import type { PlanCode } from "@/types/database";
 
-export const metadata: Metadata = { title: "Plano · Creator Hub" };
+export const metadata: Metadata = { title: "Plano" };
 
 export default async function PlanPage() {
   const current = await getCurrentOrganization();
@@ -35,7 +35,7 @@ export default async function PlanPage() {
         <CardHeader>
           <CardTitle className="text-sm font-medium">Plano atual</CardTitle>
           <CardDescription>
-            Alterações de plano são feitas pela equipe Creator Hub.
+            Alterações de plano são feitas pela equipe Zoviah.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-2 text-sm">

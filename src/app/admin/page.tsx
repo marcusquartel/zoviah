@@ -18,7 +18,7 @@ export default async function AdminOrganizationsPage({
     <div className="space-y-5">
       <PageHeader
         title="Organizações"
-        description="Provisionamento e gestão comercial dos tenants do Creator Hub."
+        description="Provisionamento e gestão comercial dos tenants da Zoviah."
       />
       <AdminOrgs search={search} firstPage={firstPage} />
     </div>

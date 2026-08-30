@@ -22,7 +22,7 @@ suitable for production. Configure custom SMTP:
 - Recommended providers: **Resend**, **Postmark**, **Amazon SES**. Any of them
   gives you a host / port / username / password and a verified sending domain.
 - **Sender**: use a real address on a domain you control, e.g.
-  `no-reply@creatorhub.com.br`, display name `Creator Hub`.
+  `no-reply@zoviah.app` (or `no-reply@zoviah.com.br`), display name `Zoviah`.
 - Verify SPF / DKIM for the sending domain with the provider — otherwise
   Gmail / Outlook will spam-folder the confirmations.
 
@@ -31,7 +31,7 @@ suitable for production. Configure custom SMTP:
 Supabase dashboard → **Authentication → URL Configuration**:
 
 - **Site URL**: exactly your `NEXT_PUBLIC_APP_URL`
-  (e.g. `https://hub.creatorhub.com.br`).
+  (e.g. `https://app.zoviah.app`).
 - **Redirect URLs** (allow-list): add
   - `${NEXT_PUBLIC_APP_URL}/invite/*`
   - `${NEXT_PUBLIC_APP_URL}/app`
@@ -46,7 +46,7 @@ Supabase dashboard → **Authentication → Emails → Templates**. The defaults
 work; at minimum:
 
 - **Confirm signup**: keep the `{{ .ConfirmationURL }}` link, set a clear
-  subject ("Confirme seu e-mail — Creator Hub"), Portuguese body.
+  subject ("Confirme seu e-mail — Zoviah"), Portuguese body.
 - **Reset password**: keep `{{ .ConfirmationURL }}`, Portuguese subject/body.
 - **Invite user** (only if you also use Supabase-native invites — the app's own
   team invites do not need this).

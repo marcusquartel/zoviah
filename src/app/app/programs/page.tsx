@@ -18,7 +18,7 @@ import {
   PROGRAM_STATUS_VARIANTS,
 } from "@/features/programs/status";
 
-export const metadata: Metadata = { title: "Programas · Creator Hub" };
+export const metadata: Metadata = { title: "Programas" };
 
 const dateFmt = new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium" });
 

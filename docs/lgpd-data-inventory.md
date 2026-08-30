@@ -1,6 +1,6 @@
 # LGPD — technical data inventory
 
-A technical inventory of the personal data Creator Hub stores, for whoever
+A technical inventory of the personal data Zoviah stores, for whoever
 writes the privacy policy and defines retention. **Not a legal opinion.**
 
 Confirmed as of Phase 7A: **CPF is not stored.** The `creator_addresses.cpf`

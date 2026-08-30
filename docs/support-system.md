@@ -1,6 +1,6 @@
 # Support system (Fase 6B)
 
-Goal: scale Creator Hub commercially with **minimal human support**, without
+Goal: scale Zoviah commercially with **minimal human support**, without
 building a Zendesk. A knowledge base, an AI assistant that answers strictly
 from it, response feedback, and one-hop escalation to a human ticket — plus a
 support panel that reuses the Phase 6A admin infrastructure.

@@ -1,4 +1,4 @@
--- Creator Hub — DEV seed: "Rare Creators" program for the Rare Way tenant.
+-- Zoviah — DEV seed: "Rare Creators" program for the Rare Way tenant.
 --
 -- Demonstrates that the form builder can produce the Rare Creators form with
 -- NO code changes — every field here is a normal form_fields row.

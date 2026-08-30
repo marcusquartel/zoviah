@@ -17,7 +17,7 @@ import {
 } from "@/features/support/labels";
 import { formatDate } from "@/features/creators/format";
 
-export const metadata: Metadata = { title: "Minhas solicitações · Creator Hub" };
+export const metadata: Metadata = { title: "Minhas solicitações" };
 
 export default async function MySupportPage() {
   const tickets = await getMyTickets();

@@ -3,7 +3,7 @@ import { PageHeader } from "@/components/page-header";
 import { listFeatureRequests } from "@/features/product/queries";
 import { SuggestionsBoard } from "@/features/product/components/suggestions-board";
 
-export const metadata: Metadata = { title: "Sugestões · Creator Hub" };
+export const metadata: Metadata = { title: "Sugestões" };
 
 export default async function SuggestionsPage() {
   const items = await listFeatureRequests();

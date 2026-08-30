@@ -1227,3 +1227,30 @@ backdrop-blur; conteúdo em `bg-surface` (cards brancos destacam). Admin: `Admin
 client com estado ativo + chip "Admin SaaS"; overview de suporte em `<StatCard>`.
 Form público envolto em card sobre `bg-surface`. CRM/Shipment counters em
 `rounded-xl` + `shadow-xs` + eyebrow.
+
+# Marca — Zoviah
+
+O produto é **Zoviah** (Creator Relationship Platform). Domínios pretendidos:
+`zoviah.app` (principal), `zoviah.com.br` (proteção). **"Zoviah" é a marca;
+"Creator" continua sendo o domínio de negócio** — `creators`,
+`creator_analyses`, `creator_events`, `creator_addresses`, `Creator Score` e
+toda a terminologia `creator_*` permanecem inalterados.
+
+Fonte única da marca visível: `src/config/product.ts` (`PRODUCT.name`,
+`shortName`, `description`, `domain` informativo). Metadata: o root layout
+define `title: { default: "Zoviah", template: "%s · Zoviah" }`; páginas filhas
+setam só o rótulo da seção. `NEXT_PUBLIC_APP_URL` continua sendo a fonte de
+verdade da URL em runtime — `zoviah.app` **não** é hard-coded como APP_URL.
+
+Identificadores técnicos que permanecem `creator-hub` (decidir renomear
+depois): `package.json` `name`, chaves de `localStorage`
+(`creator-hub:creators-view`, `creator-hub:onboarding-hidden`), o diretório
+local e o repositório. Nada em runtime depende deles.
+
+Experiência tenant-branded (painel, formulário público, página de endereço):
+logo/nome da **organização** têm prioridade; "Zoviah" fica secundária
+("{org} · Zoviah" no rodapé público).
+
+Prompt do assistente de suporte: "assistente de suporte da Zoviah"
+(`SUPPORT_PROMPT_VERSION` bumpado). AI boundaries, retrieval, RLS, PII guards e
+separação de modelo **inalterados**.

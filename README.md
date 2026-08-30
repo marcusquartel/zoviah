@@ -1,10 +1,12 @@
-# Creator Hub
+# Zoviah
 
-Plataforma SaaS da **Quartel** para gestão de creators. Este repositório está na
-**Fase 0 — Fundação**: autenticação, shell administrativo, arquitetura
-multiempresa no banco (com RLS) e base de tema/white label. Nenhuma
-funcionalidade de produto (creators, programas, IA, campanhas, integrações)
-está implementada ainda.
+**Zoviah** — Creator Relationship Platform. SaaS multiempresa para gestão de
+creators: programas e formulários públicos, CRM de inscrições, Creator Score
+(IA), coleta segura de endereço, envios (product seeding), suporte com base de
+conhecimento e feedback de produto. Isolamento por organização via RLS.
+
+"Zoviah" é a marca. "Creator" continua sendo o domínio do produto (creators,
+Creator Score, `creator_*`).
 
 ## Stack
 

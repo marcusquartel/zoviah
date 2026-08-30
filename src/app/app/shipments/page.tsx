@@ -11,7 +11,7 @@ import { ShipmentsToolbar } from "@/features/shipments/components/shipments-tool
 import { ShipmentCounters } from "@/features/shipments/components/shipment-counters";
 import { ShipmentsResults } from "@/features/shipments/components/shipments-results";
 
-export const metadata: Metadata = { title: "Envios · Creator Hub" };
+export const metadata: Metadata = { title: "Envios" };
 
 export default async function ShipmentsPage({
   searchParams,

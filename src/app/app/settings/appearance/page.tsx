@@ -11,7 +11,7 @@ import { PageHeader } from "@/components/page-header";
 import { AppearanceForm } from "@/app/app/settings/appearance/appearance-form";
 import { getCurrentOrganization } from "@/features/organizations/queries";
 
-export const metadata: Metadata = { title: "Aparência · Creator Hub" };
+export const metadata: Metadata = { title: "Aparência" };
 
 export default async function AppearancePage() {
   const current = await getCurrentOrganization();

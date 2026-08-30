@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getChangelog } from "@/features/product/queries";
 import { formatDate } from "@/features/creators/format";
 
-export const metadata: Metadata = { title: "Novidades · Creator Hub" };
+export const metadata: Metadata = { title: "Novidades" };
 
 export default async function ChangelogPage() {
   const entries = await getChangelog(50);
@@ -13,7 +13,7 @@ export default async function ChangelogPage() {
     <div className="space-y-6">
       <PageHeader
         title="Novidades"
-        description="O que mudou no Creator Hub recentemente."
+        description="O que mudou na Zoviah recentemente."
       />
       {entries.length === 0 ? (
         <p className="text-sm text-muted-foreground">

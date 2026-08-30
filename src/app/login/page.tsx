@@ -11,8 +11,9 @@ import { SetupNotice } from "@/components/setup-notice";
 import { LoginForm } from "@/app/login/login-form";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { getCurrentUser } from "@/features/organizations/queries";
+import { PRODUCT } from "@/config/product";
 
-export const metadata: Metadata = { title: "Entrar · Creator Hub" };
+export const metadata: Metadata = { title: "Entrar" };
 
 // Reads the session cookie to bounce already-authenticated users.
 export const dynamic = "force-dynamic";
@@ -41,7 +42,7 @@ export default async function LoginPage({
     <div className="flex min-h-svh items-center justify-center bg-surface p-6">
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle>Creator Hub</CardTitle>
+          <CardTitle>{PRODUCT.name}</CardTitle>
           <CardDescription>Acesse o painel administrativo.</CardDescription>
         </CardHeader>
         <CardContent>

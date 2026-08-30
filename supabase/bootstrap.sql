@@ -1,4 +1,4 @@
--- Creator Hub — bootstrap the first organization and its owner.
+-- Zoviah — bootstrap the first organization and its owner.
 --
 -- WHY THIS EXISTS
 --   RLS blocks creating an organization or the first membership through the

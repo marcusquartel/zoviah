@@ -29,6 +29,7 @@ test("support prompt: version pinned and text carries the hard rules", () => {
   assert.match(SUPPORT_PROMPT_VERSION, /^support-\d{4}-\d{2}-\d{2}\.\d+$/);
   // The version string is a checksum of intent: if the prompt text changes,
   // one of these anchors should have moved too.
+  assert.match(SUPPORT_SYSTEM_PROMPT, /assistente de suporte da Zoviah/i);
   assert.match(SUPPORT_SYSTEM_PROMPT, /SOMENTE com base nos artigos/i);
   assert.match(SUPPORT_SYSTEM_PROMPT, /NÃO tem acesso aos dados do cliente/i);
   assert.match(SUPPORT_SYSTEM_PROMPT, /NÃO executa ações/i);
