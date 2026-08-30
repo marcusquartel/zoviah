@@ -1,5 +1,6 @@
 import { MobileNav } from "@/components/app-shell/mobile-nav";
 import { UserMenu } from "@/components/app-shell/user-menu";
+import { HelpCenter } from "@/features/support/components/help-center";
 
 interface TopbarProps {
   orgName: string;
@@ -14,7 +15,10 @@ export function Topbar({ orgName, userEmail, role }: TopbarProps) {
         <MobileNav orgName={orgName} />
         <span className="text-sm font-medium md:hidden">{orgName}</span>
       </div>
-      <UserMenu email={userEmail} role={role} />
+      <div className="flex items-center gap-1">
+        <HelpCenter />
+        <UserMenu email={userEmail} role={role} />
+      </div>
     </header>
   );
 }

@@ -966,3 +966,91 @@ Checklist na Visão Geral, **derivado** do estado real (§26) — `hasBrand`
 - **Multi-org**: `organization_members` já é N:N. `getCurrentOrganization()`
   pega a membership mais antiga — ponto único para um seletor futuro. Nenhum
   seletor de org foi criado (sem uso, §33).
+
+# Fase 6B — Customer experience & support platform
+
+Camada para escalar comercialmente com suporte humano mínimo. Detalhes
+completos em `docs/support-system.md` e `docs/product-feedback.md`. Resumo:
+
+## Base de conhecimento + assistente de IA
+
+- `help_articles` (global, não-tenant): categoria, título, slug, conteúdo,
+  `keywords[]`, `status` (`draft|published|archived`) e `search_vector`
+  (`tsvector` GERADO, pesos A/B/C, dicionário `portuguese`) + índice GIN.
+  Busca só retorna `published`; RLS deixa qualquer autenticado ler publicados.
+- Assistente: modelo **próprio** `ANTHROPIC_SUPPORT_MODEL` (§8), desacoplado do
+  `ANTHROPIC_MODEL` do Creator Score. Compartilha `ANTHROPIC_API_KEY`. Prompt
+  versionado (`SUPPORT_PROMPT_VERSION`). Responde **apenas** a partir dos
+  artigos recuperados; sem suporte suficiente → "Não encontrei informação
+  suficiente para responder isso com segurança." + oferta de suporte humano.
+  A fronteira (`src/lib/anthropic/support-assistant.ts`) **não** tem client
+  Supabase: recebe a pergunta + artigos já recuperados, devolve
+  `{answer, articleIds, sufficient}` validado por Zod. Uma retry corretiva.
+- **A IA nunca**: altera dados operacionais, executa RPC da plataforma,
+  modifica código, lê PII (endereço, `token_hash`, `address_snapshot`,
+  segredos). Guard test estático (`tests/phase6b.guards.test.ts`) falha se um
+  arquivo de `features/support` ou `features/product` referenciar essas
+  strings.
+
+## Conversas, feedback, escalação
+
+- `support_conversations` (tenant-scoped por `user_id`) + `support_messages`
+  (`role` = `user|assistant|system_event`, `article_refs[]`, `model`,
+  `input_tokens`, `output_tokens`, `latency_ms` — §14, uso registrado; suporte
+  **não** consome créditos do Creator Score).
+- Feedback 👍 → `support_feedback(resolved=true)` marca `resolved` +
+  `ai_resolved=true` + `closed_at`. 👎 → conversa segue aberta, UI oferece
+  "Falar com suporte".
+- `support_escalate` cria um `support_tickets` (`type`, `status`, `priority`,
+  `classification jsonb`, `assigned_to`, `admin_notes`) e marca a conversa
+  `escalated`.
+
+## Painel de suporte (reusa infra da Fase 6A — §50, sem 2º admin)
+
+- `/admin/support`: overview (**AI Resolution Rate** =
+  `ai_resolved / (ai_resolved + escalated)`; `null` sem sinal — conversas
+  ainda abertas não entram no denominador) + fila de tickets com filtros +
+  detalhe.
+- `/admin/support/knowledge`: CRUD de artigos via `admin_upsert_help_article`.
+- **Preparar para engenharia** (§23/§24): `buildEngineeringPrompt()` gera um
+  prompt estruturado com as restrições fixas (preservar RLS, criar teste de
+  regressão, não alterar migrations antigas, sem dados reais em teste, sem
+  PII). `sanitizeForEngineering()` remove e-mail/CPF/CEP/telefone/chave/token
+  dos campos livres. O texto é devolvido para **cópia manual** — nada é
+  enviado, Claude Code não é executado, nenhum PR é criado.
+- Todas as RPCs `admin_*` de suporte começam com `is_platform_admin()`.
+
+## Product feedback
+
+- `feature_requests` (tenant cria; visível cross-tenant só após triagem —
+  status ≠ `submitted`), `feature_request_votes` com
+  **`unique(organization_id, request_id)`** → **1 voto por organização** (§37):
+  20 assentos da mesma empresa não inflam. A org que envia já entra com 1
+  voto. Duplicatas apontam para `canonical_request_id` e os votos agregam no
+  canônico.
+- `roadmap_items`: `status`
+  (`under_consideration|planned|in_progress|released` → "Em avaliação /
+  Planejado / Em desenvolvimento / Lançado"), `published`. **Sem campo de
+  data** (§39) — o roadmap mostra direção, nunca prazo.
+- `changelog_entries` ("Novidades"): `draft|published`, `published_at`
+  setado na 1ª publicação.
+- Tenant: `/app/suggestions` (board + voto + envio), `/app/roadmap`,
+  `/app/changelog` (nav "Novidades"). Botão global "Ajuda" no topbar
+  (`HelpCenter`) — assistente + links. Só itens `published` de roadmap /
+  changelog são visíveis ao tenant; rascunho é platform-admin (§49).
+- Admin: `/admin/product` (triagem de sugestões, roadmap, novidades).
+
+## Migrations
+
+`20260830000002_support_system.sql` + `20260830000003_product_feedback.sql`
+(sequenciais, nenhuma anterior alterada — §73).
+
+## IA / testes (§68)
+
+Suíte padrão (`npm test`): **zero** chamadas Anthropic reais. O pipeline do
+assistente é testado com `messageFn` mockado
+(`tests/support.test.ts`). Smoke opcional com **no máximo uma** chamada real:
+`npm run test:support-ai:smoke` (`tests/phase6b.support-ai-smoke.ts`, fora do
+glob padrão). Integração real-Supabase/no-Claude:
+`tests/phase6b.support.test.ts` + `tests/phase6b.product.test.ts` (skip até as
+migrations serem aplicadas).

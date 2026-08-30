@@ -9,7 +9,8 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test": "node --test --disable-warning=MODULE_TYPELESS_PACKAGE_JSON \"tests/**/*.test.ts\"",
-    "test:anthropic:smoke": "node --test --disable-warning=MODULE_TYPELESS_PACKAGE_JSON tests/phase3a.anthropic-smoke.ts"
+    "test:anthropic:smoke": "node --test --disable-warning=MODULE_TYPELESS_PACKAGE_JSON tests/phase3a.anthropic-smoke.ts",
+    "test:support-ai:smoke": "node --test --disable-warning=MODULE_TYPELESS_PACKAGE_JSON tests/phase6b.support-ai-smoke.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.122.0",

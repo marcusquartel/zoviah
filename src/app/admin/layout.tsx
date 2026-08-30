@@ -45,6 +45,18 @@ export default async function AdminLayout({
           Organizações
         </Link>
         <Link
+          href="/admin/support"
+          className="rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+        >
+          Suporte
+        </Link>
+        <Link
+          href="/admin/product"
+          className="rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+        >
+          Produto
+        </Link>
+        <Link
           href="/admin/audit"
           className="rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
         >

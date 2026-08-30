@@ -27,6 +27,45 @@ export type PlanCode =
   | "enterprise";
 export type OrgInviteStatus = "pending" | "accepted" | "expired" | "revoked";
 
+// --- Phase 6B: support + product feedback -----------------------------------
+export type HelpArticleStatus = "draft" | "published" | "archived";
+export type SupportConversationStatus = "open" | "resolved" | "escalated";
+export type SupportMessageRole = "user" | "assistant" | "system_event";
+export type SupportTicketType =
+  | "question"
+  | "account"
+  | "bug"
+  | "feature_request"
+  | "other";
+export type SupportTicketStatus =
+  | "open"
+  | "in_progress"
+  | "resolved"
+  | "closed";
+export type SupportTicketPriority = "low" | "normal" | "high" | "critical";
+export type FeatureRequestFrequency =
+  | "rarely"
+  | "sometimes"
+  | "often"
+  | "daily";
+export type FeatureRequestImportance =
+  | "nice_to_have"
+  | "important"
+  | "essential";
+export type FeatureRequestStatus =
+  | "submitted"
+  | "under_review"
+  | "planned"
+  | "in_progress"
+  | "released"
+  | "declined";
+export type RoadmapItemStatus =
+  | "under_consideration"
+  | "planned"
+  | "in_progress"
+  | "released";
+export type ChangelogStatus = "draft" | "published";
+
 export type ProgramStatus = "draft" | "active" | "paused" | "archived";
 
 export type FieldType =
@@ -317,6 +356,299 @@ export interface Database {
           metadata?: Record<string, Json>;
         };
         Update: { metadata?: Record<string, Json> };
+        Relationships: [];
+      };
+      help_articles: {
+        Row: {
+          id: string;
+          category: string;
+          title: string;
+          slug: string;
+          summary: string | null;
+          content: string;
+          keywords: string[];
+          status: HelpArticleStatus;
+          created_by: string | null;
+          updated_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          category: string;
+          title: string;
+          slug: string;
+          summary?: string | null;
+          content: string;
+          keywords?: string[];
+          status?: HelpArticleStatus;
+          created_by?: string | null;
+          updated_by?: string | null;
+        };
+        Update: {
+          category?: string;
+          title?: string;
+          slug?: string;
+          summary?: string | null;
+          content?: string;
+          keywords?: string[];
+          status?: HelpArticleStatus;
+          updated_by?: string | null;
+        };
+        Relationships: [];
+      };
+      support_conversations: {
+        Row: {
+          id: string;
+          organization_id: string;
+          user_id: string;
+          status: SupportConversationStatus;
+          current_route: string | null;
+          module: string | null;
+          ai_resolved: boolean;
+          created_at: string;
+          updated_at: string;
+          closed_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          user_id: string;
+          status?: SupportConversationStatus;
+          current_route?: string | null;
+          module?: string | null;
+        };
+        Update: {
+          status?: SupportConversationStatus;
+          ai_resolved?: boolean;
+          closed_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "support_conversations_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      support_messages: {
+        Row: {
+          id: string;
+          conversation_id: string;
+          role: SupportMessageRole;
+          content: string;
+          article_refs: string[];
+          model: string | null;
+          input_tokens: number | null;
+          output_tokens: number | null;
+          latency_ms: number | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          conversation_id: string;
+          role: SupportMessageRole;
+          content: string;
+          article_refs?: string[];
+          model?: string | null;
+          input_tokens?: number | null;
+          output_tokens?: number | null;
+          latency_ms?: number | null;
+        };
+        Update: { content?: string };
+        Relationships: [
+          {
+            foreignKeyName: "support_messages_conversation_id_fkey";
+            columns: ["conversation_id"];
+            isOneToOne: false;
+            referencedRelation: "support_conversations";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      support_tickets: {
+        Row: {
+          id: string;
+          organization_id: string;
+          conversation_id: string | null;
+          user_id: string;
+          type: SupportTicketType;
+          status: SupportTicketStatus;
+          priority: SupportTicketPriority;
+          subject: string;
+          description: string;
+          current_route: string | null;
+          module: string | null;
+          classification: Record<string, Json>;
+          assigned_to: string | null;
+          admin_notes: string | null;
+          created_at: string;
+          updated_at: string;
+          resolved_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          conversation_id?: string | null;
+          user_id: string;
+          type?: SupportTicketType;
+          status?: SupportTicketStatus;
+          priority?: SupportTicketPriority;
+          subject: string;
+          description: string;
+          current_route?: string | null;
+          module?: string | null;
+          classification?: Record<string, Json>;
+        };
+        Update: {
+          status?: SupportTicketStatus;
+          priority?: SupportTicketPriority;
+          assigned_to?: string | null;
+          admin_notes?: string | null;
+          resolved_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "support_tickets_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      feature_requests: {
+        Row: {
+          id: string;
+          organization_id: string;
+          created_by: string | null;
+          title: string;
+          problem: string;
+          use_case: string | null;
+          frequency: FeatureRequestFrequency;
+          importance: FeatureRequestImportance;
+          status: FeatureRequestStatus;
+          canonical_request_id: string | null;
+          admin_note: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          created_by?: string | null;
+          title: string;
+          problem: string;
+          use_case?: string | null;
+          frequency?: FeatureRequestFrequency;
+          importance?: FeatureRequestImportance;
+          status?: FeatureRequestStatus;
+          canonical_request_id?: string | null;
+        };
+        Update: {
+          status?: FeatureRequestStatus;
+          canonical_request_id?: string | null;
+          admin_note?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "feature_requests_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      feature_request_votes: {
+        Row: {
+          id: string;
+          request_id: string;
+          organization_id: string;
+          user_id: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          request_id: string;
+          organization_id: string;
+          user_id: string;
+        };
+        Update: Record<string, never>;
+        Relationships: [
+          {
+            foreignKeyName: "feature_request_votes_request_id_fkey";
+            columns: ["request_id"];
+            isOneToOne: false;
+            referencedRelation: "feature_requests";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      roadmap_items: {
+        Row: {
+          id: string;
+          title: string;
+          summary: string | null;
+          status: RoadmapItemStatus;
+          sort_order: number;
+          feature_request_id: string | null;
+          published: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          title: string;
+          summary?: string | null;
+          status?: RoadmapItemStatus;
+          sort_order?: number;
+          feature_request_id?: string | null;
+          published?: boolean;
+        };
+        Update: {
+          title?: string;
+          summary?: string | null;
+          status?: RoadmapItemStatus;
+          sort_order?: number;
+          feature_request_id?: string | null;
+          published?: boolean;
+        };
+        Relationships: [];
+      };
+      changelog_entries: {
+        Row: {
+          id: string;
+          title: string;
+          summary: string | null;
+          content: string;
+          status: ChangelogStatus;
+          published_at: string | null;
+          related_roadmap_item_id: string | null;
+          created_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          title: string;
+          summary?: string | null;
+          content: string;
+          status?: ChangelogStatus;
+          published_at?: string | null;
+          related_roadmap_item_id?: string | null;
+          created_by?: string | null;
+        };
+        Update: {
+          title?: string;
+          summary?: string | null;
+          content?: string;
+          status?: ChangelogStatus;
+          published_at?: string | null;
+          related_roadmap_item_id?: string | null;
+        };
         Relationships: [];
       };
       programs: {
@@ -1214,6 +1546,167 @@ export interface Database {
         Args: { p_organization_id: string };
         Returns: Json;
       };
+      search_help_articles: {
+        Args: { p_query: string; p_limit?: number };
+        Returns: Json;
+      };
+      support_start_conversation: {
+        Args: { p_organization_id: string; p_route: string; p_module: string };
+        Returns: Json;
+      };
+      support_append_message: {
+        Args: {
+          p_conversation_id: string;
+          p_user_content: string;
+          p_assistant_content: string;
+          p_article_refs: string[];
+          p_model: string | null;
+          p_input_tokens: number | null;
+          p_output_tokens: number | null;
+          p_latency_ms: number | null;
+        };
+        Returns: Json;
+      };
+      support_record_failure: {
+        Args: { p_conversation_id: string; p_user_content: string };
+        Returns: Json;
+      };
+      support_feedback: {
+        Args: { p_conversation_id: string; p_resolved: boolean };
+        Returns: Json;
+      };
+      support_escalate: {
+        Args: {
+          p_conversation_id: string;
+          p_type: string;
+          p_subject: string;
+          p_description: string;
+          p_classification?: Json;
+        };
+        Returns: Json;
+      };
+      admin_support_overview: {
+        Args: Record<string, never>;
+        Returns: Json;
+      };
+      admin_list_support_tickets: {
+        Args: {
+          p_status?: string | null;
+          p_priority?: string | null;
+          p_type?: string | null;
+          p_organization_id?: string | null;
+          p_limit?: number;
+          p_offset?: number;
+        };
+        Returns: Json;
+      };
+      admin_get_support_ticket: {
+        Args: { p_ticket_id: string };
+        Returns: Json;
+      };
+      admin_update_support_ticket: {
+        Args: {
+          p_ticket_id: string;
+          p_status?: string | null;
+          p_priority?: string | null;
+          p_assign_self?: boolean | null;
+          p_admin_notes?: string | null;
+        };
+        Returns: Json;
+      };
+      admin_list_help_articles: {
+        Args: { p_status?: string | null };
+        Returns: Json;
+      };
+      admin_upsert_help_article: {
+        Args: {
+          p_id: string | null;
+          p_category: string;
+          p_title: string;
+          p_slug: string;
+          p_summary: string | null;
+          p_content: string;
+          p_keywords: string[];
+          p_status: string;
+        };
+        Returns: Json;
+      };
+      list_feature_requests: {
+        Args: { p_organization_id: string; p_status?: string | null };
+        Returns: Json;
+      };
+      submit_feature_request: {
+        Args: {
+          p_organization_id: string;
+          p_title: string;
+          p_problem: string;
+          p_use_case: string | null;
+          p_frequency: string;
+          p_importance: string;
+        };
+        Returns: Json;
+      };
+      vote_feature_request: {
+        Args: {
+          p_organization_id: string;
+          p_request_id: string;
+          p_vote: boolean;
+        };
+        Returns: Json;
+      };
+      get_roadmap: {
+        Args: Record<string, never>;
+        Returns: Json;
+      };
+      get_changelog: {
+        Args: { p_limit?: number };
+        Returns: Json;
+      };
+      admin_list_feature_requests: {
+        Args: { p_status?: string | null };
+        Returns: Json;
+      };
+      admin_update_feature_request: {
+        Args: {
+          p_request_id: string;
+          p_status?: string | null;
+          p_canonical_request_id?: string | null;
+          p_admin_note?: string | null;
+          p_clear_canonical?: boolean;
+        };
+        Returns: Json;
+      };
+      admin_upsert_roadmap_item: {
+        Args: {
+          p_id: string | null;
+          p_title: string;
+          p_summary: string | null;
+          p_status: string;
+          p_sort_order: number;
+          p_feature_request_id: string | null;
+          p_published: boolean;
+        };
+        Returns: Json;
+      };
+      admin_list_roadmap_items: {
+        Args: Record<string, never>;
+        Returns: Json;
+      };
+      admin_upsert_changelog_entry: {
+        Args: {
+          p_id: string | null;
+          p_title: string;
+          p_summary: string | null;
+          p_content: string;
+          p_status: string;
+          p_related_roadmap_item_id: string | null;
+        };
+        Returns: Json;
+      };
+      admin_list_changelog_entries: {
+        Args: Record<string, never>;
+        Returns: Json;
+      };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
@@ -1254,3 +1747,18 @@ export type OrganizationInvite =
   Database["public"]["Tables"]["organization_invites"]["Row"];
 export type PlatformAuditEvent =
   Database["public"]["Tables"]["platform_audit_events"]["Row"];
+export type HelpArticle = Database["public"]["Tables"]["help_articles"]["Row"];
+export type SupportConversation =
+  Database["public"]["Tables"]["support_conversations"]["Row"];
+export type SupportMessage =
+  Database["public"]["Tables"]["support_messages"]["Row"];
+export type SupportTicket =
+  Database["public"]["Tables"]["support_tickets"]["Row"];
+export type FeatureRequest =
+  Database["public"]["Tables"]["feature_requests"]["Row"];
+export type FeatureRequestVote =
+  Database["public"]["Tables"]["feature_request_votes"]["Row"];
+export type RoadmapItem =
+  Database["public"]["Tables"]["roadmap_items"]["Row"];
+export type ChangelogEntry =
+  Database["public"]["Tables"]["changelog_entries"]["Row"];
