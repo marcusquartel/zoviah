@@ -109,17 +109,16 @@ describe("Phase 6A — SaaS readiness", { skip }, () => {
 
   after(async () => {
     if (!admin) return;
+    // Audit events first: their FK to organizations is `on delete set null`,
+    // so deleting the orgs first would orphan them (actor is this test's pa).
+    await admin
+      .from("platform_audit_events")
+      .delete()
+      .eq("actor_user_id", users.pa.id);
     for (const id of [orgA, orgB].filter(Boolean)) {
       await admin.from("organizations").delete().eq("id", id);
     }
     await admin.from("platform_admins").delete().eq("user_id", users.pa.id);
-    await admin
-      .from("platform_audit_events")
-      .delete()
-      .in(
-        "organization_id",
-        [orgA, orgB].filter(Boolean),
-      );
     for (const u of Object.values(users)) await admin.auth.admin.deleteUser(u.id);
   });
 
