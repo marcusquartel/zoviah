@@ -64,6 +64,7 @@ describe("Phase 6B — support", { skip }, () => {
   let orgB = "";
   let articleId = "";
   let draftId = "";
+  let ftsArticleId = "";
   let conversationId = "";
   let ticketId = "";
 
@@ -147,7 +148,7 @@ describe("Phase 6B — support", { skip }, () => {
     for (const id of [orgA, orgB].filter(Boolean)) {
       await admin.from("organizations").delete().eq("id", id);
     }
-    for (const id of [articleId, draftId].filter(Boolean)) {
+    for (const id of [articleId, draftId, ftsArticleId].filter(Boolean)) {
       await admin.from("help_articles").delete().eq("id", id);
     }
     await admin.from("platform_admins").delete().eq("user_id", users.pa.id);
@@ -170,6 +171,64 @@ describe("Phase 6B — support", { skip }, () => {
       .eq("id", draftId)
       .maybeSingle();
     assert.equal(direct.data, null);
+  });
+
+  test("1b) FTS: trigger keeps search_vector in sync on INSERT and UPDATE", async () => {
+    // INSERT via the admin RPC -> trigger help_articles_tsv must populate the
+    // tsvector so the article is findable by a word only in its content.
+    const ins = await pa.rpc("admin_upsert_help_article", {
+      p_id: null,
+      p_category: "Métricas",
+      p_title: "Snapshot de métricas",
+      p_slug: `fts-${stamp}`,
+      p_summary: null,
+      p_content:
+        "O termo zebrafinch aparece só aqui para testar a indexação de texto.",
+      p_keywords: ["métricas"],
+      p_status: "published",
+    });
+    assert.ifError(ins.error);
+    ftsArticleId = ins.data.id;
+
+    // search_vector is a plain tsvector column, filled by the BEFORE trigger.
+    const row1 = await admin
+      .from("help_articles")
+      .select("search_vector")
+      .eq("id", ftsArticleId)
+      .single();
+    assert.ok(row1.data!.search_vector, "search_vector populated on INSERT");
+    assert.match(String(row1.data!.search_vector), /zebrafinch/);
+
+    const hit = await owner.rpc("search_help_articles", { p_query: "zebrafinch" });
+    assert.ifError(hit.error);
+    assert.ok(
+      (hit.data as { id: string }[]).some((a) => a.id === ftsArticleId),
+      "GIN-indexed FTS finds the new content word",
+    );
+
+    // UPDATE the content -> trigger must refresh the tsvector.
+    const upd = await pa.rpc("admin_upsert_help_article", {
+      p_id: ftsArticleId,
+      p_category: "Métricas",
+      p_title: "Snapshot de métricas",
+      p_slug: `fts-${stamp}`,
+      p_summary: null,
+      p_content: "Agora só contém a palavra quokka, sem o termo anterior.",
+      p_keywords: ["métricas"],
+      p_status: "published",
+    });
+    assert.ifError(upd.error);
+
+    const gone = await owner.rpc("search_help_articles", { p_query: "zebrafinch" });
+    assert.ok(
+      !(gone.data as { id: string }[]).some((a) => a.id === ftsArticleId),
+      "old term no longer matches after UPDATE",
+    );
+    const fresh = await owner.rpc("search_help_articles", { p_query: "quokka" });
+    assert.ok(
+      (fresh.data as { id: string }[]).some((a) => a.id === ftsArticleId),
+      "new term matches after UPDATE",
+    );
   });
 
   test("2) conversation lifecycle: start -> append -> feedback resolves + ai_resolved", async () => {
@@ -372,5 +431,42 @@ describe("Phase 6B — support", { skip }, () => {
     });
     assert.ifError(ok.error);
     assert.equal(ok.data.id, articleId);
+  });
+
+  test("9) anon has no SELECT on the support tables and cannot run the RPCs", async () => {
+    const a = anon();
+    for (const t of [
+      "help_articles",
+      "support_conversations",
+      "support_messages",
+      "support_tickets",
+    ] as const) {
+      const r = await a.from(t).select("id").limit(1);
+      // RLS with no anon policy -> empty set (or an explicit error); never rows.
+      assert.ok(!r.data || r.data.length === 0, `anon read leaked ${t}`);
+    }
+    // A published article is readable by an authenticated tenant but not anon.
+    const pub = await a
+      .from("help_articles")
+      .select("id")
+      .eq("id", articleId)
+      .maybeSingle();
+    assert.equal(pub.data, null);
+
+    for (const call of [
+      a.rpc("search_help_articles", { p_query: "x" }),
+      a.rpc("support_start_conversation", {
+        p_organization_id: orgA,
+        p_route: "/x",
+        p_module: "m",
+      }),
+      a.rpc("admin_support_overview"),
+    ]) {
+      const res = await call;
+      // search_help_articles is granted to `authenticated` only; the RPCs raise.
+      assert.ok(
+        res.error || !res.data || (Array.isArray(res.data) && res.data.length === 0),
+      );
+    }
   });
 });
