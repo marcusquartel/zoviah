@@ -17,12 +17,10 @@ import {
 import { addressSchema } from "@/lib/validation/address";
 import { BR_STATES } from "@/lib/br-locations";
 import { lookupCep } from "@/lib/viacep";
-import { formatCpf } from "@/lib/cpf";
 import { submitAddress } from "@/features/requests/public-actions";
 
 interface FormValues {
   recipientName: string;
-  cpf: string;
   postalCode: string;
   street: string;
   number: string;
@@ -55,7 +53,6 @@ export function AddressForm({ token }: { token: string }) {
   } = useForm<FormValues>({
     defaultValues: {
       recipientName: "",
-      cpf: "",
       postalCode: "",
       street: "",
       number: "",
@@ -131,20 +128,6 @@ export function AddressForm({ token }: { token: string }) {
         autoComplete="name"
         error={errors.recipientName?.message}
         {...register("recipientName")}
-      />
-      <Field
-        id="cpf"
-        label="CPF"
-        inputMode="numeric"
-        autoComplete="off"
-        placeholder="000.000.000-00"
-        maxLength={14}
-        error={errors.cpf?.message}
-        {...register("cpf", {
-          onChange: (e) => {
-            e.target.value = formatCpf(e.target.value);
-          },
-        })}
       />
       <div className="space-y-1">
         <Label htmlFor="postalCode">CEP</Label>

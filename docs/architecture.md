@@ -685,12 +685,9 @@ versionado: `unique (organization_id, creator_id) where is_current`. CHECK de
 tamanho em cada campo, `postal_code ~ '^[0-9]{8}$'`, `state ~ '^[A-Z]{2}$'`,
 `country = 'BR'`. RLS: membros leem os da própria org; escrita só via RPC.
 
-**CPF** (migration `20260829000003`): coluna `cpf` (11 dígitos, sem máscara),
-CHECK `cpf is null or public.is_valid_cpf(cpf)` — `is_valid_cpf` é uma função
-`immutable` que replica o algoritmo dos dígitos verificadores. É PII sensível,
-tratado igual ao resto do endereço: só entra por `complete_address_request`
-(que o exige), nunca em evento/log/listagem/payload do Claude. Coluna nullable
-no banco (sem linhas para backfill), obrigatória pela RPC daqui pra frente.
+> Nota: a migration `20260829000003` chegou a adicionar uma coluna `cpf` +
+> `is_valid_cpf`; a `20260829000005` reverteu isso (CPF estava fora do escopo
+> aprovado; nenhuma linha real tinha valor). O endereço não coleta CPF.
 
 ## Fluxo público
 
@@ -704,7 +701,6 @@ expirou"), sem enumeração.
 `next.config.ts` serve `/complete/:token*` com `Cache-Control: no-store`,
 `Referrer-Policy: no-referrer` e `X-Robots-Tag: noindex`. O formulário
 (mobile-first, labels reais, `autocomplete`, honeypot) coleta destinatário,
-**CPF** (máscara no input, validado por dígito verificador antes do envio),
 CEP, rua, número, complemento, bairro, cidade e **estado (select das 27 UFs)**.
 Ao sair do campo CEP, o cliente consulta o **ViaCEP** (`viacep.com.br`, sem
 chave, best-effort — falha → preenchimento manual; o único dado que sai é o
@@ -714,12 +710,11 @@ somente-leitura quando veio do CEP. Envio via `complete_address_request`
 
 1. lock da request pelo hash; 2. valida status/expiração/tipo; 3. valida
 `application.status = awaiting_address`; 4. normaliza (CEP → 8 dígitos, UF →
-2 maiúsculas, CPF → 11 dígitos + `is_valid_cpf`, trim) e valida; 5. exige
-consentimento; 6. marca o endereço current anterior como `is_current = false`;
-7. insere o novo; 8. request → `completed` (+ `completed_at`, `consent_at`);
-9. application → `completed`; 10. evento `address_submitted`
-(`actor_user_id = null`, `source = public_secure_request`, **sem endereço nem
-CPF**). Tudo ou nada.
+2 maiúsculas, trim) e valida; 5. exige consentimento; 6. marca o endereço
+current anterior como `is_current = false`; 7. insere o novo; 8. request →
+`completed` (+ `completed_at`, `consent_at`); 9. application → `completed`;
+10. evento `address_submitted` (`actor_user_id = null`, `source =
+public_secure_request`, **sem endereço**). Tudo ou nada.
 
 ## CRM / Modal
 
@@ -735,10 +730,9 @@ e colunas do Kanban ganham "Aguardando endereço" e "Cadastros completos".
 
 ## PII
 
-`creator_addresses` (endereço **e CPF**) é PII operacional: **nunca** vai para
-logs, analytics, `creator_events`, Anthropic, mensagens de erro ou URL.
-`buildClaudePayload` não tem caminho para endereço/CPF (teste de regressão em
-`analysis-sanitize.test.ts`, que verifica também o token `cpf`).
+`creator_addresses` é PII operacional: **nunca** vai para logs, analytics,
+`creator_events`, Anthropic, mensagens de erro ou URL. `buildClaudePayload` não
+tem caminho para endereço (teste de regressão em `analysis-sanitize.test.ts`).
 `city` / `state` do cadastro inicial seguem a política de privacidade que já
 existia; `creator_addresses` jamais entra automaticamente em qualquer payload.
 Sem política de retenção automática nesta fase (documentado como pendência
@@ -801,7 +795,7 @@ espelhada em `src/features/shipments/status.ts`).
   só em `draft` / `preparing` (`ADDRESS_LOCKED` depois). A aba Endereço do modal
   mostra o aviso "Há um endereço mais recente disponível" quando
   `current_address.id ≠ shipment.source_address_id` e o envio ainda é editável.
-- **PII**: `address_snapshot` (com CPF) só carrega no detalhe do envio. Nunca na
+- **PII**: `address_snapshot` só carrega no detalhe do envio. Nunca na
   `shipment_list_items`, nos `creator_events`, em log, em URL ou no Claude.
 
 ## Tracking

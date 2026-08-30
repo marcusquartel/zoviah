@@ -58,7 +58,6 @@ async function signedIn(email: string, password: string): Promise<SupabaseClient
 
 const GOOD_ADDRESS = {
   recipient_name: "Pâmela Kald",
-  cpf: "11144477735",
   postal_code: "30140110",
   street: "Rua dos Aimorés",
   number: "1200",
@@ -371,7 +370,6 @@ describe("Phase 4 — secure address request", { skip }, () => {
     assert.equal(addr.data![0].is_current, true);
     assert.equal(addr.data![0].postal_code, "30140110");
     assert.equal(addr.data![0].state, "MG");
-    assert.equal(addr.data![0].cpf, "11144477735"); // digits only
     assert.equal(addr.data![0].source_request_id, requestId);
 
     const req = await admin
@@ -400,7 +398,7 @@ describe("Phase 4 — secure address request", { skip }, () => {
     assert.ok(submitted);
     assert.equal(submitted.actor_user_id, null); // §58 public
     const evText = JSON.stringify(events.data);
-    for (const s of ["Aimorés", "30140110", "Pâmela", "11144477735", raw]) {
+    for (const s of ["Aimorés", "30140110", "Pâmela", raw]) {
       assert.ok(!evText.includes(s), `event leaked "${s}"`);
     }
 
@@ -522,7 +520,7 @@ describe("Phase 4 — secure address request", { skip }, () => {
     await admin.from("applications").delete().eq("id", app);
   });
 
-  test("complete_address_request refuses an invalid CPF (INVALID_ADDRESS)", async () => {
+  test("complete_address_request refuses a malformed address (INVALID_ADDRESS)", async () => {
     const raw = generateSecureToken();
     const app = await seedApprovedApplication();
     await ownerA.rpc("create_address_request", {
@@ -531,7 +529,7 @@ describe("Phase 4 — secure address request", { skip }, () => {
     });
     const bad = await anon().rpc("complete_address_request", {
       p_token_hash: hashToken(raw),
-      p_payload: { ...GOOD_ADDRESS, cpf: "11144477734" }, // wrong check digit
+      p_payload: { ...GOOD_ADDRESS, postal_code: "123" }, // not 8 digits
     });
     assert.ok(bad.error);
     assert.match(bad.error!.message, /INVALID_ADDRESS/);

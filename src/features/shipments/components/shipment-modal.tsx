@@ -16,7 +16,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { formatDate, formatDateTime } from "@/features/creators/format";
-import { formatCpf } from "@/lib/cpf";
 import { ShipmentStatusBadge } from "@/features/shipments/status-badge";
 import {
   SHIPMENT_STATUS_LABELS,
@@ -473,7 +472,6 @@ function AddressTab({
 
   const lines = [
     a.recipient_name,
-    a.cpf ? `CPF ${formatCpf(a.cpf)}` : null,
     `${a.street}, ${a.number}`,
     a.complement || null,
     a.neighborhood,

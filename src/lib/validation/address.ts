@@ -1,6 +1,5 @@
 import { z } from "zod";
 // Relative (not "@/") so this schema stays importable by the node test runner.
-import { normalizeCpf } from "../cpf.ts";
 import { BR_UFS } from "../br-locations.ts";
 
 /**
@@ -20,11 +19,6 @@ const trimmed = (max: number, label: string) =>
 
 export const addressSchema = z.object({
   recipientName: trimmed(150, "o nome do destinatário"),
-  cpf: z
-    .string()
-    .trim()
-    .transform((v) => normalizeCpf(v) ?? v.replace(/\D/g, ""))
-    .refine((v) => normalizeCpf(v) !== null, { error: "CPF inválido." }),
   postalCode: z
     .string()
     .trim()
@@ -58,7 +52,6 @@ export type AddressInput = z.infer<typeof addressSchema>;
 export function toAddressPayload(a: AddressInput) {
   return {
     recipient_name: a.recipientName,
-    cpf: a.cpf,
     postal_code: a.postalCode,
     street: a.street,
     number: a.number,

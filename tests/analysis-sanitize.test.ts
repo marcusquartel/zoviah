@@ -269,7 +269,6 @@ test("87) no shipping-address field ever appears in the Claude payload", () => {
   const json = JSON.stringify(buildClaudePayload(sanitizeEvidence(input)));
   for (const forbidden of [
     "recipient_name",
-    "cpf",
     "postal_code",
     "street",
     "neighborhood",

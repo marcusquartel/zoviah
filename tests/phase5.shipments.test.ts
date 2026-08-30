@@ -64,7 +64,6 @@ const ITEMS = [
 function addrFields(recipient: string) {
   return {
     recipient_name: recipient,
-    cpf: "11144477735",
     postal_code: "30140110",
     street: "Rua dos Aimorés",
     number: "1200",
@@ -226,7 +225,7 @@ describe("Phase 5 — shipments", { skip }, () => {
     assert.equal(ship.data!.created_by, users.ownerA.id);
     assert.equal(ship.data!.address_snapshot.recipient_name, "Snapshot Test");
     assert.equal(ship.data!.address_snapshot.postal_code, "30140110");
-    assert.equal(ship.data!.address_snapshot.cpf, "11144477735");
+    assert.ok(!("cpf" in ship.data!.address_snapshot), "snapshot has no cpf key");
     assert.equal(ship.data!.internal_notes, "kit especial");
 
     const items = await admin
@@ -254,7 +253,7 @@ describe("Phase 5 — shipments", { skip }, () => {
 
     // §106: no PII in the event
     const evText = JSON.stringify(ev.data);
-    for (const s of ["Aimorés", "30140110", "11144477735", "kit especial"]) {
+    for (const s of ["Aimorés", "30140110", "kit especial"]) {
       assert.ok(!evText.includes(s), `event leaked "${s}"`);
     }
     void creatorId;

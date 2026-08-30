@@ -87,12 +87,12 @@ async function main() {
     .single();
   const addr = await admin
     .from("creator_addresses")
-    .insert({ organization_id: orgId, creator_id: creator.data.id, source_request_id: req.data.id, is_current: true, recipient_name: "Perf", cpf: "11144477735", postal_code: "30140110", street: "Rua X", number: "1", neighborhood: "Centro", city: "Belo Horizonte", state: "MG", country: "BR" })
+    .insert({ organization_id: orgId, creator_id: creator.data.id, source_request_id: req.data.id, is_current: true, recipient_name: "Perf", postal_code: "30140110", street: "Rua X", number: "1", neighborhood: "Centro", city: "Belo Horizonte", state: "MG", country: "BR" })
     .select("id")
     .single();
 
   const snapshot = {
-    recipient_name: "Perf", cpf: "11144477735", postal_code: "30140110",
+    recipient_name: "Perf", postal_code: "30140110",
     street: "Rua X", number: "1", complement: null, neighborhood: "Centro",
     city: "Belo Horizonte", state: "MG", country: "BR",
   };
