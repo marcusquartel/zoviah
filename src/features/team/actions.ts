@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentOrganization } from "@/features/organizations/queries";
 import { generateSecureToken, hashToken } from "@/lib/secure-token";
 import { buildInviteUrl } from "@/lib/app-url";
+import { isSupabaseConfigured } from "@/lib/supabase/env";
 import type { OrganizationRole } from "@/types/database";
 
 export interface TeamActionResult {
@@ -157,4 +158,107 @@ export async function acceptInvite(
   const result = data as { status?: "accepted" | "already_member" };
   revalidatePath("/app", "layout");
   return { ok: true, status: result.status };
+}
+
+// ---------------------------------------------------------------------------
+// Invite-only signup (Phase 7A).
+//
+// A brand-new person can create their own account straight from the invite
+// page — no operator "Add user" in the Supabase dashboard. There is NO public
+// signup: an account is only created when a still-valid invite token is
+// presented, and the e-mail is taken from the server-validated invite, never
+// from the browser.
+// ---------------------------------------------------------------------------
+
+export interface SignupFromInviteResult {
+  ok: boolean;
+  error?: string;
+  /** True when Supabase Auth requires the user to confirm their e-mail first. */
+  needsEmailConfirmation?: boolean;
+  /** Set when the account existed already — the UI should switch to login. */
+  accountExists?: boolean;
+  /** Set when the invite was accepted in the same call (confirmation off). */
+  accepted?: boolean;
+}
+
+const SIGNUP_REASONS: Record<string, string> = {
+  invalid: "Este convite não está mais disponível.",
+  expired: "Este convite expirou. Peça um novo à equipe.",
+  revoked: "Este convite foi cancelado.",
+  accepted: "Este convite já foi aceito. Faça login.",
+  organization_suspended: "A organização está suspensa. Fale com o suporte.",
+};
+
+export async function signUpFromInvite(input: {
+  token: string;
+  password: string;
+}): Promise<SignupFromInviteResult> {
+  if (!isSupabaseConfigured()) {
+    return { ok: false, error: "Cadastro temporariamente indisponível." };
+  }
+  const token = String(input.token ?? "");
+  const password = String(input.password ?? "");
+  if (password.length < 8 || password.length > 72) {
+    return { ok: false, error: "A senha deve ter entre 8 e 72 caracteres." };
+  }
+
+  const supabase = await createClient();
+
+  // 1. Validate the invite server-side and get its real e-mail.
+  const { data: prep, error: prepErr } = await supabase.rpc(
+    "prepare_invite_signup",
+    { p_token_hash: hashToken(token) },
+  );
+  if (prepErr) {
+    console.error("[prepare_invite_signup]", prepErr.code, prepErr.message);
+    return { ok: false, error: "Não foi possível validar o convite." };
+  }
+  const prepared = prep as
+    | { ok: true; email: string }
+    | { ok: false; reason: string };
+  if (!prepared.ok) {
+    return { ok: false, error: SIGNUP_REASONS[prepared.reason] ?? SIGNUP_REASONS.invalid };
+  }
+
+  // 2. Create the account with the invite's e-mail — never the browser's.
+  const { data: signUp, error: signErr } = await supabase.auth.signUp({
+    email: prepared.email,
+    password,
+    options: { emailRedirectTo: buildInviteUrl(token) },
+  });
+  if (signErr) {
+    const msg = signErr.message.toLowerCase();
+    if (msg.includes("already registered") || msg.includes("already been registered")) {
+      return {
+        ok: false,
+        accountExists: true,
+        error: "Você já tem uma conta com este e-mail. Faça login para aceitar o convite.",
+      };
+    }
+    if (msg.includes("weak") || msg.includes("password")) {
+      return { ok: false, error: "Senha muito fraca. Use uma senha mais forte." };
+    }
+    console.error("[auth.signUp]", signErr.status, signErr.message);
+    return { ok: false, error: "Não foi possível criar a conta." };
+  }
+
+  // 3a. E-mail confirmation ON -> no session yet. User confirms, comes back
+  //     to /invite/[token] authenticated, and the existing accept flow runs.
+  if (!signUp.session) {
+    return { ok: true, needsEmailConfirmation: true };
+  }
+
+  // 3b. Confirmation OFF -> the server client now holds the session. Accept
+  //     the invite right away.
+  const { data: acc, error: accErr } = await supabase.rpc("accept_org_invite", {
+    p_token_hash: hashToken(token),
+  });
+  if (accErr) {
+    console.error("[accept_org_invite after signup]", accErr.code, accErr.message);
+    // Account exists; they can retry acceptance from the invite page.
+    return { ok: true, accepted: false };
+  }
+  void (acc as { status?: string });
+  revalidatePath("/app", "layout");
+  return { ok: true, accepted: true };
 }

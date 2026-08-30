@@ -54,6 +54,8 @@ export interface AdminOrgDetail {
   started_at: string | null;
   expires_at: string | null;
   notes: string | null;
+  logo_url: string | null;
+  favicon_url: string | null;
   users_count: number;
   creators_count: number;
   programs_count: number;

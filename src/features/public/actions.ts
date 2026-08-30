@@ -3,6 +3,7 @@
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
+import { hashToken } from "@/lib/secure-token";
 import { rateLimit, sweepRateLimits } from "@/lib/rate-limit";
 import {
   buildFieldSchema,
@@ -67,6 +68,7 @@ export async function submitApplication(
     requestHeaders.get("x-real-ip") ||
     "unknown";
 
+  // Layer 1: cheap per-instance limiter (blunts a burst hitting one worker).
   if (Math.random() < 0.05) sweepRateLimits();
   const limited = rateLimit(`submit:${ip}`);
   if (!limited.ok) {
@@ -74,6 +76,23 @@ export async function submitApplication(
       ok: false,
       error: "Muitas tentativas. Tente novamente em alguns minutos.",
     };
+  }
+
+  // Layer 2: durable DB-backed limiter — survives serverless instance churn.
+  // The raw IP never reaches the database; only its sha256 hash.
+  if (ip !== "unknown") {
+    const supabaseRl = await createClient();
+    const { data: rl } = await supabaseRl.rpc("rate_limit_public_submission", {
+      p_ip_hash: hashToken(ip),
+      p_max: 8,
+      p_window_secs: 600,
+    });
+    if (rl && (rl as { allowed?: boolean }).allowed === false) {
+      return {
+        ok: false,
+        error: "Muitas tentativas. Tente novamente em alguns minutos.",
+      };
+    }
   }
 
   // Honeypot: a real user never fills this. Pretend success.

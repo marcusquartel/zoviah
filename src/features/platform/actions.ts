@@ -31,6 +31,8 @@ const RPC_ERRORS: Record<string, string> = {
   INVALID_OWNER_EMAIL: "E-mail do owner inválido.",
   INVALID_NOTES: "Nota muito longa.",
   ORGANIZATION_NOT_FOUND: "Organização não encontrada.",
+  INVALID_LOGO_URL: "URL de logo inválida (use http/https).",
+  INVALID_FAVICON_URL: "URL de favicon inválida (use http/https).",
 };
 
 function mapError(message: string | undefined): string {
@@ -143,5 +145,48 @@ export async function setOrganizationPlan(
     return { ok: false, error: mapError(error.message) };
   }
   revalidatePath("/admin");
+  return { ok: true };
+}
+
+const httpUrlOrEmpty = z
+  .string()
+  .trim()
+  .refine((v) => v === "" || /^https?:\/\/[^\s]+$/i.test(v), {
+    error: "Use uma URL http(s) ou deixe em branco.",
+  });
+
+const brandingSchema = z.object({
+  logoUrl: httpUrlOrEmpty,
+  faviconUrl: httpUrlOrEmpty,
+});
+
+/**
+ * Set an organization's logo / favicon URL from /admin — replaces the
+ * hand-written `UPDATE organization_settings` an operator used to run in the
+ * Supabase SQL editor. No upload/storage in this phase: URLs only.
+ */
+export async function setOrganizationBranding(
+  organizationId: string,
+  input: { logoUrl: string; faviconUrl: string },
+): Promise<AdminActionResult> {
+  if (!(await getIsPlatformAdmin())) {
+    return { ok: false, error: RPC_ERRORS.FORBIDDEN };
+  }
+  const parsed = brandingSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
+  }
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("admin_set_organization_branding", {
+    p_organization_id: organizationId,
+    p_logo_url: parsed.data.logoUrl || null,
+    p_favicon_url: parsed.data.faviconUrl || null,
+  });
+  if (error) {
+    console.error("[admin_set_organization_branding]", error.code, error.message);
+    return { ok: false, error: mapError(error.message) };
+  }
+  revalidatePath("/admin");
+  revalidatePath("/app", "layout");
   return { ok: true };
 }

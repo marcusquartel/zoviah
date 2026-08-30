@@ -1,61 +1,113 @@
-# Production readiness — deploy checklist
+# Production readiness — executable checklist
 
-Técnico. O que precisa estar em pé **antes** de apontar um cliente pagante para
-a instância de produção. Este documento não instala nada — é a lista de
-verificação.
+Everything that must be true before pointing a paying customer at the
+production instance. Tick each box only with evidence (a screenshot, a command
+output, a test result). Items marked **[operator]** need an action outside this
+repository — see `docs/manual-external-actions.md`.
 
-## Variáveis de ambiente
+The code side is validated centrally: `checkProductionEnv()`
+(`src/lib/env/production.ts`, unit-tested in `tests/env.test.ts`) is the single
+source of truth for which variables are required and what shape they must have.
 
-| Variável | Onde | Obrigatória em prod | Notas |
-|---|---|---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | browser + server | sim | URL do projeto Supabase |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | browser + server | sim | anon / publishable key |
-| `NEXT_PUBLIC_APP_URL` | browser + server | **sim** | URL absoluta do app. Em prod NÃO pode ser localhost (validado em `src/lib/app-url.ts`). Usada nos links de `/complete/<token>` e `/invite/<token>` |
-| `SUPABASE_SERVICE_ROLE_KEY` | server / scripts | não (só testes e scripts admin) | **nunca** importar em `src/` |
-| `ANTHROPIC_API_KEY` | server | opcional | sem ela o CRM funciona; "Analisar creator" fica indisponível |
-| `ANTHROPIC_MODEL` | server | opcional | ex.: `claude-sonnet-5` |
-| `ANTHROPIC_WORKSPACE_ID` | server | opcional | só para API keys identity-linked |
-| `NEXT_PUBLIC_TERMS_URL` | browser | recomendada | link nos rodapés públicos |
-| `NEXT_PUBLIC_PRIVACY_POLICY_URL` | browser | recomendada | idem |
+---
 
-## Banco de dados
+## Domain & transport
 
-- [ ] Todas as migrations de `supabase/migrations/` aplicadas, em ordem de
-      timestamp (via `supabase db push` ou colando cada arquivo no SQL Editor).
-- [ ] `bootstrap.sql` rodado para o primeiro owner / primeira organização.
-- [ ] Ao menos um `platform_admins` inserido (SQL Editor):
+- [ ] **[operator]** Production domain registered and pointing at the host.
+- [ ] **[operator]** DNS records propagated (apex + `www` as chosen).
+- [ ] **[operator]** HTTPS active; HTTP redirects to HTTPS.
+- [ ] `Strict-Transport-Security` present on responses (emitted automatically
+      when `NODE_ENV=production` — see `src/lib/security-headers.ts`).
+
+## Environment variables
+
+Set in the host's project settings, never committed. Run the app once and
+check `/api/health` returns `{"status":"ok"}`.
+
+- [ ] `NEXT_PUBLIC_SUPABASE_URL` — the project URL (https).
+- [ ] `NEXT_PUBLIC_SUPABASE_ANON_KEY` — anon or publishable key.
+- [ ] `NEXT_PUBLIC_APP_URL` — **required**, `https://`, **not** localhost.
+      Used to build every invite and address link. A wrong value silently
+      breaks those flows.
+- [ ] `NEXT_PUBLIC_TERMS_URL` and `NEXT_PUBLIC_PRIVACY_POLICY_URL` — **required
+      in production**; must be `http(s)` (the validator rejects
+      `javascript:` / `data:`).
+- [ ] `ANTHROPIC_API_KEY` + `ANTHROPIC_MODEL` — optional. Absent ⇒ Creator
+      Score is unavailable, the CRM keeps working.
+- [ ] `ANTHROPIC_SUPPORT_MODEL` — optional, separate from `ANTHROPIC_MODEL`
+      (§8). Absent ⇒ the support assistant degrades to a human ticket.
+- [ ] No `NEXT_PUBLIC_`-prefixed secret exists (`grep -r "NEXT_PUBLIC_.*\(SERVICE_ROLE\|ANTHROPIC_API\)" .env*` is empty). The validator flags these as blocking errors.
+- [ ] `SUPABASE_SERVICE_ROLE_KEY` — only in the CI / scripts environment, never
+      in the app runtime, never imported from `src/`.
+
+## Database
+
+- [ ] All migrations in `supabase/migrations/` applied in timestamp order —
+      currently **18** files, `20260827000001` … `20260830000004`. See
+      `docs/migration-workflow.md`.
+- [ ] `bootstrap.sql` run once for the first organization + owner.
+- [ ] At least one `platform_admins` row for the operator:
       `insert into platform_admins (user_id) select id from auth.users where email = 'operador@…';`
-- [ ] Regenerar `src/types/database.ts` se o schema divergir do hand-written
-      (`npx supabase gen types typescript`).
+- [ ] `src/types/database.ts` matches the live schema (it is hand-maintained —
+      diff after any migration).
 
-## DNS / domínio
+## Auth e-mail
 
-- [ ] Domínio de produção apontando para o host (Vercel/etc.).
-- [ ] `NEXT_PUBLIC_APP_URL` = esse domínio, com https.
-- [ ] Custom domain por tenant: **fora de escopo** desta fase.
+- [ ] **[operator]** SMTP configured in Supabase Auth so invite / confirmation
+      / recovery e-mails actually send. See `docs/auth-email-setup.md`.
+- [ ] **[operator]** Supabase Auth **Site URL** = `NEXT_PUBLIC_APP_URL`.
+- [ ] **[operator]** Supabase Auth **Redirect URLs** allow-list includes
+      `${NEXT_PUBLIC_APP_URL}/invite/*` and `${NEXT_PUBLIC_APP_URL}/app`.
+- [ ] Decide: e-mail confirmation ON or OFF (the invite-signup flow handles
+      both — see `docs/auth-email-setup.md`).
 
-## Backups
+## Backup / restore
 
-- [ ] Confirmar a política de backup do plano Supabase em uso (point-in-time
-      recovery a partir do plano Pro). **Não** há backup engine no app —
-      documentar a janela de retenção e testar um restore antes do go-live.
+- [ ] **[operator]** Backup mechanism confirmed for the current Supabase plan.
+- [ ] **[operator]** A restore test actually performed and timed. Do **not**
+      tick this from documentation alone. See `docs/backup-runbook.md`.
 
 ## Error monitoring
 
-- [ ] Integrar Sentry (ou equivalente) — **não** instalado ainda. Requisito
-      pré-lançamento: capturar exceções de Server Actions / RPCs em produção.
+- [ ] **[operator]** Sentry project created; `SENTRY_DSN` (+
+      `NEXT_PUBLIC_SENTRY_DSN`) set. The SDK is already wired and is a no-op
+      until a DSN is present.
+- [ ] Test exception verified: `GET /api/debug-sentry?confirm=1` on the
+      deployed instance produces an issue in Sentry.
+- [ ] (optional) `SENTRY_ORG` / `SENTRY_PROJECT` / `SENTRY_AUTH_TOKEN` set in
+      CI for source-map upload.
 
-## Segurança
+## Security headers
 
-- [ ] `SUPABASE_SERVICE_ROLE_KEY` só em variáveis de ambiente do runtime de
-      scripts/CI, nunca no bundle do browser (`grep -r SERVICE_ROLE src/` = vazio).
-- [ ] `ANTHROPIC_API_KEY` nunca com prefixo `NEXT_PUBLIC_`.
-- [ ] Rodar `npm run lint && npm run typecheck && npm test && npm run build`
-      verde. `npm run test:anthropic:smoke` roda 1 chamada real, sob demanda.
+- [ ] Global headers present on a normal response: `X-Content-Type-Options`,
+      `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy`,
+      `Content-Security-Policy-Report-Only`.
+- [ ] After ~1–2 weeks with **no** CSP violation reports for legitimate use
+      (tenant logos, Supabase, Next assets), switch
+      `Content-Security-Policy-Report-Only` → `Content-Security-Policy` in
+      `src/lib/security-headers.ts` (`globalSecurityHeaders`).
+
+## Knowledge base
+
+- [ ] `node scripts/seed-help-articles.mjs` run against production (idempotent).
+- [ ] Spot-check: the "Ajuda" assistant answers "Como criar um envio?",
+      "Como aprovar uma creator?", "O que é Coverage?",
+      "Como convidar alguém da equipe?" with the right articles.
 
 ## Legal
 
-- [ ] Termos de Serviço e Política de Privacidade **revisados por jurídico** e
-      publicados. Este repositório **não** contém texto jurídico aprovado —
-      só linka `NEXT_PUBLIC_TERMS_URL` / `NEXT_PUBLIC_PRIVACY_POLICY_URL` no
-      rodapé das páginas públicas quando configurados.
+- [ ] **[operator]** Terms of Service and Privacy Policy written **and reviewed
+      by a lawyer** and published at stable URLs.
+- [ ] Those URLs set in `NEXT_PUBLIC_TERMS_URL` /
+      `NEXT_PUBLIC_PRIVACY_POLICY_URL`; the footer shows them on the public
+      form and address page.
+
+## Final gate
+
+- [ ] `npm run lint && npm run typecheck && npm test && npm run build` — all
+      green, `npm test` reports `0 fail`, `0 skip` (from applied phases), and
+      **0 real Anthropic calls**.
+- [ ] `npm run test:anthropic:smoke` and `npm run test:support-ai:smoke` — run
+      on demand only; each makes at most one paid call. Not a daily gate.
+- [ ] Manual smoke test passed — see the roundtrip in the Phase 7A report /
+      `docs/manual-external-actions.md`.

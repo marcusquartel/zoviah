@@ -158,7 +158,9 @@ test("labels: every ticket enum value is labelled", () => {
   for (const k of ["question", "account", "bug", "feature_request", "other"] as const) {
     assert.equal(typeof TICKET_TYPE_LABELS[k], "string");
   }
-  assert.equal(HELP_CATEGORIES.length, 9);
+  assert.equal(HELP_CATEGORIES.length, 12);
+  assert.ok(HELP_CATEGORIES.includes("Primeiros passos"));
+  assert.ok(HELP_CATEGORIES.includes("Suporte"));
 });
 
 test("engineering prompt: scrubs PII, always carries constraints, no auto-send", () => {

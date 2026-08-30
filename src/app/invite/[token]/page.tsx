@@ -4,6 +4,7 @@ import { hashToken } from "@/lib/secure-token";
 import { getCurrentUser } from "@/features/organizations/queries";
 import { getPublicInvite } from "@/features/team/queries";
 import { AcceptInvite } from "./accept-invite";
+import { InviteSignup } from "./invite-signup";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
@@ -70,17 +71,11 @@ async function PendingInvite({
       {user ? (
         <AcceptInvite token={token} userEmail={user.email ?? ""} />
       ) : (
-        <div className="space-y-2">
-          <p className="text-sm text-muted-foreground">
-            Entre com a conta do e-mail convidado para aceitar.
-          </p>
-          <Link
-            href={`/login?next=${encodeURIComponent(`/invite/${token}`)}`}
-            className="inline-block rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-          >
-            Entrar
-          </Link>
-        </div>
+        <InviteSignup
+          token={token}
+          emailMasked={invite.email_masked}
+          loginHref={`/login?next=${encodeURIComponent(`/invite/${token}`)}`}
+        />
       )}
     </div>
   );

@@ -1707,6 +1707,22 @@ export interface Database {
         Args: Record<string, never>;
         Returns: Json;
       };
+      prepare_invite_signup: {
+        Args: { p_token_hash: string };
+        Returns: Json;
+      };
+      rate_limit_public_submission: {
+        Args: { p_ip_hash: string; p_max?: number; p_window_secs?: number };
+        Returns: Json;
+      };
+      admin_set_organization_branding: {
+        Args: {
+          p_organization_id: string;
+          p_logo_url: string | null;
+          p_favicon_url: string | null;
+        };
+        Returns: Json;
+      };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;

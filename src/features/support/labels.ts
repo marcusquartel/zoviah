@@ -55,15 +55,18 @@ export const ARTICLE_STATUS_LABELS: Record<HelpArticleStatus, string> = {
 };
 
 export const HELP_CATEGORIES = [
+  "Primeiros passos",
   "Creators",
   "Programas",
+  "Formulários",
   "Creator Score",
-  "Métricas",
+  "Métricas / Evidências",
+  "Aprovação",
   "Endereço",
   "Envios",
   "Equipe",
   "Configurações",
-  "Conta",
+  "Suporte",
 ] as const;
 
 export type HelpCategory = (typeof HELP_CATEGORIES)[number];

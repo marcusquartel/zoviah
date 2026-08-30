@@ -1054,3 +1054,119 @@ assistente é testado com `messageFn` mockado
 glob padrão). Integração real-Supabase/no-Claude:
 `tests/phase6b.support.test.ts` + `tests/phase6b.product.test.ts` (skip até as
 migrations serem aplicadas).
+
+# Fase 7A — Go-live hardening
+
+Sem funcionalidade nova de produto. Prontidão para produção, segurança,
+observabilidade e redução de operação manual. Detalhes operacionais em
+`docs/production-readiness.md`, `docs/backup-runbook.md`,
+`docs/auth-email-setup.md`, `docs/migration-workflow.md`,
+`docs/lgpd-data-inventory.md`, `docs/manual-external-actions.md`.
+
+## Validação central de ambiente
+
+`src/lib/env/production.ts` — `checkProductionEnv(env, {isProduction})` puro,
+única fonte de verdade sobre o que produção exige: Supabase (sempre),
+`NEXT_PUBLIC_APP_URL` (obrigatória em prod, https, não-localhost), URLs legais
+(obrigatórias em prod, http(s), rejeita `javascript:`/`data:`), Anthropic
+(Score e Support degradam, nunca bloqueiam), e higiene de segredo (qualquer
+`NEXT_PUBLIC_*` que seja segredo → erro bloqueante). `checkCurrentEnv()` lê
+`process.env`. Testes em `tests/env.test.ts`. Os módulos de runtime
+(`app-url`, `legal`, `supabase/env`, `anthropic/*`) mantêm seus acessadores
+locais; este módulo centraliza as regras do checklist.
+
+## Invite-only signup (§6/§7)
+
+Não há signup público. Uma conta só é criada a partir de um convite válido.
+
+- Migration `20260830000004`: RPC `prepare_invite_signup(p_token_hash)`
+  (`security definer`, anon) devolve o e-mail real do convite **apenas** se
+  `pending` + não expirado + não revogado + organização `active`. O chamador já
+  tem o token secreto, então revelar o e-mail a ele é aceitável; a página
+  segue exibindo o e-mail mascarado via `get_public_org_invite`.
+- `signUpFromInvite(token, password)` (`src/features/team/actions.ts`): valida
+  o convite pela RPC, cria a conta com `supabase.auth.signUp({ email, password })`
+  usando o **e-mail do convite** (nunca o do browser),
+  `emailRedirectTo = ${APP_URL}/invite/<token>`. Com confirmação de e-mail
+  desligada → sessão imediata → `accept_org_invite` na mesma chamada. Com
+  confirmação ligada → `needsEmailConfirmation`; o usuário confirma, volta a
+  `/invite/[token]` autenticado, e o botão "Aceitar convite" existente conclui.
+- UI: `src/app/invite/[token]/invite-signup.tsx` (criar conta / já tenho
+  conta). O fluxo de usuário existente (login → aceitar) é inalterado.
+- Elimina o passo manual "Supabase Dashboard → Auth → Add user" para provisionar
+  owners e membros de equipe.
+
+## Rate limit durável do formulário público (§5)
+
+Já existiam limiter em memória (5/10min por IP) + honeypot. Adicionada a
+**camada 2**, durável: tabela `public_submission_throttle(ip_hash, window_start,
+count)` (RLS, sem policy) + RPC `rate_limit_public_submission(p_ip_hash, p_max,
+p_window_secs)` — janela fixa atômica via `insert … on conflict`. `submitApplication`
+chama a RPC antes de `submit_application`, com o **hash sha256 do IP** (o IP em
+texto puro nunca vai ao banco). Sweep oportunístico dentro da própria função.
+Sem Redis. Captcha continua futuro.
+
+## Branding por platform admin (§12)
+
+Migration `20260830000004`: RPC `admin_set_organization_branding(org, logo_url,
+favicon_url)` (platform admin, valida `^https?://` ou null, audita
+`organization_branding_updated`). `admin_get_organization` recriada para
+retornar `logo_url`/`favicon_url`. UI no modal de organização em `/admin`
+(`admin-org-modal.tsx`): dois campos de URL + prévia + salvar. Sem upload/
+storage nesta fase. Elimina o `UPDATE organization_settings` manual.
+
+## Error monitoring — Sentry (§3)
+
+`@sentry/nextjs` instalado e ligado, **inerte sem DSN**. `initSentry(runtime)`
+(`src/lib/observability/sentry-init.ts`) lê `SENTRY_DSN` (server/edge) /
+`NEXT_PUBLIC_SENTRY_DSN` (browser) — se ausente, `Sentry.init` nem é chamado.
+`sentry.server.config.ts`, `sentry.edge.config.ts`,
+`src/instrumentation.ts` (+ `onRequestError`), `src/instrumentation-client.ts`
+(+ `onRouterTransitionStart`). `next.config.ts` envolvido em `withSentryConfig`
+(upload de sourcemap só com `SENTRY_AUTH_TOKEN`). `sendDefaultPii: false` +
+`beforeSend`/`beforeSendTransaction` com `scrubEvent`
+(`src/lib/observability/scrub.ts`, puro, testado): remove chaves negadas em
+qualquer profundidade (`address_snapshot`, `answers`, `token`, `password`,
+`cookie`, `email`, `cpf`, `postal_code`, …), redige valores com cara de
+credencial (sk-, JWT, sha256 hex, Bearer), descarta headers/cookies, anonimiza
+`user` para só o id. Rota de teste: `GET /api/debug-sentry?confirm=1`.
+
+## Security headers (§4)
+
+`src/lib/security-headers.ts` (puro, testado) + `next.config.ts` aplicando em
+`/:path*`: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`,
+`Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy`
+(camera/mic/geo/topics desligados), HSTS **só em produção**, e
+**`Content-Security-Policy-Report-Only`** (não bloqueante) — `connect-src`
+libera a origem Supabase + `wss://`, `img-src https:` para logos de tenant,
+`frame-ancestors 'none'`, `object-src 'none'`. Cut-over para CSP enforcing
+documentado em `production-readiness.md`. `/invite/:token*` ganhou os mesmos
+headers de `no-store`/`noindex`/`no-referrer` de `/complete/:token*`.
+
+## Health check (§22)
+
+`GET /api/health` → `{status:'ok', time}`. Sem banco, sem Anthropic, sem envs.
+
+## Knowledge base seed (§14–§17)
+
+`scripts/help-articles.mjs` (41 artigos, labels reais da UI, sem marketing, sem
+nome de tenant) + `scripts/seed-help-articles.mjs` (idempotente: upsert por
+`slug`, só escreve o que mudou, `--dry-run`, nunca deleta, service role).
+`HELP_CATEGORIES` expandido para as 12 categorias do escopo (Primeiros passos,
+Creators, Programas, Formulários, Creator Score, Métricas / Evidências,
+Aprovação, Endereço, Envios, Equipe, Configurações, Suporte). Retrieval real
+verificado: "Como criar um envio?", "Como aprovar uma creator?", "O que é
+Coverage?", "Como convidar alguém da equipe?" retornam o artigo certo.
+
+## CI (§21)
+
+`.github/workflows/ci.yml`: em push/PR roda `npm ci` + lint + typecheck + test
++ build. Sem deploy, sem segredo, 0 chamada Anthropic real. Inerte até o
+repositório ter um remoto GitHub (hoje sem `origin`).
+
+## Testes
+
+Puros (em `npm test`): `env.test.ts`, `security-headers.test.ts`,
+`scrub.test.ts`. Integração real-Supabase/no-Claude (skip até `20260830000004`):
+`phase7a.signup.test.ts` (12 casos §27), `phase7a.branding.test.ts` (5 §28),
+`phase7a.public-security.test.ts` (rate limit + anon §29).

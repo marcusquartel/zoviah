@@ -10,6 +10,8 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
@@ -22,6 +24,7 @@ import { formatDate } from "@/features/creators/format";
 import { PLAN_CODES, PLAN_LABELS, ORG_STATUS_LABELS } from "@/features/platform/plans";
 import { loadOrganizationDetail } from "@/features/platform/data-actions";
 import {
+  setOrganizationBranding,
   setOrganizationPlan,
   setOrganizationStatus,
 } from "@/features/platform/actions";
@@ -41,11 +44,16 @@ export function AdminOrgModal({
   const [data, setData] = useState<AdminOrgDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [pending, startTransition] = useTransition();
+  const [logoUrl, setLogoUrl] = useState("");
+  const [faviconUrl, setFaviconUrl] = useState("");
 
   const load = useCallback(async (id: string) => {
     setLoading(true);
     try {
-      setData(await loadOrganizationDetail(id));
+      const detail = await loadOrganizationDetail(id);
+      setData(detail);
+      setLogoUrl(detail?.logo_url ?? "");
+      setFaviconUrl(detail?.favicon_url ?? "");
     } finally {
       setLoading(false);
     }
@@ -76,6 +84,20 @@ export function AdminOrgModal({
         onChanged();
       } else {
         toast.error(res.error ?? "Não foi possível alterar o status.");
+      }
+    });
+  }
+
+  function saveBranding() {
+    if (!data) return;
+    startTransition(async () => {
+      const res = await setOrganizationBranding(data.id, { logoUrl, faviconUrl });
+      if (res.ok) {
+        toast.success("Branding atualizado.");
+        await load(data.id);
+        onChanged();
+      } else {
+        toast.error(res.error ?? "Não foi possível salvar o branding.");
       }
     });
   }
@@ -181,6 +203,66 @@ export function AdminOrgModal({
                   {data.status === "active" ? "Suspender" : "Reativar"}
                 </Button>
               </div>
+            </div>
+
+            <div className="mt-2 space-y-3 border-t pt-3">
+              <p className="text-sm font-medium">Branding</p>
+              <div className="space-y-1.5">
+                <Label htmlFor="org-logo-url" className="text-xs">
+                  Logo URL
+                </Label>
+                <Input
+                  id="org-logo-url"
+                  value={logoUrl}
+                  onChange={(e) => setLogoUrl(e.target.value)}
+                  placeholder="https://…/logo.svg"
+                  disabled={pending}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="org-favicon-url" className="text-xs">
+                  Favicon URL
+                </Label>
+                <Input
+                  id="org-favicon-url"
+                  value={faviconUrl}
+                  onChange={(e) => setFaviconUrl(e.target.value)}
+                  placeholder="https://…/favicon.png"
+                  disabled={pending}
+                />
+              </div>
+              {logoUrl || faviconUrl ? (
+                <div className="flex items-center gap-4 rounded-md border bg-muted/30 p-2">
+                  {logoUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={logoUrl}
+                      alt="Prévia do logo"
+                      className="h-8 w-auto max-w-[160px] object-contain"
+                    />
+                  ) : null}
+                  {faviconUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={faviconUrl}
+                      alt="Prévia do favicon"
+                      className="size-6 object-contain"
+                    />
+                  ) : null}
+                </div>
+              ) : null}
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={
+                  pending ||
+                  (logoUrl === (data.logo_url ?? "") &&
+                    faviconUrl === (data.favicon_url ?? ""))
+                }
+                onClick={saveBranding}
+              >
+                Salvar branding
+              </Button>
             </div>
           </>
         )}
