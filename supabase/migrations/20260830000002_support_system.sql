@@ -18,12 +18,11 @@ create table public.help_articles (
   keywords    text[] not null default '{}',
   status      text not null default 'draft'
                 check (status in ('draft', 'published', 'archived')),
-  search_vector tsvector generated always as (
-    setweight(to_tsvector('portuguese', coalesce(title, '')), 'A') ||
-    setweight(to_tsvector('portuguese', coalesce(summary, '')), 'B') ||
-    setweight(to_tsvector('portuguese', array_to_string(keywords, ' ')), 'B') ||
-    setweight(to_tsvector('portuguese', coalesce(content, '')), 'C')
-  ) stored,
+  -- Populated by trigger below (not a GENERATED column: a stored generated
+  -- tsvector needs a strictly-immutable expression, and the weighted
+  -- to_tsvector('portuguese', ...) form is only stable — Postgres rejects it
+  -- at CREATE TABLE with "generation expression is not immutable").
+  search_vector tsvector,
   created_by  uuid references auth.users (id) on delete set null,
   updated_by  uuid references auth.users (id) on delete set null,
   created_at  timestamptz not null default now(),
@@ -33,6 +32,27 @@ create table public.help_articles (
 create index help_articles_search_idx on public.help_articles using gin (search_vector);
 create index help_articles_status_category_idx
   on public.help_articles (status, category);
+
+-- Keep search_vector in sync with the weighted text fields.
+create or replace function public.help_articles_tsv()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  new.search_vector :=
+    setweight(to_tsvector('portuguese', coalesce(new.title, '')), 'A') ||
+    setweight(to_tsvector('portuguese', coalesce(new.summary, '')), 'B') ||
+    setweight(to_tsvector('portuguese', array_to_string(new.keywords, ' ')), 'B') ||
+    setweight(to_tsvector('portuguese', coalesce(new.content, '')), 'C');
+  return new;
+end;
+$$;
+
+create trigger help_articles_tsv_sync
+  before insert or update of title, summary, keywords, content
+  on public.help_articles
+  for each row execute function public.help_articles_tsv();
 
 create trigger help_articles_set_updated_at
   before update on public.help_articles
