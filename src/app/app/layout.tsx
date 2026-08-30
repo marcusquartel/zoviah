@@ -62,7 +62,7 @@ export default async function AppLayout({
         primaryColor={settings?.primary_color}
         secondaryColor={settings?.secondary_color}
       />
-      <div className="flex min-h-svh">
+      <div className="flex min-h-svh bg-surface">
         <Sidebar
           orgName={organization.name}
           logoUrl={settings?.logo_url}
@@ -74,7 +74,7 @@ export default async function AppLayout({
             userEmail={user.email ?? ""}
             role={role}
           />
-          <main className="flex-1 p-6">
+          <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">
             <div className="mx-auto max-w-7xl">{children}</div>
           </main>
         </div>

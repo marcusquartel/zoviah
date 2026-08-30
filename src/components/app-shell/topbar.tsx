@@ -10,10 +10,12 @@ interface TopbarProps {
 
 export function Topbar({ orgName, userEmail, role }: TopbarProps) {
   return (
-    <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b bg-background px-4">
+    <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center justify-between gap-3 border-b border-border bg-background/85 px-4 backdrop-blur supports-backdrop-filter:bg-background/70">
       <div className="flex items-center gap-2">
         <MobileNav orgName={orgName} />
-        <span className="text-sm font-medium md:hidden">{orgName}</span>
+        <span className="text-sm font-semibold tracking-tight md:hidden">
+          {orgName}
+        </span>
       </div>
       <div className="flex items-center gap-1">
         <HelpCenter />
