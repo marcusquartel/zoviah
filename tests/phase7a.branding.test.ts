@@ -49,9 +49,22 @@ function anon(): SupabaseClient {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 }
+const clientByEmail = new Map<string, SupabaseClient>();
 async function signedIn(email: string, password: string): Promise<SupabaseClient> {
+  const cached = clientByEmail.get(email);
+  if (cached) return cached;
   const c = anon();
-  assert.ifError((await c.auth.signInWithPassword({ email, password })).error);
+  let lastErr: unknown = null;
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const { error } = await c.auth.signInWithPassword({ email, password });
+    if (!error) {
+      clientByEmail.set(email, c);
+      return c;
+    }
+    lastErr = error;
+    await new Promise((r) => setTimeout(r, 500 * (attempt + 1)));
+  }
+  assert.ifError(lastErr);
   return c;
 }
 

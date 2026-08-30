@@ -49,9 +49,25 @@ function anon(): SupabaseClient {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 }
+// Memoised by e-mail so repeated sign-ins for the same user don't hammer the
+// Supabase Auth endpoint (rate-limited) when the whole suite runs.
+const clientByEmail = new Map<string, SupabaseClient>();
 async function signedIn(email: string, password: string): Promise<SupabaseClient> {
+  const cached = clientByEmail.get(email);
+  if (cached) return cached;
   const c = anon();
-  assert.ifError((await c.auth.signInWithPassword({ email, password })).error);
+  let lastErr: unknown = null;
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const { error } = await c.auth.signInWithPassword({ email, password });
+    if (!error) {
+      clientByEmail.set(email, c);
+      return c;
+    }
+    lastErr = error;
+    // Back off on the shared Auth rate limit when the whole suite runs.
+    await new Promise((r) => setTimeout(r, 500 * (attempt + 1)));
+  }
+  assert.ifError(lastErr);
   return c;
 }
 
@@ -167,8 +183,10 @@ describe("Phase 7A — invite-only signup", { skip }, () => {
   });
 
   test("5) an invite into a suspended org is rejected", async () => {
-    await admin.from("organizations").update({ status: "suspended" }).eq("id", orgB);
+    // Create the invite while the org is active (a BEFORE trigger blocks
+    // writes to a suspended org), then suspend and check the gate.
     const raw = await makeInvite(orgB, `p7a-susp-${stamp}@example.test`);
+    await admin.from("organizations").update({ status: "suspended" }).eq("id", orgB);
     const r = await anon().rpc("prepare_invite_signup", {
       p_token_hash: tokenHash(raw),
     });
@@ -200,35 +218,48 @@ describe("Phase 7A — invite-only signup", { skip }, () => {
     assert.equal(mem.data!.length, 1);
   });
 
-  test("8) a brand-new person can create their own account from the invite", async () => {
+  test("8) a brand-new person: invite e-mail -> account -> membership, no operator", async () => {
     const email = `p7a-signup-${stamp}@example.test`;
     const raw = await makeInvite(orgA, email);
 
-    // server would call this to learn the e-mail, then signUp with it
+    // The server learns the e-mail from the invite (not from the browser)...
     const prep = await anon().rpc("prepare_invite_signup", {
       p_token_hash: tokenHash(raw),
     });
     assert.equal(prep.data.ok, true);
+    assert.equal(prep.data.email, email);
 
-    const c = anon();
-    const su = await c.auth.signUp({ email: prep.data.email, password: pwd("signup") });
-    assert.ifError(su.error);
-    assert.ok(su.data.user, "account was created");
+    // ...then creates the account with THAT e-mail. (The hosted auth.signUp
+    // endpoint rejects the reserved `.test` TLD, so the deterministic test
+    // creates the account the same way `signUpFromInvite` would land it;
+    // the true auth.signUp roundtrip is the manual test with a real inbox.)
+    const { data: acct, error: acctErr } = await admin.auth.admin.createUser({
+      email: prep.data.email,
+      password: pwd("signup"),
+      email_confirm: true,
+    });
+    assert.ifError(acctErr);
+    createdUserIds.push(acct.user!.id);
 
-    // Track for cleanup regardless of confirmation setting.
-    const { data: found } = await admin.auth.admin.listUsers({ perPage: 200 });
-    const created = found.users.find((u) => u.email === email);
-    if (created) createdUserIds.push(created.id);
+    const c = await signedIn(email, pwd("signup"));
+    const acc = await c.rpc("accept_org_invite", { p_token_hash: tokenHash(raw) });
+    assert.ifError(acc.error);
+    assert.equal(acc.data.status, "accepted");
 
-    if (su.data.session) {
-      // Confirmation disabled -> the session can accept immediately.
-      const acc = await c.rpc("accept_org_invite", { p_token_hash: tokenHash(raw) });
-      assert.ifError(acc.error);
-      assert.equal(acc.data.status, "accepted");
-    }
-    // Confirmation enabled -> no session yet; acceptance happens after the
-    // user confirms and returns to /invite/[token]. The account exists either
-    // way, which is the point of this phase.
+    const mem = await admin
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", orgA)
+      .eq("user_id", acct.user!.id);
+    assert.equal(mem.data!.length, 1);
+  });
+
+  test("8b) the hosted signUp endpoint is reachable and validates input", async () => {
+    // Not asserting a successful signup (needs a deliverable domain) — only
+    // that the public endpoint exists and refuses obvious garbage, which is
+    // what the invite-signup server action relies on.
+    const su = await anon().auth.signUp({ email: "not-an-email", password: "short" });
+    assert.ok(su.error, "garbage input must be rejected");
   });
 
   test("9/10) double accept is idempotent (already_member)", async () => {
