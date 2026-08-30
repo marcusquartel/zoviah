@@ -1,18 +1,25 @@
 import { NextResponse } from "next/server";
 import * as Sentry from "@sentry/nextjs";
 import { isSentryEnabled } from "@/lib/observability/sentry-init";
+import { isDebugRouteEnabled } from "@/lib/observability/debug-route";
 
 /**
- * Deliberately throws so you can verify the error-monitoring pipeline end to
+ * Deliberately throws so the error-monitoring pipeline can be verified end to
  * end. Documented in `docs/production-readiness.md`.
  *
- * Guarded by `?confirm=1` so a crawler or a stray click doesn't spam the
- * issue tracker. Returns a plain 200 (not an error) when Sentry is not
- * configured, so hitting it in dev is harmless and obvious.
+ * Abuse guard: in production this route does not exist (404) unless
+ * `ENABLE_SENTRY_DEBUG_ROUTE=1` is explicitly set. That keeps an anonymous
+ * visitor from generating exceptions and burning Sentry quota. Outside
+ * production it works with `?confirm=1`. Turn the flag on only while checking
+ * the integration, then remove it.
  */
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
+  if (!isDebugRouteEnabled(process.env)) {
+    return NextResponse.json({ error: "not found" }, { status: 404 });
+  }
+
   const confirmed = new URL(request.url).searchParams.get("confirm") === "1";
   if (!confirmed) {
     return NextResponse.json({

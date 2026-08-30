@@ -72,8 +72,10 @@ check `/api/health` returns `{"status":"ok"}`.
 - [ ] **[operator]** Sentry project created; `SENTRY_DSN` (+
       `NEXT_PUBLIC_SENTRY_DSN`) set. The SDK is already wired and is a no-op
       until a DSN is present.
-- [ ] Test exception verified: `GET /api/debug-sentry?confirm=1` on the
-      deployed instance produces an issue in Sentry.
+- [ ] Test exception verified: temporarily set `ENABLE_SENTRY_DEBUG_ROUTE=1`
+      (the route is 404 in production without it), hit
+      `GET /api/debug-sentry?confirm=1` on the deployed instance, confirm the
+      issue appears in Sentry, then **remove the flag**.
 - [ ] (optional) `SENTRY_ORG` / `SENTRY_PROJECT` / `SENTRY_AUTH_TOKEN` set in
       CI for source-map upload.
 

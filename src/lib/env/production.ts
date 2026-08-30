@@ -186,6 +186,16 @@ export function checkProductionEnv(
     sentryDsn ? "monitoramento de erro ativo" : "ausente — sem captura de exceção em produção",
   );
 
+  // --- Debug routes ------------------------------------------------
+  if (isProduction && val(env, "ENABLE_SENTRY_DEBUG_ROUTE") === "1") {
+    add(
+      "ENABLE_SENTRY_DEBUG_ROUTE",
+      "warn",
+      false,
+      "rota /api/debug-sentry ligada em produção — desligue após verificar",
+    );
+  }
+
   // --- Secret hygiene -------------------------------------------------
   for (const key of FORBIDDEN_PUBLIC_SECRETS) {
     if (val(env, key)) {

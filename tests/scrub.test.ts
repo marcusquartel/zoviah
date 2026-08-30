@@ -1,6 +1,22 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { scrubEvent, scrubValue } from "../src/lib/observability/scrub.ts";
+import { isDebugRouteEnabled } from "../src/lib/observability/debug-route.ts";
+
+test("debug route: production requires an explicit opt-in flag", () => {
+  assert.equal(isDebugRouteEnabled({ NODE_ENV: "production" }), false);
+  assert.equal(
+    isDebugRouteEnabled({ NODE_ENV: "production", ENABLE_SENTRY_DEBUG_ROUTE: "0" }),
+    false,
+  );
+  assert.equal(
+    isDebugRouteEnabled({ NODE_ENV: "production", ENABLE_SENTRY_DEBUG_ROUTE: "1" }),
+    true,
+  );
+  assert.equal(isDebugRouteEnabled({ NODE_ENV: "development" }), true);
+  assert.equal(isDebugRouteEnabled({ NODE_ENV: "test" }), true);
+  assert.equal(isDebugRouteEnabled({}), true);
+});
 
 test("scrubValue: denied keys are redacted at any depth", () => {
   const input = {

@@ -7,7 +7,7 @@ stated evidence.
 
 | # | Action | Why code can't do it | Evidence to record | Blocking? |
 |---|---|---|---|---|
-| 1 | **Create the Sentry project**, get the DSN, set `SENTRY_DSN` + `NEXT_PUBLIC_SENTRY_DSN` in the host | Needs a Sentry account + org | `/api/debug-sentry?confirm=1` on prod creates an issue | P0 for paying customers |
+| 1 | **Create the Sentry project**, get the DSN, set `SENTRY_DSN` + `NEXT_PUBLIC_SENTRY_DSN` in the host | Needs a Sentry account + org | `ENABLE_SENTRY_DEBUG_ROUTE=1` + `/api/debug-sentry?confirm=1` on prod creates an issue, then flag removed | P0 for paying customers |
 | 2 | **Configure SMTP in Supabase Auth** (provider account, verified sending domain, SPF/DKIM) | Needs an e-mail provider account + DNS | A recovery e-mail arrives, not in spam | P1 (P0 if confirmation stays ON) |
 | 3 | **Set Supabase Auth Site URL + Redirect URLs** to the production domain | Dashboard-only setting | Screenshot of URL config | P0 |
 | 4 | **Decide e-mail confirmation ON/OFF** for signups | Product/ops decision | Documented choice in `docs/auth-email-setup.md` | P1 |

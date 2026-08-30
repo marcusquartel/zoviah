@@ -1129,7 +1129,10 @@ storage nesta fase. Elimina o `UPDATE organization_settings` manual.
 qualquer profundidade (`address_snapshot`, `answers`, `token`, `password`,
 `cookie`, `email`, `cpf`, `postal_code`, …), redige valores com cara de
 credencial (sk-, JWT, sha256 hex, Bearer), descarta headers/cookies, anonimiza
-`user` para só o id. Rota de teste: `GET /api/debug-sentry?confirm=1`.
+`user` para só o id. Rota de teste `/api/debug-sentry`: **404 em produção**
+salvo `ENABLE_SENTRY_DEBUG_ROUTE=1` (evita anônimo consumir quota do Sentry);
+fora de produção funciona com `?confirm=1`. Gate puro em
+`src/lib/observability/debug-route.ts`.
 
 ## Security headers (§4)
 
