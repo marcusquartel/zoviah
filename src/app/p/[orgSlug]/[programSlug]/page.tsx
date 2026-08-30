@@ -42,7 +42,7 @@ export default async function PublicProgramPage({
         primaryColor={organization.primary_color}
         secondaryColor={organization.secondary_color}
       />
-      <main className="mx-auto w-full max-w-xl px-4 py-10 sm:py-16">
+      <main className="mx-auto flex min-h-svh w-full max-w-xl flex-col bg-surface px-4 py-10 sm:py-16">
         <header className="mb-8 space-y-3">
           {organization.logo_url ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -52,11 +52,11 @@ export default async function PublicProgramPage({
               className="h-10 w-auto"
             />
           ) : (
-            <p className="text-sm font-medium text-muted-foreground">
+            <p className="text-[0.6875rem] font-medium uppercase tracking-[0.08em] text-muted-foreground">
               {organization.name}
             </p>
           )}
-          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+          <h1 className="font-heading text-2xl font-semibold tracking-tight sm:text-3xl">
             {program.public_title}
           </h1>
           {program.public_description ? (
@@ -67,22 +67,26 @@ export default async function PublicProgramPage({
         </header>
 
         {isOpen ? (
-          <PublicForm
-            orgSlug={orgSlug}
-            programSlug={programSlug}
-            fields={fields}
-            successMessage={program.success_message}
-          />
+          <div className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-7">
+            <PublicForm
+              orgSlug={orgSlug}
+              programSlug={programSlug}
+              fields={fields}
+              successMessage={program.success_message}
+            />
+          </div>
         ) : (
-          <div className="rounded-xl border bg-card p-8 text-center">
-            <h2 className="text-lg font-semibold">Inscrições encerradas</h2>
+          <div className="rounded-2xl border border-border bg-card p-8 text-center shadow-sm">
+            <h2 className="font-heading text-lg font-semibold">
+              Inscrições encerradas
+            </h2>
             <p className="mt-2 text-sm text-muted-foreground">
               As inscrições para este programa não estão abertas no momento.
             </p>
           </div>
         )}
 
-        <p className="mt-10 text-center text-xs text-muted-foreground">
+        <p className="mt-auto pt-10 text-center text-xs text-muted-foreground">
           {organization.name} · Creator Hub
         </p>
         <LegalFooter />

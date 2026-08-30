@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { StatCard } from "@/components/ui/stat-card";
 import {
   Table,
   TableBody,
@@ -61,21 +61,14 @@ export default async function AdminSupportPage({
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
         {stats.map((s) => (
-          <Card key={s.label}>
-            <CardHeader className="pb-1">
-              <CardTitle className="text-xs font-medium text-muted-foreground">
-                {s.label}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-2xl font-semibold">{s.value}</CardContent>
-          </Card>
+          <StatCard key={s.label} label={s.label} value={s.value} />
         ))}
       </div>
 
-      <div className="flex flex-wrap gap-2 text-sm">
+      <div className="flex flex-wrap items-center gap-1.5 text-sm">
         <Link
           href="/admin/support"
-          className="rounded-md border px-2 py-1 text-muted-foreground hover:text-foreground"
+          className="rounded-lg border border-border bg-card px-2.5 py-1 text-xs font-medium text-muted-foreground shadow-xs transition-colors hover:text-foreground"
         >
           Todos
         </Link>
@@ -83,14 +76,14 @@ export default async function AdminSupportPage({
           <Link
             key={s}
             href={`/admin/support?status=${s}`}
-            className="rounded-md border px-2 py-1 text-muted-foreground hover:text-foreground"
+            className="rounded-lg border border-border bg-card px-2.5 py-1 text-xs font-medium text-muted-foreground shadow-xs transition-colors hover:text-foreground"
           >
             {TICKET_STATUS_LABELS[s]}
           </Link>
         ))}
         <Link
           href="/admin/support/knowledge"
-          className="rounded-md border px-2 py-1 font-medium"
+          className="ml-auto rounded-lg border border-border bg-card px-2.5 py-1 text-xs font-medium shadow-xs transition-colors hover:border-border-strong"
         >
           Base de conhecimento →
         </Link>

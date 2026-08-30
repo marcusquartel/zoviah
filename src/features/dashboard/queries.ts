@@ -1,6 +1,15 @@
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentOrganization } from "@/features/organizations/queries";
 import { getCrmCounts } from "@/features/creators/queries";
+import {
+  bucketGrowth,
+  growthRatePct,
+  normalizeState,
+  rank,
+  titleCase,
+  type GrowthPoint,
+  type RankItem,
+} from "@/features/dashboard/aggregate";
 import type { ApplicationListItem, ApplicationStatus } from "@/types/database";
 
 /**
@@ -17,19 +26,7 @@ const FETCH_CAP = 5000;
 
 export type DashboardPeriodDays = 7 | 30 | 90;
 
-export interface RankItem {
-  label: string;
-  count: number;
-}
-
-export interface GrowthPoint {
-  /** ISO date of the bucket start. */
-  date: string;
-  /** Cumulative creators at the end of this bucket. */
-  total: number;
-  /** New creators within this bucket. */
-  added: number;
-}
+export type { RankItem, GrowthPoint };
 
 export interface AttentionItem {
   label: string;
@@ -72,58 +69,6 @@ const FUNNEL: { status: ApplicationStatus; label: string; key: string }[] = [
   { status: "awaiting_address", label: "Endereço", key: "awaiting_address" },
   { status: "completed", label: "Completo", key: "completed" },
 ];
-
-function titleCase(s: string): string {
-  return s
-    .toLowerCase()
-    .split(/\s+/)
-    .map((w) => (w.length <= 2 ? w.toUpperCase() : w[0].toUpperCase() + w.slice(1)))
-    .join(" ");
-}
-
-function rank(values: (string | null)[], normalize: (s: string) => string): RankItem[] {
-  const counts = new Map<string, number>();
-  for (const v of values) {
-    const t = (v ?? "").trim();
-    if (!t) continue;
-    const key = normalize(t);
-    counts.set(key, (counts.get(key) ?? 0) + 1);
-  }
-  return [...counts.entries()]
-    .map(([label, count]) => ({ label, count }))
-    .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label))
-    .slice(0, 5);
-}
-
-function bucketGrowth(dates: string[], periodDays: DashboardPeriodDays): GrowthPoint[] {
-  const now = Date.now();
-  const buckets = 12;
-  const span = periodDays * 86_400_000;
-  const step = span / buckets;
-  const start = now - span;
-  const sorted = [...dates].map((d) => new Date(d).getTime()).sort((a, b) => a - b);
-
-  let baseline = 0;
-  for (const t of sorted) if (t < start) baseline += 1;
-
-  const points: GrowthPoint[] = [];
-  let cursor = 0;
-  let running = baseline;
-  // advance cursor past the baseline
-  while (cursor < sorted.length && sorted[cursor] < start) cursor += 1;
-
-  for (let i = 0; i < buckets; i += 1) {
-    const edge = start + step * (i + 1);
-    let added = 0;
-    while (cursor < sorted.length && sorted[cursor] < edge) {
-      added += 1;
-      cursor += 1;
-    }
-    running += added;
-    points.push({ date: new Date(edge).toISOString(), total: running, added });
-  }
-  return points;
-}
 
 export async function getDashboardOverview(
   periodDays: DashboardPeriodDays = 30,
@@ -207,10 +152,6 @@ export async function getDashboardOverview(
   );
   const newCreators = newC.count ?? 0;
   const newCreatorsPrev = newPrev.count ?? 0;
-  const growthRatePct =
-    newCreatorsPrev > 0
-      ? Math.round(((newCreators - newCreatorsPrev) / newCreatorsPrev) * 100)
-      : null;
 
   // `crm_counts` also returns `possible_duplicate` at runtime (not in the
   // typed CrmCounts interface), so read it through a loose map.
@@ -255,19 +196,16 @@ export async function getDashboardOverview(
     activeShipments: activeShip.count ?? 0,
     funnel,
     growth,
-    growthRatePct,
+    growthRatePct: growthRatePct(newCreators, newCreatorsPrev),
     topCities: rank(
       creators.map((c) => c.city),
       titleCase,
     ),
     topStates: rank(
       creators.map((c) => c.state),
-      (s) => (s.length === 2 ? s.toUpperCase() : titleCase(s)),
+      normalizeState,
     ),
-    topPrograms: rank(
-      apps.map((a) => a.program_name),
-      (s) => s,
-    ),
+    topPrograms: rank(apps.map((a) => a.program_name)),
     attention,
     latest: (latest.data ?? []) as DashboardOverview["latest"],
   };
