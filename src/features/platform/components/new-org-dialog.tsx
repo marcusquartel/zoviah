@@ -22,6 +22,8 @@ import {
 import { Check, Copy } from "lucide-react";
 import { PLAN_CODES, PLAN_LABELS } from "@/features/platform/plans";
 import { createOrganization } from "@/features/platform/actions";
+import { suggestSubdomain } from "@/lib/tenant/host";
+import { PRODUCT } from "@/config/product";
 
 const slugify = (s: string) =>
   s
@@ -29,6 +31,15 @@ const slugify = (s: string) =>
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 63);
+
+const subdomainify = (s: string) =>
+  s
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9-]+/g, "")
     .replace(/^-+|-+$/g, "")
     .slice(0, 63);
 
@@ -50,6 +61,8 @@ export function NewOrgDialog({
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [slugEdited, setSlugEdited] = useState(false);
+  const [subdomain, setSubdomain] = useState("");
+  const [subdomainEdited, setSubdomainEdited] = useState(false);
   const [ownerEmail, setOwnerEmail] = useState("");
   const [planCode, setPlanCode] = useState("founding");
   const [status, setStatus] = useState("active");
@@ -63,6 +76,8 @@ export function NewOrgDialog({
     setName("");
     setSlug("");
     setSlugEdited(false);
+    setSubdomain("");
+    setSubdomainEdited(false);
     setOwnerEmail("");
     setPlanCode("founding");
     setStatus("active");
@@ -75,6 +90,9 @@ export function NewOrgDialog({
       const res = await createOrganization({
         name,
         slug: slug || slugify(name),
+        // The field is pre-filled live from the name; an explicit clear means
+        // "no tenant host yet" and is respected.
+        subdomain: subdomain || undefined,
         ownerEmail,
         planCode,
         status,
@@ -144,6 +162,8 @@ export function NewOrgDialog({
                 onChange={(e) => {
                   setName(e.target.value);
                   if (!slugEdited) setSlug(slugify(e.target.value));
+                  if (!subdomainEdited)
+                    setSubdomain(suggestSubdomain(e.target.value));
                 }}
               />
             </div>
@@ -159,7 +179,28 @@ export function NewOrgDialog({
                 placeholder="minha-empresa"
               />
               <p className="text-xs text-muted-foreground">
-                Usado nas URLs públicas dos formulários.
+                Usado nas URLs públicas dos formulários (zoviah.app/p/{slug || "slug"}
+                /…). Não muda o endereço do tenant.
+              </p>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="org-subdomain">Subdomínio</Label>
+              <Input
+                id="org-subdomain"
+                value={subdomain}
+                onChange={(e) => {
+                  setSubdomainEdited(true);
+                  setSubdomain(subdomainify(e.target.value));
+                }}
+                placeholder="minhaempresa"
+              />
+              <p className="text-xs text-muted-foreground">
+                Endereço do tenant:{" "}
+                <span className="font-mono">
+                  {subdomain || "subdominio"}.{PRODUCT.domain}
+                </span>
+                . Independente do slug. Deixe em branco para não criar um
+                endereço agora.
               </p>
             </div>
             <div className="space-y-1">

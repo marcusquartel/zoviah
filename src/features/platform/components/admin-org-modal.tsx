@@ -27,8 +27,19 @@ import {
   setOrganizationBranding,
   setOrganizationPlan,
   setOrganizationStatus,
+  setOrganizationSubdomain,
 } from "@/features/platform/actions";
 import type { AdminOrgDetail } from "@/features/platform/queries";
+import { PRODUCT } from "@/config/product";
+
+const subdomainify = (s: string) =>
+  s
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9-]+/g, "")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 63);
 
 const PLAN_ITEMS = PLAN_CODES.map((p) => ({ value: p, label: PLAN_LABELS[p] }));
 
@@ -46,6 +57,7 @@ export function AdminOrgModal({
   const [pending, startTransition] = useTransition();
   const [logoUrl, setLogoUrl] = useState("");
   const [faviconUrl, setFaviconUrl] = useState("");
+  const [subdomain, setSubdomain] = useState("");
 
   const load = useCallback(async (id: string) => {
     setLoading(true);
@@ -54,6 +66,7 @@ export function AdminOrgModal({
       setData(detail);
       setLogoUrl(detail?.logo_url ?? "");
       setFaviconUrl(detail?.favicon_url ?? "");
+      setSubdomain(detail?.subdomain ?? "");
     } finally {
       setLoading(false);
     }
@@ -84,6 +97,22 @@ export function AdminOrgModal({
         onChanged();
       } else {
         toast.error(res.error ?? "Não foi possível alterar o status.");
+      }
+    });
+  }
+
+  function saveSubdomain() {
+    if (!data) return;
+    startTransition(async () => {
+      const res = await setOrganizationSubdomain(data.id, subdomain.trim());
+      if (res.ok) {
+        toast.success(
+          subdomain.trim() ? "Subdomínio atualizado." : "Subdomínio removido.",
+        );
+        await load(data.id);
+        onChanged();
+      } else {
+        toast.error(res.error ?? "Não foi possível salvar o subdomínio.");
       }
     });
   }
@@ -153,7 +182,13 @@ export function AdminOrgModal({
 
             <dl className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm">
               <dt className="text-muted-foreground">Slug</dt>
-              <dd>/{data.slug}</dd>
+              <dd>/p/{data.slug}</dd>
+              <dt className="text-muted-foreground">Subdomínio</dt>
+              <dd className="font-mono text-xs">
+                {data.subdomain
+                  ? `${data.subdomain}.${PRODUCT.domain}`
+                  : "— (nenhum)"}
+              </dd>
               <dt className="text-muted-foreground">Criada em</dt>
               <dd>{formatDate(data.created_at)}</dd>
               <dt className="text-muted-foreground">Usuários</dt>
@@ -203,6 +238,32 @@ export function AdminOrgModal({
                   {data.status === "active" ? "Suspender" : "Reativar"}
                 </Button>
               </div>
+            </div>
+
+            <div className="mt-2 space-y-2 border-t pt-3">
+              <p className="text-sm font-medium">Subdomínio</p>
+              <Input
+                value={subdomain}
+                onChange={(e) => setSubdomain(subdomainify(e.target.value))}
+                placeholder="minhaempresa"
+                disabled={pending}
+              />
+              <p className="text-xs text-muted-foreground">
+                Endereço do tenant:{" "}
+                <span className="font-mono">
+                  {subdomain || "subdominio"}.{PRODUCT.domain}
+                </span>
+                . Independente do slug ({`/p/${data.slug}`} continua igual).
+                Vazio = sem endereço.
+              </p>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={pending || subdomain === (data.subdomain ?? "")}
+                onClick={saveSubdomain}
+              >
+                Salvar subdomínio
+              </Button>
             </div>
 
             <div className="mt-2 space-y-3 border-t pt-3">

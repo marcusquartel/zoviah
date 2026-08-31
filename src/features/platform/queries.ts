@@ -15,6 +15,7 @@ export interface AdminOrgRow {
   id: string;
   name: string;
   slug: string;
+  subdomain: string | null;
   status: OrganizationStatus;
   created_at: string;
   plan_code: PlanCode | null;
@@ -48,6 +49,7 @@ export interface AdminOrgDetail {
   id: string;
   name: string;
   slug: string;
+  subdomain: string | null;
   status: OrganizationStatus;
   created_at: string;
   plan_code: PlanCode | null;

@@ -178,12 +178,15 @@ export interface Database {
           id: string;
           name: string;
           slug: string;
+          /** Tenant host label: `<subdomain>.zoviah.app`. Distinct from slug. */
+          subdomain: string | null;
           status: OrganizationStatus;
         } & Timestamps;
         Insert: {
           id?: string;
           name: string;
           slug: string;
+          subdomain?: string | null;
           status?: OrganizationStatus;
           created_at?: string;
           updated_at?: string;
@@ -192,6 +195,7 @@ export interface Database {
           id?: string;
           name?: string;
           slug?: string;
+          subdomain?: string | null;
           status?: OrganizationStatus;
           created_at?: string;
           updated_at?: string;
@@ -1482,7 +1486,12 @@ export interface Database {
           p_plan_code: string;
           p_status: string;
           p_owner_token_hash: string;
+          p_subdomain?: string | null;
         };
+        Returns: Json;
+      };
+      admin_set_organization_subdomain: {
+        Args: { p_organization_id: string; p_subdomain: string | null };
         Returns: Json;
       };
       admin_list_organizations: {

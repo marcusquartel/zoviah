@@ -1,26 +1,31 @@
 /**
  * Host → tenant resolution (Phase 8A).
  *
- * `<slug>.zoviah.app` selects an organization CONTEXT. It never grants
+ * `<subdomain>.zoviah.app` selects an organization CONTEXT. It never grants
  * authorization — membership is still checked server-side and RLS is still the
  * last barrier. This module is pure and unit-tested.
+ *
+ * The host label is matched against `organizations.subdomain`, NOT
+ * `organizations.slug`. Slug stays reserved for the public form URLs
+ * (`/p/<slug>/...`); subdomain is the commercial tenant host. They are
+ * independent: Rare Way is `slug = "rare-way"`, `subdomain = "rareway"`.
  *
  *   zoviah.app              -> root
  *   www.zoviah.app          -> root
  *   <anything>.vercel.app   -> root  (preview / the bare project domain)
  *   localhost[:port]        -> root
  *   127.0.0.1 / [::1] / IPs -> root
- *   rareway.zoviah.app      -> tenant, slug "rareway"
- *   rare-way.localhost:3001 -> tenant, slug "rare-way"  (local testing, opt-in)
+ *   rareway.zoviah.app      -> tenant, subdomain "rareway"
+ *   rareway.localhost:3001  -> tenant, subdomain "rareway"  (local testing, opt-in)
  *   a.b.zoviah.app          -> unknown (not a single tenant label)
  */
 
 export type HostContext =
   | { kind: "root" }
-  | { kind: "tenant"; slug: string }
+  | { kind: "tenant"; subdomain: string }
   | { kind: "unknown" };
 
-/** Labels that can never be a tenant slug even if the slug format allows them. */
+/** Labels that can never be a tenant subdomain even if the format allows them. */
 export const RESERVED_SUBDOMAINS: ReadonlySet<string> = new Set([
   "www",
   "app",
@@ -56,8 +61,33 @@ export const RESERVED_SUBDOMAINS: ReadonlySet<string> = new Set([
   "preview",
 ]);
 
-/** Same rule as `organizations.slug` (a valid DNS label under 64 chars). */
-const SLUG_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+/** A valid DNS label under 64 chars — the shape of both slug and subdomain. */
+const SUBDOMAIN_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+
+/** Whether a candidate subdomain has a valid DNS-label shape and length. */
+export function isValidSubdomainFormat(label: string): boolean {
+  return SUBDOMAIN_RE.test(label) && label.length >= 1 && label.length <= 63;
+}
+
+/** Whether a label is on the reserved list and can never be a tenant host. */
+export function isReservedSubdomain(label: string): boolean {
+  return RESERVED_SUBDOMAINS.has(label.trim().toLowerCase());
+}
+
+/**
+ * A suggested subdomain for a new organization, derived from its name:
+ * transliterate, drop everything but `[a-z0-9]`, and remove separators so the
+ * result reads as one commercial word ("Rare Way" -> "rareway"). Only a
+ * suggestion — the platform admin can edit it before saving.
+ */
+export function suggestSubdomain(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "")
+    .slice(0, 63);
+}
 
 function isIpv4(h: string): boolean {
   return /^\d{1,3}(\.\d{1,3}){3}$/.test(h);
@@ -97,7 +127,7 @@ export function resolveHostContext(
 
   if (isRootHost(host, root)) return { kind: "root" };
 
-  // Local testing: <slug>.localhost / <slug>.lvh.me
+  // Local testing: <subdomain>.localhost / <subdomain>.lvh.me
   for (const localBase of ["localhost", "lvh.me"]) {
     if (host.endsWith(`.${localBase}`)) {
       const label = host.slice(0, -(`.${localBase}`.length));
@@ -115,11 +145,11 @@ export function resolveHostContext(
 }
 
 function tenantFromLabel(label: string): HostContext {
-  // exactly one label, valid slug shape, not reserved
+  // exactly one label, valid subdomain shape, not reserved
   if (!label || label.includes(".")) return { kind: "unknown" };
-  if (!SLUG_RE.test(label) || label.length > 63) return { kind: "unknown" };
+  if (!isValidSubdomainFormat(label)) return { kind: "unknown" };
   if (RESERVED_SUBDOMAINS.has(label)) return { kind: "root" };
-  return { kind: "tenant", slug: label };
+  return { kind: "tenant", subdomain: label };
 }
 
 /**

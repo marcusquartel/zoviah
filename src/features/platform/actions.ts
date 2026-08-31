@@ -5,6 +5,7 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { generateSecureToken, hashToken } from "@/lib/secure-token";
 import { buildInviteUrl } from "@/lib/app-url";
+import { isReservedSubdomain, isValidSubdomainFormat } from "@/lib/tenant/host";
 import { PLAN_CODES } from "@/features/platform/plans";
 import { getIsPlatformAdmin } from "@/features/platform/queries";
 import type { OrganizationStatus, PlanCode } from "@/types/database";
@@ -26,6 +27,9 @@ const RPC_ERRORS: Record<string, string> = {
   INVALID_NAME: "Nome inválido.",
   INVALID_SLUG: "Slug inválido (use minúsculas, números e hífen).",
   SLUG_TAKEN: "Este slug já está em uso.",
+  INVALID_SUBDOMAIN: "Subdomínio inválido (use minúsculas, números e hífen).",
+  SUBDOMAIN_TAKEN: "Este subdomínio já está em uso.",
+  SUBDOMAIN_RESERVED: "Este subdomínio é reservado.",
   INVALID_PLAN: "Plano inválido.",
   INVALID_STATUS: "Status inválido.",
   INVALID_OWNER_EMAIL: "E-mail do owner inválido.",
@@ -44,6 +48,24 @@ function mapError(message: string | undefined): string {
   return "Não foi possível concluir a ação.";
 }
 
+/**
+ * Optional tenant subdomain. Empty string -> `undefined` (org has no tenant
+ * host yet). Otherwise it must be a valid, non-reserved DNS label. Same rules
+ * as `src/lib/tenant/host.ts` and the `admin_*` RPCs.
+ */
+const subdomainField = z
+  .string()
+  .trim()
+  .transform((v) => v.toLowerCase())
+  .refine((v) => v === "" || isValidSubdomainFormat(v), {
+    error: "Subdomínio inválido (use minúsculas, números e hífen).",
+  })
+  .refine((v) => v === "" || !isReservedSubdomain(v), {
+    error: "Este subdomínio é reservado.",
+  })
+  .transform((v) => (v === "" ? undefined : v))
+  .optional();
+
 const createSchema = z.object({
   name: z.string().trim().min(2).max(120),
   slug: z
@@ -53,6 +75,7 @@ const createSchema = z.object({
     .refine((v) => /^[a-z0-9]+(-[a-z0-9]+)*$/.test(v) && v.length <= 63, {
       error: "Slug inválido.",
     }),
+  subdomain: subdomainField,
   ownerEmail: z.email(),
   planCode: z.enum(PLAN_CODES as [PlanCode, ...PlanCode[]]),
   status: z.enum(["active", "suspended"] as [OrganizationStatus, OrganizationStatus]),
@@ -61,6 +84,7 @@ const createSchema = z.object({
 export async function createOrganization(input: {
   name: string;
   slug: string;
+  subdomain?: string;
   ownerEmail: string;
   planCode: string;
   status: string;
@@ -84,6 +108,7 @@ export async function createOrganization(input: {
     p_plan_code: parsed.data.planCode,
     p_status: parsed.data.status,
     p_owner_token_hash: hashToken(rawToken),
+    p_subdomain: parsed.data.subdomain ?? null,
   });
   if (error) {
     console.error("[admin_create_organization]", error.code, error.message);
@@ -142,6 +167,35 @@ export async function setOrganizationPlan(
   });
   if (error) {
     console.error("[admin_set_organization_plan]", error.code, error.message);
+    return { ok: false, error: mapError(error.message) };
+  }
+  revalidatePath("/admin");
+  return { ok: true };
+}
+
+/**
+ * Set / change / clear an organization's tenant subdomain
+ * (`<subdomain>.zoviah.app`). An empty string clears it. Slug is never
+ * touched. Format / reserved / uniqueness are re-checked in the RPC.
+ */
+export async function setOrganizationSubdomain(
+  organizationId: string,
+  subdomain: string,
+): Promise<AdminActionResult> {
+  if (!(await getIsPlatformAdmin())) {
+    return { ok: false, error: RPC_ERRORS.FORBIDDEN };
+  }
+  const parsed = subdomainField.safeParse(subdomain);
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
+  }
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("admin_set_organization_subdomain", {
+    p_organization_id: organizationId,
+    p_subdomain: parsed.data ?? null,
+  });
+  if (error) {
+    console.error("[admin_set_organization_subdomain]", error.code, error.message);
     return { ok: false, error: mapError(error.message) };
   }
   revalidatePath("/admin");
