@@ -12,6 +12,11 @@ import {
   RECOVERY_LINK_INVALID_MESSAGE,
 } from "../src/features/auth/messages.ts";
 import { buildAuthCallbackUrl } from "../src/lib/app-url.ts";
+import {
+  isAllowedOtpType,
+  safeNextPath,
+  parseAuthCallback,
+} from "../src/features/auth/callback.ts";
 
 function withEnv(vars: Record<string, string | undefined>, fn: () => void) {
   const saved: Record<string, string | undefined> = {};
@@ -122,5 +127,61 @@ test("buildAuthCallbackUrl: dev falls back to localhost base (no throw)", () => 
       buildAuthCallbackUrl(RESET_PASSWORD_PATH),
       "http://localhost:3001/auth/callback?next=%2Freset-password",
     );
+  });
+});
+
+// --- /auth/callback SSR handler helpers --------------------------------------
+
+test("isAllowedOtpType: recovery + the standard e-mail OTP types, nothing else", () => {
+  for (const t of ["recovery", "email", "magiclink", "invite", "signup", "email_change"]) {
+    assert.equal(isAllowedOtpType(t), true, t);
+  }
+  for (const t of ["", "sms", "phone", "oauth", "RECOVERY", "recovery ", null]) {
+    assert.equal(isAllowedOtpType(t as string | null), false, String(t));
+  }
+});
+
+test("safeNextPath: same-origin relative only; everything else -> /reset-password", () => {
+  assert.equal(safeNextPath("/reset-password"), "/reset-password");
+  assert.equal(safeNextPath("/app/creators"), "/app/creators");
+  for (const evil of [
+    null,
+    "",
+    "reset-password",
+    "//evil.example.com",
+    "/\\evil.example.com",
+    "https://evil.example.com",
+    "http://x",
+    "javascript:alert(1)",
+    "\\\\evil",
+  ]) {
+    assert.equal(safeNextPath(evil), "/reset-password", String(evil));
+  }
+});
+
+test("parseAuthCallback: extracts token_hash/type/code, sanitises next", () => {
+  const recovery = parseAuthCallback(
+    new URLSearchParams("token_hash=abc123&type=recovery&next=/reset-password"),
+  );
+  assert.deepEqual(recovery, {
+    tokenHash: "abc123",
+    type: "recovery",
+    code: null,
+    next: "/reset-password",
+  });
+
+  const pkce = parseAuthCallback(
+    new URLSearchParams("code=xyz&next=https://evil.example.com"),
+  );
+  assert.equal(pkce.code, "xyz");
+  assert.equal(pkce.tokenHash, null);
+  assert.equal(pkce.next, "/reset-password"); // open-redirect target dropped
+
+  const empty = parseAuthCallback(new URLSearchParams(""));
+  assert.deepEqual(empty, {
+    tokenHash: null,
+    type: null,
+    code: null,
+    next: "/reset-password",
   });
 });
