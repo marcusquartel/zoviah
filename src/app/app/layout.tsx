@@ -73,6 +73,7 @@ export default async function AppLayout({
             orgName={organization.name}
             userEmail={user.email ?? ""}
             role={role}
+            isPlatformAdmin={isPlatformAdmin}
           />
           <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">
             <div className="mx-auto max-w-7xl">{children}</div>
