@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ShieldCheck } from "lucide-react";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
+import { getHostContext, rootUrl } from "@/lib/tenant/context";
 import { getCurrentUser } from "@/features/organizations/queries";
 import { getIsPlatformAdmin } from "@/features/platform/queries";
 import { UserMenu } from "@/components/app-shell/user-menu";
@@ -20,6 +21,10 @@ export default async function AdminLayout({
   children: React.ReactNode;
 }) {
   if (!isSupabaseConfigured()) redirect("/login");
+
+  // The admin area lives on the root domain only (the proxy also enforces this).
+  const host = await getHostContext();
+  if (host.kind === "tenant") redirect(rootUrl("/admin"));
 
   const user = await getCurrentUser();
   if (!user) redirect("/login");

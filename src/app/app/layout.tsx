@@ -1,9 +1,11 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Sidebar } from "@/components/app-shell/sidebar";
 import { Topbar } from "@/components/app-shell/topbar";
 import { ThemeStyle } from "@/components/theme-style";
 import { SetupNotice } from "@/components/setup-notice";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
+import { getHostContext, rootUrl } from "@/lib/tenant/context";
 import {
   getCurrentOrganization,
   getCurrentUser,
@@ -28,9 +30,35 @@ export default async function AppLayout({
     redirect("/login");
   }
 
-  const current = await getCurrentOrganization();
+  const [host, current] = await Promise.all([
+    getHostContext(),
+    getCurrentOrganization(),
+  ]);
 
   if (!current) {
+    // On a tenant subdomain, `null` means the slug is unknown OR the user is
+    // not a member — either way, no access, and never a fallback to some other
+    // org. We can't tell the two apart (RLS hides non-member orgs), so one
+    // screen covers both.
+    if (host.kind === "tenant") {
+      return (
+        <div className="mx-auto flex min-h-svh max-w-md flex-col items-center justify-center gap-3 p-6 text-center">
+          <h1 className="text-lg font-semibold">Organização indisponível</h1>
+          <p className="text-sm text-muted-foreground">
+            Não encontramos esta organização ou sua conta ({user.email}) não
+            tem acesso a ela.
+          </p>
+          <div className="flex gap-3 text-sm">
+            <a href={rootUrl("/app")} className="text-primary hover:underline">
+              Ir para o painel
+            </a>
+            <Link href="/login" className="text-muted-foreground hover:text-foreground">
+              Entrar com outra conta
+            </Link>
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="mx-auto flex min-h-svh max-w-md flex-col items-center justify-center gap-3 p-6 text-center">
         <h1 className="text-lg font-semibold">Nenhuma organização</h1>

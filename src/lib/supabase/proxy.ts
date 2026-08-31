@@ -1,10 +1,12 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { getSupabaseEnv } from "@/lib/supabase/env";
+import { deriveRootDomain, resolveHostContext } from "@/lib/tenant/host";
 import type { Database } from "@/types/database";
 
 const LOGIN_PATH = "/login";
 const APP_PREFIX = "/app";
+const ADMIN_PREFIX = "/admin";
 
 /**
  * Runs on every request (see src/proxy.ts). It does two things:
@@ -20,6 +22,19 @@ const APP_PREFIX = "/app";
  * through RLS. The proxy is just a fast redirect.
  */
 export async function updateSession(request: NextRequest) {
+  const rootDomain = deriveRootDomain(process.env);
+  const host = resolveHostContext(request.headers.get("host"), rootDomain);
+
+  // The platform admin area only exists on the root domain. On a tenant
+  // subdomain, bounce /admin to https://<root>/admin.
+  if (
+    host.kind === "tenant" &&
+    request.nextUrl.pathname.startsWith(ADMIN_PREFIX)
+  ) {
+    const to = new URL(request.nextUrl.pathname + request.nextUrl.search, `https://${rootDomain}`);
+    return NextResponse.redirect(to);
+  }
+
   let response = NextResponse.next({ request });
 
   const { url, anonKey } = getSupabaseEnv();
