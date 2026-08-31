@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import {
   forgotPasswordSchema,
   passwordResetSchema,
@@ -14,6 +15,10 @@ import {
   RECOVERY_ERRORS,
   RECOVERY_ERROR_MESSAGES,
   recoveryErrorMessage,
+  PASSWORD_RESET_SUCCESS_PATH,
+  PASSWORD_RESET_SUCCESS_PARAM,
+  PASSWORD_RESET_SUCCESS_VALUE,
+  PASSWORD_RESET_SUCCESS_MESSAGE,
 } from "../src/features/auth/messages.ts";
 import { buildAuthCallbackUrl } from "../src/lib/app-url.ts";
 import {
@@ -21,6 +26,7 @@ import {
   safeNextPath,
   parseAuthCallback,
   classifyVerifyError,
+  mapUpdatePasswordError,
 } from "../src/features/auth/callback.ts";
 
 function withEnv(vars: Record<string, string | undefined>, fn: () => void) {
@@ -239,4 +245,54 @@ test("parseAuthCallback: extracts token_hash/type/code, sanitises next", () => {
     code: null,
     next: "/reset-password",
   });
+});
+
+// --- Success path (post-updateUser) ----------------------------------------
+
+test("success path: redirect target + discreet login message", () => {
+  assert.equal(PASSWORD_RESET_SUCCESS_PARAM, "password_reset");
+  assert.equal(PASSWORD_RESET_SUCCESS_VALUE, "success");
+  assert.equal(PASSWORD_RESET_SUCCESS_PATH, "/login?password_reset=success");
+  assert.match(PASSWORD_RESET_SUCCESS_MESSAGE, /senha alterada com sucesso/i);
+  assert.doesNotMatch(PASSWORD_RESET_SUCCESS_MESSAGE, /token|supabase|@|jwt/i);
+});
+
+test("mapUpdatePasswordError: friendly text, null on success, no raw message", () => {
+  assert.equal(mapUpdatePasswordError(null), null);
+  assert.match(
+    mapUpdatePasswordError({ message: "New password should be different from the old password." }) ?? "",
+    /diferente da anterior/i,
+  );
+  assert.match(
+    mapUpdatePasswordError({ message: "Password is too weak" }) ?? "",
+    /mais forte/i,
+  );
+  assert.match(
+    mapUpdatePasswordError({ message: "Database timeout xyz" }) ?? "",
+    /não foi possível alterar a senha/i,
+  );
+  for (const m of ["different from the old", "too weak", "boom"]) {
+    const out = mapUpdatePasswordError({ message: m }) ?? "";
+    assert.doesNotMatch(out, /supabase|Database|xyz|boom/i);
+  }
+});
+
+test("regression: updatePassword redirects and never wraps logic in try/catch", () => {
+  const src = readFileSync("src/features/auth/actions.ts", "utf8");
+  // isolate the function body
+  const start = src.indexOf("export async function updatePassword(");
+  assert.ok(start >= 0, "updatePassword not found");
+  // the closing brace of the function is the first "\n}\n" at column 0 after start
+  const rest = src.slice(start);
+  const end = rest.search(/\n}\n/);
+  assert.ok(end > 0);
+  const body = rest.slice(0, end);
+
+  // It must redirect on success...
+  assert.match(body, /redirect\(PASSWORD_RESET_SUCCESS_PATH\)/);
+  // ...and must NOT contain a try/catch — redirect() throws NEXT_REDIRECT and
+  // must reach Next, not be swallowed. If a future edit adds error handling,
+  // it has to inspect the returned `error` (as today), not try/catch.
+  assert.doesNotMatch(body, /\btry\s*\{/, "updatePassword must not use try/catch");
+  assert.doesNotMatch(body, /\bcatch\s*\(/, "updatePassword must not use try/catch");
 });

@@ -11,12 +11,14 @@ import {
   passwordResetSchema,
 } from "@/lib/validation/auth";
 import {
+  PASSWORD_RESET_SUCCESS_PATH,
   RECOVERY_ERRORS,
   RESET_PASSWORD_PATH,
 } from "@/features/auth/messages";
 import {
   classifyVerifyError,
   isAllowedOtpType,
+  mapUpdatePasswordError,
   safeNextPath,
 } from "@/features/auth/callback";
 
@@ -157,14 +159,17 @@ export async function requestPasswordReset(
 }
 
 export interface ResetPasswordState {
-  ok?: boolean;
   error?: string;
+  /** The recovery session was gone before the update — offer a fresh link. */
+  expired?: boolean;
 }
 
 /**
  * Sets the new password for the recovery session established by
- * `/auth/callback`. On success the recovery session is discarded so the user
- * signs in fresh with the new password. Never touches membership/org.
+ * `/recover/confirm`. On success it signs the recovery session out and
+ * `redirect()`s to `/login?password_reset=success` — so this route never
+ * re-renders in its signed-out ("invalid link") state after a successful
+ * change. Never touches membership/org. Never returns on success.
  */
 export async function updatePassword(
   _prev: ResetPasswordState,
@@ -182,30 +187,35 @@ export async function updatePassword(
   }
 
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) {
     return {
+      expired: true,
       error:
         "Sessão de recuperação ausente ou expirada. Solicite um novo e-mail.",
     };
   }
 
+  // No try/catch here: we inspect the returned `error`, and the success path
+  // ends in redirect() — which throws NEXT_REDIRECT and MUST NOT be caught,
+  // or /reset-password re-renders (now signed out) as an "invalid link".
   const { error } = await supabase.auth.updateUser({
     password: parsed.data.password,
   });
-  if (error) {
-    const msg = error.message.toLowerCase();
-    if (msg.includes("same") || msg.includes("different from the old")) {
-      return { error: "A nova senha deve ser diferente da anterior." };
-    }
-    if (msg.includes("weak") || msg.includes("password")) {
-      return { error: "Senha muito fraca. Escolha uma senha mais forte." };
-    }
-    console.error("[updatePassword] failed:", error.status);
-    return { error: "Não foi possível alterar a senha. Tente novamente." };
+  const mapped = mapUpdatePasswordError(error);
+  if (mapped) {
+    console.error("[updatePassword] failed", {
+      status: error?.status ?? null,
+      flow: "recovery",
+      at: new Date().toISOString(),
+    });
+    return { error: mapped };
   }
 
-  // Fresh login with the new password — clears the recovery session.
+  // Password changed. End the recovery session, then navigate away so this
+  // route never re-renders without a session.
   await supabase.auth.signOut();
-  return { ok: true };
+  redirect(PASSWORD_RESET_SUCCESS_PATH);
 }

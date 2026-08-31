@@ -69,3 +69,21 @@ export function classifyVerifyError(err: {
   }
   return RECOVERY_ERRORS.verifyFailed;
 }
+
+/**
+ * Friendly message for a Supabase `updateUser({ password })` failure. Never
+ * returns the raw message. `null` on the success path — the action redirects.
+ */
+export function mapUpdatePasswordError(
+  err: { message?: string } | null,
+): string | null {
+  if (!err) return null;
+  const m = (err.message ?? "").toLowerCase();
+  if (m.includes("same") || m.includes("different from the old")) {
+    return "A nova senha deve ser diferente da anterior.";
+  }
+  if (m.includes("weak") || m.includes("password")) {
+    return "Senha muito fraca. Escolha uma senha mais forte.";
+  }
+  return "Não foi possível alterar a senha. Tente novamente.";
+}

@@ -8,6 +8,13 @@ export const RESET_PASSWORD_PATH = "/reset-password";
 export const RECOVER_CONFIRM_PATH = "/recover/confirm";
 export const LOGIN_PATH = "/login";
 
+/** `/login?password_reset=success` — set after a successful password reset. */
+export const PASSWORD_RESET_SUCCESS_PARAM = "password_reset";
+export const PASSWORD_RESET_SUCCESS_VALUE = "success";
+export const PASSWORD_RESET_SUCCESS_PATH = `${LOGIN_PATH}?${PASSWORD_RESET_SUCCESS_PARAM}=${PASSWORD_RESET_SUCCESS_VALUE}`;
+export const PASSWORD_RESET_SUCCESS_MESSAGE =
+  "Senha alterada com sucesso. Entre com sua nova senha.";
+
 /**
  * Shown after a "recover password" submit, regardless of whether the e-mail
  * belongs to a real account. Never reveal account existence (enumeration).
