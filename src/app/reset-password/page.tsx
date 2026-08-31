@@ -13,7 +13,7 @@ import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { PRODUCT } from "@/config/product";
 import {
   FORGOT_PASSWORD_PATH,
-  RECOVERY_LINK_INVALID_MESSAGE,
+  recoveryErrorMessage,
 } from "@/features/auth/messages";
 import { ResetForm } from "@/app/reset-password/reset-form";
 
@@ -24,13 +24,19 @@ export const metadata: Metadata = {
 };
 export const dynamic = "force-dynamic";
 
-export default async function ResetPasswordPage() {
+export default async function ResetPasswordPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
   if (!isSupabaseConfigured()) {
     return <SetupNotice />;
   }
 
-  // The recovery session (if any) was set by /auth/callback exchanging the
-  // one-time code. No token is read from this page's URL.
+  const { error } = await searchParams;
+
+  // The recovery session (if any) was set by the /recover/confirm POST
+  // (verifyOtp). No token is read from this page's URL.
   const supabase = await createClient();
   const {
     data: { user },
@@ -49,7 +55,7 @@ export default async function ResetPasswordPage() {
           ) : (
             <div className="space-y-3 text-center">
               <p className="text-sm text-muted-foreground">
-                {RECOVERY_LINK_INVALID_MESSAGE}
+                {recoveryErrorMessage(error)}
               </p>
               <Link
                 href={FORGOT_PASSWORD_PATH}

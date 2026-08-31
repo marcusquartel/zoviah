@@ -39,7 +39,12 @@ const nextConfig: NextConfig = {
       // Password-recovery surfaces: /auth/callback carries a one-time code in
       // the URL; /reset-password holds the recovery session; keep all three
       // uncached, unindexed and referrer-free.
-      ...["/auth/callback", "/reset-password", "/forgot-password"].map(
+      ...[
+        "/auth/callback",
+        "/recover/confirm",
+        "/reset-password",
+        "/forgot-password",
+      ].map(
         (source) => ({
           source,
           headers: [

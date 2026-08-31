@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import type { EmailOtpType } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { buildAuthCallbackUrl } from "@/lib/app-url";
@@ -9,7 +10,15 @@ import {
   loginSchema,
   passwordResetSchema,
 } from "@/lib/validation/auth";
-import { RESET_PASSWORD_PATH } from "@/features/auth/messages";
+import {
+  RECOVERY_ERRORS,
+  RESET_PASSWORD_PATH,
+} from "@/features/auth/messages";
+import {
+  classifyVerifyError,
+  isAllowedOtpType,
+  safeNextPath,
+} from "@/features/auth/callback";
 
 export interface LoginState {
   error?: string;
@@ -50,6 +59,61 @@ export async function logout(): Promise<void> {
   const supabase = await createClient();
   await supabase.auth.signOut();
   redirect("/login");
+}
+
+/**
+ * Consumes the recovery OTP — POST only, triggered by an explicit button on
+ * /recover/confirm. Never called on a GET, so an e-mail scanner that pre-opens
+ * the link cannot burn the single-use token.
+ *
+ * `verifyOtp` runs server-to-server; the @supabase/ssr server client writes
+ * the session cookie (this is a Server Action, cookie writes commit). We then
+ * re-check `getUser()` to be sure the cookie actually stuck before sending the
+ * user to the reset form. The token_hash is never logged.
+ */
+export async function confirmRecovery(formData: FormData): Promise<void> {
+  if (!isSupabaseConfigured()) {
+    redirect(`${RESET_PASSWORD_PATH}?error=${RECOVERY_ERRORS.verifyFailed}`);
+  }
+
+  const tokenHash = String(formData.get("token_hash") ?? "");
+  const type = String(formData.get("type") ?? "");
+  const next = safeNextPath(String(formData.get("next") ?? RESET_PASSWORD_PATH));
+
+  const fail = (code: string): never => {
+    console.error("[recovery] verify failed", {
+      code,
+      flow: "recovery",
+      at: new Date().toISOString(),
+    });
+    redirect(`${RESET_PASSWORD_PATH}?error=${code}`);
+  };
+
+  if (!tokenHash) fail(RECOVERY_ERRORS.missingToken);
+  if (!isAllowedOtpType(type)) fail(RECOVERY_ERRORS.invalidType);
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.verifyOtp({
+    type: type as EmailOtpType,
+    token_hash: tokenHash,
+  });
+  if (error) {
+    console.error("[recovery] verifyOtp error", {
+      status: error.status ?? null,
+      code: error.code ?? null,
+      flow: "recovery",
+      at: new Date().toISOString(),
+    });
+    fail(classifyVerifyError(error));
+  }
+
+  // Confirm the session cookie actually persisted.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) fail(RECOVERY_ERRORS.cookieFailed);
+
+  redirect(next);
 }
 
 // ---------------------------------------------------------------------------

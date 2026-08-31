@@ -7,15 +7,20 @@ import {
 import {
   FORGOT_PASSWORD_PATH,
   RESET_PASSWORD_PATH,
+  RECOVER_CONFIRM_PATH,
   LOGIN_PATH,
   NEUTRAL_RESET_MESSAGE,
   RECOVERY_LINK_INVALID_MESSAGE,
+  RECOVERY_ERRORS,
+  RECOVERY_ERROR_MESSAGES,
+  recoveryErrorMessage,
 } from "../src/features/auth/messages.ts";
 import { buildAuthCallbackUrl } from "../src/lib/app-url.ts";
 import {
   isAllowedOtpType,
   safeNextPath,
   parseAuthCallback,
+  classifyVerifyError,
 } from "../src/features/auth/callback.ts";
 
 function withEnv(vars: Record<string, string | undefined>, fn: () => void) {
@@ -38,6 +43,7 @@ function withEnv(vars: Record<string, string | undefined>, fn: () => void) {
 test("paths: stable and as the login link expects", () => {
   assert.equal(FORGOT_PASSWORD_PATH, "/forgot-password");
   assert.equal(RESET_PASSWORD_PATH, "/reset-password");
+  assert.equal(RECOVER_CONFIRM_PATH, "/recover/confirm");
   assert.equal(LOGIN_PATH, "/login");
 });
 
@@ -156,6 +162,55 @@ test("safeNextPath: same-origin relative only; everything else -> /reset-passwor
     "\\\\evil",
   ]) {
     assert.equal(safeNextPath(evil), "/reset-password", String(evil));
+  }
+});
+
+test("classifyVerifyError: expired / used / not-found -> otp_expired bucket", () => {
+  for (const m of [
+    "Token has expired or is invalid",
+    "otp_expired",
+    "Email link is invalid or has expired",
+    "Token has expired",
+    "OTP has already been used",
+    "user not found",
+  ]) {
+    assert.equal(
+      classifyVerifyError({ message: m }),
+      RECOVERY_ERRORS.otpExpired,
+      m,
+    );
+  }
+  assert.equal(
+    classifyVerifyError({ code: "otp_expired", status: 403 }),
+    RECOVERY_ERRORS.otpExpired,
+  );
+});
+
+test("classifyVerifyError: anything else / null -> verify_failed (never raw text)", () => {
+  assert.equal(
+    classifyVerifyError({ message: "Database connection lost" }),
+    RECOVERY_ERRORS.verifyFailed,
+  );
+  assert.equal(classifyVerifyError(null), RECOVERY_ERRORS.verifyFailed);
+  // the returned value is always one of the safe codes
+  for (const v of Object.values(RECOVERY_ERRORS)) assert.equal(typeof v, "string");
+});
+
+test("recoveryErrorMessage: safe generic copy per code, no Supabase text", () => {
+  assert.match(
+    recoveryErrorMessage(RECOVERY_ERRORS.otpExpired),
+    /expirou ou já foi usado/i,
+  );
+  assert.match(
+    recoveryErrorMessage(RECOVERY_ERRORS.cookieFailed),
+    /iniciar a sessão de recuperação/i,
+  );
+  // unknown / missing -> the plain invalid message
+  assert.equal(recoveryErrorMessage("bogus_code"), RECOVERY_LINK_INVALID_MESSAGE);
+  assert.equal(recoveryErrorMessage(null), RECOVERY_LINK_INVALID_MESSAGE);
+  // no message leaks a token / e-mail / "supabase"
+  for (const msg of Object.values(RECOVERY_ERROR_MESSAGES)) {
+    assert.doesNotMatch(msg, /token_hash|supabase|jwt|@|\berror\b/i);
   }
 });
 

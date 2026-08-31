@@ -1,66 +1,56 @@
 import { NextResponse } from "next/server";
-import type { EmailOtpType } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
-import {
-  isAllowedOtpType,
-  parseAuthCallback,
-} from "@/features/auth/callback";
+import { parseAuthCallback } from "@/features/auth/callback";
+import { RECOVERY_ERRORS, RECOVER_CONFIRM_PATH } from "@/features/auth/messages";
 
 /**
- * Supabase Auth e-mail links land here. A Route Handler is used deliberately —
- * it can write the auth cookies, a Server Component cannot.
+ * Supabase Auth e-mail links land here.
  *
- * Two shapes are supported:
+ *  1. `?token_hash=...&type=...` (SSR e-mail OTP, incl. recovery):
+ *     we DO NOT verify on this GET — an e-mail scanner that pre-opens the link
+ *     would burn the single-use OTP and the human's click would then fail with
+ *     `otp_expired`. Instead we forward to /recover/confirm, where an explicit
+ *     button POSTs and consumes the token.
  *
- *  1. SSR e-mail OTP (the recovery flow): `?token_hash=...&type=recovery`
- *     -> `verifyOtp({ type, token_hash })`. Server-to-server, no URL fragment,
- *     no PKCE `code_verifier` needed — works even across devices.
+ *  2. `?code=...` (PKCE / OAuth): exchanged here. No current flow relies on it;
+ *     kept for forward-compatibility.
  *
- *  2. PKCE / OAuth: `?code=...` -> `exchangeCodeForSession(code)`. Kept for
- *     forward-compatibility; no current flow relies on it.
- *
- * On a valid session we redirect to `next` (a same-origin relative path;
- * open-redirect targets are refused). On any failure we redirect to
- * `${next}?error=link` and let the target page show a generic message.
- *
- * `token_hash`, `code` and the full request URL are never logged.
+ * `next` is constrained to a same-origin relative path; token_hash / code /
+ * full URL are never logged.
  */
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const { tokenHash, type, code, next } = parseAuthCallback(url.searchParams);
-  const fail = () =>
-    NextResponse.redirect(new URL(`${next}?error=link`, url.origin));
 
-  try {
-    const supabase = await createClient();
-
-    if (tokenHash && isAllowedOtpType(type)) {
-      const { error } = await supabase.auth.verifyOtp({
-        type: type as EmailOtpType,
-        token_hash: tokenHash,
-      });
-      if (error) {
-        console.error("[auth/callback] verifyOtp rejected:", error.status ?? "");
-        return fail();
-      }
-      return NextResponse.redirect(new URL(next, url.origin));
-    }
-
-    if (code) {
-      const { error } = await supabase.auth.exchangeCodeForSession(code);
-      if (error) {
-        console.error("[auth/callback] code exchange rejected");
-        return fail();
-      }
-      return NextResponse.redirect(new URL(next, url.origin));
-    }
-  } catch {
-    console.error("[auth/callback] verification threw");
-    return fail();
+  // Prefetch-safe: hand the OTP to the confirmation page, don't consume it.
+  if (tokenHash) {
+    const to = new URL(RECOVER_CONFIRM_PATH, url.origin);
+    to.searchParams.set("token_hash", tokenHash);
+    if (type) to.searchParams.set("type", type);
+    to.searchParams.set("next", next);
+    return NextResponse.redirect(to);
   }
 
-  // Neither shape present.
-  return fail();
+  if (code) {
+    try {
+      const supabase = await createClient();
+      const { error } = await supabase.auth.exchangeCodeForSession(code);
+      if (!error) return NextResponse.redirect(new URL(next, url.origin));
+      console.error("[auth/callback] code exchange rejected", {
+        flow: "oauth",
+        at: new Date().toISOString(),
+      });
+    } catch {
+      console.error("[auth/callback] code exchange threw");
+    }
+    return NextResponse.redirect(
+      new URL(`${next}?error=${RECOVERY_ERRORS.verifyFailed}`, url.origin),
+    );
+  }
+
+  return NextResponse.redirect(
+    new URL(`${next}?error=${RECOVERY_ERRORS.missingToken}`, url.origin),
+  );
 }
