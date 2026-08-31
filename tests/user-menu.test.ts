@@ -51,6 +51,30 @@ test("regression: UserMenu never wraps a menu item in a form element", () => {
   assert.equal(openTriggers.length, 0, "no logout on menu-open handlers");
 });
 
+test("regression: DropdownMenuLabel is inside a DropdownMenuGroup", () => {
+  // Base UI's Menu.GroupLabel (= DropdownMenuLabel) calls
+  // useMenuGroupRootContext(), which throws
+  //   "Base UI: MenuGroupContext is missing"
+  // when there is no <Menu.Group> ancestor. That threw on menu OPEN and, with
+  // no error.tsx in src/app, surfaced as Next's "This page couldn't load".
+  const src = readFileSync("src/components/app-shell/user-menu.tsx", "utf8");
+  const labelOpen = src.indexOf("<DropdownMenuLabel");
+  assert.ok(labelOpen > 0, "DropdownMenuLabel is used");
+
+  const groupOpen = src.lastIndexOf("<DropdownMenuGroup", labelOpen);
+  const groupClose = src.indexOf("</DropdownMenuGroup>", labelOpen);
+  const labelClose = src.indexOf("</DropdownMenuLabel>", labelOpen);
+  assert.ok(
+    groupOpen > 0 && groupOpen < labelOpen,
+    "DropdownMenuLabel must open inside a DropdownMenuGroup",
+  );
+  assert.ok(
+    groupClose > labelClose,
+    "the DropdownMenuGroup must still be open when DropdownMenuLabel closes",
+  );
+  assert.ok(src.includes("DropdownMenuGroup,"), "DropdownMenuGroup is imported");
+});
+
 test("regression: logout server action does signOut then redirect('/login')", () => {
   const src = readFileSync("src/features/auth/actions.ts", "utf8");
   const start = src.indexOf("export async function logout(");

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -38,9 +39,7 @@ export function UserMenu({
 
   // `logout` is a Server Action (signOut + redirect("/login")). Invoked
   // imperatively via startTransition — the same pattern the CRM status menus
-  // use — so the item stays a plain DropdownMenuItem. Wrapping a menu item in
-  // a form element breaks the Base UI Menu popup's item traversal on open,
-  // which is what threw the "This page couldn't load" screen.
+  // use — so the item stays a plain DropdownMenuItem.
   function handleLogout() {
     startTransition(async () => {
       await logout();
@@ -63,15 +62,19 @@ export function UserMenu({
         <ChevronsUpDown className="size-3.5 text-muted-foreground" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuLabel>
-          <span className="block truncate font-medium text-foreground">
-            {email}
-          </span>
-          <span className="text-xs text-muted-foreground">
-            {orgName ? `${orgName} · ` : ""}
-            <span className="capitalize">{role}</span>
-          </span>
-        </DropdownMenuLabel>
+        {/* Base UI's Menu.GroupLabel (= DropdownMenuLabel) throws
+            "MenuGroupContext is missing" unless it is inside a Menu.Group. */}
+        <DropdownMenuGroup>
+          <DropdownMenuLabel>
+            <span className="block truncate font-medium text-foreground">
+              {email}
+            </span>
+            <span className="text-xs text-muted-foreground">
+              {orgName ? `${orgName} · ` : ""}
+              <span className="capitalize">{role}</span>
+            </span>
+          </DropdownMenuLabel>
+        </DropdownMenuGroup>
         <DropdownMenuSeparator />
 
         {items.map((item) =>
