@@ -86,19 +86,39 @@ export async function askAssistant(
     if (!conversationId) return { ok: false, error: "Falha ao abrir conversa." };
   }
 
-  // Retrieve knowledge.
-  const { data: hits } = await supabase.rpc("search_help_articles", {
+  // Retrieve knowledge. Fall back to the most significant word(s) of the
+  // question when the phrase itself matches nothing — a synonym gap ("alterar"
+  // vs "editar") shouldn't drop the assistant straight to "não encontrei".
+  const toArticles = (rows: unknown): RetrievedArticle[] =>
+    Array.isArray(rows)
+      ? (rows as { id: string; title: string; category: string; content: string }[]).map(
+          (a) => ({ id: a.id, title: a.title, category: a.category, content: a.content }),
+        )
+      : [];
+
+  const primary = await supabase.rpc("search_help_articles", {
     p_query: parsed.data.question,
     p_limit: 8,
   });
-  const articles: RetrievedArticle[] = Array.isArray(hits)
-    ? (hits as unknown as RetrievedArticle[]).map((a) => ({
-        id: a.id,
-        title: a.title,
-        category: a.category,
-        content: a.content,
-      }))
-    : [];
+  let articles = toArticles(primary.data);
+
+  if (articles.length === 0) {
+    const words = parsed.data.question
+      .toLowerCase()
+      .replace(/[^\p{L}\p{N}\s]/gu, " ")
+      .split(/\s+/)
+      .filter((w) => w.length >= 4)
+      .sort((a, b) => b.length - a.length)
+      .slice(0, 3);
+    for (const w of words) {
+      const alt = await supabase.rpc("search_help_articles", {
+        p_query: w,
+        p_limit: 8,
+      });
+      articles = toArticles(alt.data);
+      if (articles.length > 0) break;
+    }
+  }
 
   // If the AI is not configured at all, degrade gracefully to human support.
   if (!isSupportAiConfigured() && !messageFn) {

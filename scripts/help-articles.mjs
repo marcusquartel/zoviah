@@ -149,7 +149,10 @@ export const HELP_ARTICLES = [
     category: "Creators",
     title: "Como mudar o status de uma inscrição",
     summary: "Usar Mudar status na ficha da creator.",
-    keywords: ["mudar status", "mover", "kanban"],
+    keywords: [
+      "mudar status", "alterar status", "trocar status", "mover", "kanban",
+      "aprovar", "reprovar", "avançar", "etapa",
+    ],
     content:
       "Na ficha da creator, use Mudar status e escolha o novo status. Só aparecem as transições permitidas a partir do status atual.\n\n" +
       "Aprovar leva direto para Aprovada. As transições ligadas ao endereço acontecem sozinhas no fluxo seguro de endereço.",
@@ -1369,5 +1372,102 @@ export const HELP_ARTICLES = [
     keywords: ["cpf", "quem vê", "privacidade", "acesso", "restrito"],
     content:
       "O CPF aparece só para membros da organização, na aba Endereço da creator e no bloco de endereço do envio. Ele não entra em relatórios, na Timeline pública, na lista de creators nem em qualquer conteúdo enviado para a IA.",
+  },
+
+  // ---- Creators: editar, corrigir, arquivar, excluir ----------
+  {
+    slug: "editar-dados-da-creator",
+    category: "Creators",
+    title: "Como alterar ou editar os dados de uma creator",
+    summary: "Os dados vêm do formulário; o que você muda é status, notas e endereço.",
+    keywords: [
+      "editar", "alterar", "mudar", "atualizar", "corrigir", "modificar",
+      "trocar", "dados da creator", "informações", "cadastro",
+    ],
+    content:
+      "Você não edita diretamente os campos que a creator preencheu no formulário (nome, cidade, redes). O que você faz na tela da creator:\n" +
+      "- Mudar o status (nova, em avaliação, informações solicitadas, aprovada, arquivada).\n" +
+      "- Adicionar notas internas.\n" +
+      "- Solicitar informações — coloca a inscrição nesse status para você cobrar a correção pelo seu canal (WhatsApp, e-mail).\n" +
+      "- Quando aprovada, solicitar o endereço.\n\n" +
+      "Para corrigir um dado errado do formulário, use Solicitar informações e peça para a creator reenviar, ou registre a informação certa numa nota.",
+  },
+  {
+    slug: "corrigir-informacao-errada-da-creator",
+    category: "Creators",
+    title: "A creator preencheu um dado errado",
+    summary: "Solicitar informações ou registrar em nota.",
+    keywords: [
+      "erro", "errado", "dado errado", "corrigir", "informação incorreta",
+      "consertar", "ajustar", "e-mail errado", "telefone errado",
+    ],
+    content:
+      "Abra a creator e clique em Solicitar informações: o status vira 'informações solicitadas' e você combina a correção com a pessoa pelo canal que usa. Quando ela reenviar, volte o status para em avaliação ou aprove.\n\n" +
+      "Se for algo pequeno e você já tem o dado certo, registre numa nota interna para o time não se perder.",
+  },
+  {
+    slug: "arquivar-uma-creator",
+    category: "Creators",
+    title: "Arquivar uma creator",
+    summary: "Tira da operação sem apagar nada.",
+    keywords: [
+      "arquivar", "arquivada", "tirar da lista", "esconder", "inativar",
+      "descartar", "recusar", "reprovar",
+    ],
+    content:
+      "Na tela da creator, mude o status para arquivada. Ela sai do fluxo do dia a dia, mas a inscrição, as respostas e o histórico continuam salvos.\n\n" +
+      "Para trazer de volta, mude o status de arquivada para em avaliação (ou nova).",
+  },
+  {
+    slug: "excluir-ou-remover-uma-creator",
+    category: "Creators",
+    title: "Como excluir ou deletar uma creator",
+    summary: "Não há exclusão pelo painel — o caminho é Arquivar.",
+    keywords: [
+      "excluir", "deletar", "apagar", "remover", "eliminar", "delete",
+      "tirar", "sumir", "excluir creator", "deletar inscrição",
+    ],
+    content:
+      "O painel não tem 'excluir creator' — isso evita apagar dados por engano e perder o histórico. Use Arquivar: muda o status para arquivada e a creator sai da operação, com tudo preservado.\n\n" +
+      "Se você precisa remover os dados de vez (ex.: pedido de exclusão por LGPD), abra uma solicitação em Ajuda → Falar com suporte informando a creator e o motivo.",
+  },
+  {
+    slug: "adicionar-nota-interna-na-creator",
+    category: "Creators",
+    title: "Adicionar uma nota interna",
+    summary: "Anotações do time na tela da creator.",
+    keywords: [
+      "nota", "notas", "comentário", "observação", "anotação", "registro",
+      "interno", "histórico",
+    ],
+    content:
+      "Na tela da creator há um campo de nota. O que você escrever fica visível para o time na Timeline e não é mostrado para a creator.\n\n" +
+      "Use para registrar combinados, contexto de avaliação ou correções informadas por fora.",
+  },
+  {
+    slug: "remover-dados-por-lgpd",
+    category: "Configurações",
+    title: "Pedido de exclusão de dados (LGPD)",
+    summary: "Como tratar um pedido para apagar dados pessoais.",
+    keywords: [
+      "lgpd", "exclusão", "apagar dados", "direito ao esquecimento",
+      "remover dados pessoais", "privacidade", "deletar dados",
+    ],
+    content:
+      "O painel não apaga creators nem dados de endereço por conta própria. Para atender um pedido de exclusão, abra uma solicitação em Ajuda → Falar com suporte com a identificação da pessoa e o pedido.\n\n" +
+      "Enquanto isso, você pode Arquivar a creator para tirá-la da operação.",
+  },
+  {
+    slug: "o-assistente-nao-encontrou",
+    category: "Suporte",
+    title: "O assistente respondeu que 'não encontrou'",
+    summary: "Reformule a pergunta ou fale com o suporte humano.",
+    keywords: [
+      "não encontrei", "não sei", "assistente não respondeu", "sem resposta",
+      "reformular", "não achou",
+    ],
+    content:
+      "O assistente responde só pela documentação. Se ele não achou, tente reformular com outras palavras (ex.: 'editar' em vez de 'alterar') ou seja mais específico sobre a tela.\n\n" +
+      "Se ainda assim não resolver, use 'Falar com suporte' para abrir uma solicitação — o histórico da conversa vai junto.",
   },
 ];
