@@ -1,4 +1,5 @@
 import { Building2 } from "lucide-react";
+import { BrandLogo } from "@/components/brand-logo";
 import { PRODUCT } from "@/config/product";
 
 interface OrgBadgeProps {
@@ -13,12 +14,7 @@ export function OrgBadge({ name, logoUrl }: OrgBadgeProps) {
         // The client's logo already carries the brand name — don't repeat it
         // as text next to it. Just the mark + a small "by Zoviah".
         <div className="min-w-0 text-left">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={logoUrl}
-            alt={name}
-            className="h-8 w-auto max-w-[160px] object-contain"
-          />
+          <BrandLogo src={logoUrl} alt={name} size="sm" />
           <p className="mt-1 text-[0.6875rem] text-muted-foreground">
             by {PRODUCT.name}
           </p>

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ThemeStyle } from "@/components/theme-style";
 import { LegalFooter } from "@/components/legal-footer";
+import { BrandLogo } from "@/components/brand-logo";
 import { getPublicProgram } from "@/features/public/queries";
 import { PublicForm } from "./public-form";
 
@@ -45,11 +46,10 @@ export default async function PublicProgramPage({
       <main className="mx-auto flex min-h-svh w-full max-w-xl flex-col bg-surface px-4 py-10 sm:py-16">
         <header className="mb-8 space-y-3">
           {organization.logo_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <BrandLogo
               src={organization.logo_url}
               alt={organization.name}
-              className="h-12 w-auto max-w-[220px] object-contain"
+              size="lg"
             />
           ) : (
             <p className="text-[0.6875rem] font-medium uppercase tracking-[0.08em] text-muted-foreground">

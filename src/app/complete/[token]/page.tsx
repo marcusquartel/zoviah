@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { ThemeStyle } from "@/components/theme-style";
 import { LegalFooter } from "@/components/legal-footer";
+import { BrandLogo } from "@/components/brand-logo";
 import { hashToken } from "@/lib/secure-token";
 import { getPublicAddressRequest } from "@/features/requests/queries";
 import { AddressForm } from "./address-form";
@@ -52,11 +53,10 @@ export default async function CompleteAddressPage({
       <main className="mx-auto w-full max-w-md px-4 py-8 sm:py-14">
         <header className="mb-6 space-y-2">
           {request.organization.logo_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <BrandLogo
               src={request.organization.logo_url}
               alt={request.organization.name}
-              className="h-9 w-auto"
+              size="md"
             />
           ) : (
             <p className="text-sm font-medium text-muted-foreground">
@@ -109,8 +109,12 @@ function Outcome({
   return (
     <main className="mx-auto flex min-h-[60vh] w-full max-w-md flex-col items-center justify-center px-4 py-10 text-center">
       {org?.logo_url ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={org.logo_url} alt={org.name} className="mb-6 h-9 w-auto" />
+        <BrandLogo
+          src={org.logo_url}
+          alt={org.name}
+          size="md"
+          className="mb-6"
+        />
       ) : null}
       <h1 className="text-lg font-semibold">{title}</h1>
       <p className="mt-2 text-sm text-muted-foreground">{body}</p>

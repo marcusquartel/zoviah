@@ -11,6 +11,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { NavList } from "@/components/app-shell/nav-list";
+import { BrandLogo } from "@/components/brand-logo";
 
 interface MobileNavProps {
   orgName: string;
@@ -37,14 +38,7 @@ export function MobileNav({ orgName, logoUrl }: MobileNavProps) {
       <SheetContent side="left" className="w-72 p-0">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
-            {logoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={logoUrl}
-                alt={orgName}
-                className="h-6 w-auto max-w-[130px] object-contain"
-              />
-            ) : null}
+            {logoUrl ? <BrandLogo src={logoUrl} alt={orgName} size="xs" /> : null}
             <span className={logoUrl ? "sr-only" : undefined}>{orgName}</span>
           </SheetTitle>
         </SheetHeader>

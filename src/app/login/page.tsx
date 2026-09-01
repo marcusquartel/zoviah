@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/card";
 import { SetupNotice } from "@/components/setup-notice";
 import { ThemeStyle } from "@/components/theme-style";
+import { BrandLogo } from "@/components/brand-logo";
 import { LoginForm } from "@/app/login/login-form";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { getCurrentUser } from "@/features/organizations/queries";
@@ -62,11 +63,11 @@ export default async function LoginPage({
         <CardHeader>
           {branding?.logoUrl ? (
             <>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <BrandLogo
                 src={branding.logoUrl}
                 alt={branding.name}
-                className="mb-1 h-9 w-auto max-w-[180px] object-contain"
+                size="md"
+                className="mb-1"
               />
               <CardDescription>
                 Acesse o painel de {branding.name}.

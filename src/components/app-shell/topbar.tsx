@@ -1,5 +1,6 @@
 import { MobileNav } from "@/components/app-shell/mobile-nav";
 import { UserMenu } from "@/components/app-shell/user-menu";
+import { BrandLogo } from "@/components/brand-logo";
 import { HelpCenter } from "@/features/support/components/help-center";
 
 interface TopbarProps {
@@ -22,12 +23,7 @@ export function Topbar({
       <div className="flex items-center gap-2 md:hidden">
         <MobileNav orgName={orgName} logoUrl={logoUrl} />
         {logoUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={logoUrl}
-            alt={orgName}
-            className="h-6 w-auto max-w-[110px] object-contain"
-          />
+          <BrandLogo src={logoUrl} alt={orgName} size="xs" />
         ) : (
           <span className="text-sm font-semibold tracking-tight">{orgName}</span>
         )}

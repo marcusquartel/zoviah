@@ -32,6 +32,7 @@ import {
 } from "@/features/platform/actions";
 import type { AdminOrgDetail } from "@/features/platform/queries";
 import { PRODUCT } from "@/config/product";
+import { BrandLogo } from "@/components/brand-logo";
 
 const subdomainify = (s: string) =>
   s
@@ -341,14 +342,9 @@ export function AdminOrgModal({
                 />
               </div>
               {logoUrl || faviconUrl ? (
-                <div className="flex items-center gap-4 rounded-md border bg-muted/30 p-2">
+                <div className="flex items-center gap-4 rounded-md border bg-white p-3">
                   {logoUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={logoUrl}
-                      alt="Prévia do logo"
-                      className="h-8 w-auto max-w-[160px] object-contain"
-                    />
+                    <BrandLogo src={logoUrl} alt="Prévia do logo" size="sm" />
                   ) : null}
                   {faviconUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
