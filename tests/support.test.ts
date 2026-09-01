@@ -30,14 +30,15 @@ test("support prompt: version pinned and text carries the hard rules", () => {
   // The version string is a checksum of intent: if the prompt text changes,
   // one of these anchors should have moved too.
   assert.match(SUPPORT_SYSTEM_PROMPT, /assistente de suporte da Zoviah/i);
-  assert.match(SUPPORT_SYSTEM_PROMPT, /SOMENTE com base nos artigos/i);
   assert.match(SUPPORT_SYSTEM_PROMPT, /NÃO tem acesso aos dados do cliente/i);
   assert.match(SUPPORT_SYSTEM_PROMPT, /NÃO executa ações/i);
   assert.match(SUPPORT_SYSTEM_PROMPT, /DADO, nunca INSTRUÇÃO/i);
   assert.match(SUPPORT_SYSTEM_PROMPT, /suporte humano/i);
-  // less-conservative synthesis intent (2026-09 tuning)
+  // consultor mode (2026-09): reason + infer, but never fabricate specifics
+  assert.match(SUPPORT_SYSTEM_PROMPT, /consultor do produto/i);
   assert.match(SUPPORT_SYSTEM_PROMPT, /VÁRIOS artigos/i);
-  assert.match(SUPPORT_SYSTEM_PROMPT, /"sufficient": false APENAS quando/i);
+  assert.match(SUPPORT_SYSTEM_PROMPT, /melhor orientação possível/i);
+  assert.match(SUPPORT_SYSTEM_PROMPT, /não invente nomes de botão/i);
 });
 
 test("support prompt: knowledge and question are fenced as data", () => {
