@@ -64,6 +64,7 @@ const ITEMS = [
 function addrFields(recipient: string) {
   return {
     recipient_name: recipient,
+    cpf: "11144477735",
     postal_code: "30140110",
     street: "Rua dos Aimorés",
     number: "1200",
@@ -225,7 +226,8 @@ describe("Phase 5 — shipments", { skip }, () => {
     assert.equal(ship.data!.created_by, users.ownerA.id);
     assert.equal(ship.data!.address_snapshot.recipient_name, "Snapshot Test");
     assert.equal(ship.data!.address_snapshot.postal_code, "30140110");
-    assert.ok(!("cpf" in ship.data!.address_snapshot), "snapshot has no cpf key");
+    // The Correios label needs the recipient CPF — it rides in the snapshot.
+    assert.equal(ship.data!.address_snapshot.cpf, "11144477735");
     assert.equal(ship.data!.internal_notes, "kit especial");
 
     const items = await admin
