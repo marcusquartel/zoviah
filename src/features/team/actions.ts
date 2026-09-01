@@ -74,7 +74,7 @@ export async function inviteMember(input: {
     console.error("[create_org_invite]", error.code, error.message);
     return { ok: false, error: mapError(error.message) };
   }
-  revalidatePath("/app/settings/team");
+  revalidatePath("/app/team");
   return { ok: true, url: buildInviteUrl(rawToken) };
 }
 
@@ -91,7 +91,7 @@ export async function revokeInvite(
     console.error("[revoke_org_invite]", error.code, error.message);
     return { ok: false, error: mapError(error.message) };
   }
-  revalidatePath("/app/settings/team");
+  revalidatePath("/app/team");
   return { ok: true };
 }
 
@@ -110,7 +110,7 @@ export async function removeMember(userId: string): Promise<TeamActionResult> {
     console.error("[remove_org_member]", error.code, error.message);
     return { ok: false, error: mapError(error.message) };
   }
-  revalidatePath("/app/settings/team");
+  revalidatePath("/app/team");
   return { ok: true };
 }
 
@@ -134,7 +134,7 @@ export async function changeMemberRole(input: {
     console.error("[set_org_member_role]", error.code, error.message);
     return { ok: false, error: mapError(error.message) };
   }
-  revalidatePath("/app/settings/team");
+  revalidatePath("/app/team");
   return { ok: true };
 }
 

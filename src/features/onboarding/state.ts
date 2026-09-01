@@ -28,7 +28,7 @@ const STEPS: { key: keyof OnboardingFacts; label: string; href: string }[] = [
   { key: "hasBrand", label: "Configure sua marca", href: "/app/settings/appearance" },
   { key: "hasProgram", label: "Crie seu primeiro programa", href: "/app/programs" },
   { key: "hasPublishedProgram", label: "Publique seu formulário", href: "/app/programs" },
-  { key: "teamInvited", label: "Convide sua equipe", href: "/app/settings/team" },
+  { key: "teamInvited", label: "Convide sua equipe", href: "/app/team" },
   { key: "hasApplication", label: "Receba sua primeira creator", href: "/app/creators" },
 ];
 

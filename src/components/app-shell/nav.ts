@@ -12,6 +12,7 @@ import {
   Sparkle,
   UserRound,
   Users,
+  UsersRound,
   type LucideIcon,
 } from "lucide-react";
 
@@ -28,6 +29,7 @@ export const primaryNav: NavItem[] = [
   { title: "Programas", href: "/app/programs", icon: FolderKanban },
   { title: "Envios", href: "/app/shipments", icon: Send },
   { title: "IA", href: "/app/ai", icon: Sparkles },
+  { title: "Equipe", href: "/app/team", icon: UsersRound },
   { title: "Novidades", href: "/app/changelog", icon: Sparkle },
   { title: "Configurações", href: "/app/settings/appearance", icon: Settings },
 ];
