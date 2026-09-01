@@ -99,6 +99,7 @@ export default async function AppLayout({
         <div className="flex min-w-0 flex-1 flex-col">
           <Topbar
             orgName={organization.name}
+            logoUrl={settings?.logo_url}
             userEmail={user.email ?? ""}
             role={role}
             isPlatformAdmin={isPlatformAdmin}

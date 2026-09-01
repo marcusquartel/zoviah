@@ -49,7 +49,7 @@ export default async function PublicProgramPage({
             <img
               src={organization.logo_url}
               alt={organization.name}
-              className="h-10 w-auto"
+              className="h-12 w-auto max-w-[220px] object-contain"
             />
           ) : (
             <p className="text-[0.6875rem] font-medium uppercase tracking-[0.08em] text-muted-foreground">

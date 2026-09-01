@@ -8,9 +8,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { SetupNotice } from "@/components/setup-notice";
+import { ThemeStyle } from "@/components/theme-style";
 import { LoginForm } from "@/app/login/login-form";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { getCurrentUser } from "@/features/organizations/queries";
+import { getTenantBrandingFromHost } from "@/features/tenant/branding";
 import { PRODUCT } from "@/config/product";
 import {
   PASSWORD_RESET_SUCCESS_PARAM,
@@ -40,17 +42,42 @@ export default async function LoginPage({
   const passwordResetOk =
     sp[PASSWORD_RESET_SUCCESS_PARAM] === PASSWORD_RESET_SUCCESS_VALUE;
 
-  const user = await getCurrentUser();
+  const [user, branding] = await Promise.all([
+    getCurrentUser(),
+    getTenantBrandingFromHost(),
+  ]);
   if (user) {
     redirect(next ?? "/app");
   }
 
   return (
     <div className="flex min-h-svh items-center justify-center bg-surface p-6">
+      {branding ? (
+        <ThemeStyle
+          primaryColor={branding.primaryColor}
+          secondaryColor={branding.secondaryColor}
+        />
+      ) : null}
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle>{PRODUCT.name}</CardTitle>
-          <CardDescription>Acesse o painel administrativo.</CardDescription>
+          {branding?.logoUrl ? (
+            <>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={branding.logoUrl}
+                alt={branding.name}
+                className="mb-1 h-9 w-auto max-w-[180px] object-contain"
+              />
+              <CardDescription>
+                Acesse o painel de {branding.name}.
+              </CardDescription>
+            </>
+          ) : (
+            <>
+              <CardTitle>{branding?.name ?? PRODUCT.name}</CardTitle>
+              <CardDescription>Acesse o painel administrativo.</CardDescription>
+            </>
+          )}
         </CardHeader>
         <CardContent className="space-y-3">
           {passwordResetOk ? (

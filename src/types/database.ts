@@ -1346,6 +1346,10 @@ export interface Database {
         Args: { p_org_slug: string; p_program_slug: string };
         Returns: Json;
       };
+      get_public_org_branding: {
+        Args: { p_subdomain: string };
+        Returns: Json;
+      };
       submit_application: {
         Args: {
           p_org_slug: string;
