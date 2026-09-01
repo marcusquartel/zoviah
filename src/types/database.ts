@@ -120,6 +120,8 @@ export type ShipmentStatus =
 /** Frozen copy of a creator_addresses row at the moment a shipment was built. */
 export interface AddressSnapshot {
   recipient_name: string;
+  /** Recipient CPF, digits only. Present on snapshots taken after 2026-09. */
+  cpf?: string | null;
   postal_code: string;
   street: string;
   number: string;
@@ -1142,6 +1144,8 @@ export interface Database {
           city: string;
           state: string;
           country: string;
+          /** Recipient CPF, digits only (Correios requires it). */
+          cpf: string | null;
           source_request_id: string;
           is_current: boolean;
           created_at: string;
@@ -1160,6 +1164,7 @@ export interface Database {
           city: string;
           state: string;
           country?: string;
+          cpf?: string | null;
           source_request_id: string;
           is_current?: boolean;
         };
@@ -1437,6 +1442,10 @@ export interface Database {
       complete_address_request: {
         Args: { p_token_hash: string; p_payload: Json };
         Returns: Json;
+      };
+      is_valid_cpf: {
+        Args: { p_cpf: string };
+        Returns: boolean;
       };
       is_valid_shipment_transition: {
         Args: { p_from: string; p_to: string };

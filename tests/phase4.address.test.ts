@@ -25,6 +25,7 @@ const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const configured = Boolean(url && anonKey && serviceKey);
 
 let ready = false;
+let hasCpf = false;
 if (configured) {
   const probe = createClient(url!, serviceKey!, {
     auth: { persistSession: false, autoRefreshToken: false },
@@ -34,7 +35,12 @@ if (configured) {
     p_token_hash: "0".repeat(64),
   });
   ready = !t.error && !f.error;
+  const c = await probe.from("creator_addresses").select("cpf").limit(1);
+  hasCpf = !c.error;
 }
+const skipCpf = hasCpf
+  ? false
+  : "migration 20260901000002_address_cpf_reintroduce.sql not applied";
 
 const skip = !configured
   ? "Supabase credentials not set"
@@ -58,6 +64,7 @@ async function signedIn(email: string, password: string): Promise<SupabaseClient
 
 const GOOD_ADDRESS = {
   recipient_name: "Pâmela Kald",
+  cpf: "11144477735",
   postal_code: "30140110",
   street: "Rua dos Aimorés",
   number: "1200",
@@ -569,5 +576,49 @@ describe("Phase 4 — secure address request", { skip }, () => {
     assert.match(res.error!.message, /APPLICATION_NOT_APPROVED/);
     await admin.from("applications").delete().eq("id", app.data!.id);
     await admin.from("creators").delete().eq("id", creator.data!.id);
+  });
+
+  test("CPF: required, stored digits-only, never in the timeline event", { skip: skipCpf }, async () => {
+    const raw = generateSecureToken();
+    const app = await seedApprovedApplication();
+    await ownerA.rpc("create_address_request", {
+      p_application_id: app,
+      p_token_hash: hashToken(raw),
+    });
+
+    // a bad CPF is rejected and nothing is written
+    const bad = await anon().rpc("complete_address_request", {
+      p_token_hash: hashToken(raw),
+      p_payload: { ...GOOD_ADDRESS, cpf: "111.444.777-00" },
+    });
+    assert.ok(bad.error);
+    assert.match(bad.error!.message, /INVALID_ADDRESS/);
+
+    // a masked, valid CPF is accepted and normalised to digits
+    const ok = await anon().rpc("complete_address_request", {
+      p_token_hash: hashToken(raw),
+      p_payload: { ...GOOD_ADDRESS, cpf: "111.444.777-35" },
+    });
+    assert.ifError(ok.error);
+    assert.equal(ok.data.status, "completed");
+
+    const addr = await admin
+      .from("creator_addresses")
+      .select("cpf")
+      .eq("creator_id", creatorA)
+      .eq("is_current", true)
+      .single();
+    assert.equal(addr.data!.cpf, "11144477735");
+
+    const events = await admin
+      .from("creator_events")
+      .select("data")
+      .eq("application_id", app);
+    assert.ok(!JSON.stringify(events.data).includes("11144477735"));
+    assert.ok(!JSON.stringify(events.data).includes("444"));
+
+    await admin.from("creator_addresses").delete().eq("creator_id", creatorA);
+    await admin.from("application_requests").delete().eq("application_id", app);
+    await admin.from("applications").delete().eq("id", app);
   });
 });

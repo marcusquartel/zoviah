@@ -1,6 +1,7 @@
 import { z } from "zod";
 // Relative (not "@/") so this schema stays importable by the node test runner.
 import { BR_UFS } from "../br-locations.ts";
+import { isValidCpf, stripCpf } from "./cpf.ts";
 
 /**
  * Shared shipping-address schema (Phase 4 §82). Used by the public form
@@ -19,6 +20,11 @@ const trimmed = (max: number, label: string) =>
 
 export const addressSchema = z.object({
   recipientName: trimmed(150, "o nome do destinatário"),
+  cpf: z
+    .string()
+    .trim()
+    .transform((v) => stripCpf(v))
+    .refine((v) => isValidCpf(v), { error: "Informe um CPF válido." }),
   postalCode: z
     .string()
     .trim()
@@ -52,6 +58,7 @@ export type AddressInput = z.infer<typeof addressSchema>;
 export function toAddressPayload(a: AddressInput) {
   return {
     recipient_name: a.recipientName,
+    cpf: a.cpf,
     postal_code: a.postalCode,
     street: a.street,
     number: a.number,

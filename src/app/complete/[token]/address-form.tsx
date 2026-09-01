@@ -16,11 +16,21 @@ import {
 } from "@/components/ui/select";
 import { addressSchema } from "@/lib/validation/address";
 import { BR_STATES } from "@/lib/br-locations";
+
+/** Progressive `000.000.000-00` mask while typing. */
+function maskCpf(raw: string): string {
+  const d = raw.replace(/\D/g, "").slice(0, 11);
+  const parts = [d.slice(0, 3), d.slice(3, 6), d.slice(6, 9)].filter(Boolean);
+  let out = parts.join(".");
+  if (d.length > 9) out += `-${d.slice(9)}`;
+  return out;
+}
 import { lookupCep } from "@/lib/viacep";
 import { submitAddress } from "@/features/requests/public-actions";
 
 interface FormValues {
   recipientName: string;
+  cpf: string;
   postalCode: string;
   street: string;
   number: string;
@@ -53,6 +63,7 @@ export function AddressForm({ token }: { token: string }) {
   } = useForm<FormValues>({
     defaultValues: {
       recipientName: "",
+      cpf: "",
       postalCode: "",
       street: "",
       number: "",
@@ -129,6 +140,24 @@ export function AddressForm({ token }: { token: string }) {
         error={errors.recipientName?.message}
         {...register("recipientName")}
       />
+      <Field
+        id="cpf"
+        label="CPF do destinatário"
+        inputMode="numeric"
+        autoComplete="off"
+        placeholder="000.000.000-00"
+        maxLength={14}
+        error={errors.cpf?.message}
+        {...register("cpf", {
+          onChange: (e) => {
+            e.target.value = maskCpf(e.target.value);
+          },
+        })}
+      />
+      <p className="-mt-2 text-xs text-muted-foreground">
+        Os Correios exigem o CPF do destinatário para emitir a etiqueta de
+        envio.
+      </p>
       <div className="space-y-1">
         <Label htmlFor="postalCode">CEP</Label>
         <div className="relative">

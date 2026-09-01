@@ -8,6 +8,7 @@ import { getAppBaseUrl, buildSecureLinkUrl } from "../src/lib/app-url.ts";
 
 const base = {
   recipientName: "  Pâmela Kald  ",
+  cpf: "111.444.777-35",
   postalCode: "30140-110",
   street: "Rua dos Aimorés",
   number: "123",
@@ -81,10 +82,11 @@ test("address: complement is optional, defaults to ''", () => {
   assert.equal(r.complement, "");
 });
 
-test("toAddressPayload: snake_case for the RPC, null complement", () => {
+test("toAddressPayload: snake_case for the RPC, null complement, digits-only cpf", () => {
   const p = toAddressPayload(addressSchema.parse(base));
   assert.deepEqual(p, {
     recipient_name: "Pâmela Kald",
+    cpf: "11144477735",
     postal_code: "30140110",
     street: "Rua dos Aimorés",
     number: "123",
@@ -94,6 +96,19 @@ test("toAddressPayload: snake_case for the RPC, null complement", () => {
     state: "MG",
     consent: true,
   });
+});
+
+test("address: CPF is required and structurally validated", () => {
+  assert.equal(addressSchema.parse(base).cpf, "11144477735");
+  assert.equal(addressSchema.safeParse({ ...base, cpf: "" }).success, false);
+  assert.equal(
+    addressSchema.safeParse({ ...base, cpf: "111.444.777-00" }).success,
+    false,
+  );
+  assert.equal(
+    addressSchema.safeParse({ ...base, cpf: "111111111 11" }).success,
+    false,
+  );
 });
 
 test("app-url: dev default is localhost:3001, link is built under /complete", () => {

@@ -14,6 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatDate } from "@/features/creators/format";
+import { formatCpf } from "@/lib/validation/cpf";
 import { loadAddressTab } from "@/features/creators/data-actions";
 import {
   createAddressRequest,
@@ -245,6 +246,7 @@ function Panel({ children }: { children: React.ReactNode }) {
 function CurrentAddress({ address }: { address: CreatorAddress }) {
   const lines = [
     address.recipient_name,
+    address.cpf ? `CPF ${formatCpf(address.cpf)}` : null,
     `${address.street}, ${address.number}`,
     address.complement || null,
     address.neighborhood,
