@@ -109,9 +109,13 @@ export function HelpCenter() {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
         render={
-          <Button variant="ghost" size="sm" className="gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2 border-primary/30 text-primary hover:bg-primary/5 hover:text-primary"
+          >
             <LifeBuoy className="size-4" />
-            <span className="hidden sm:inline">Ajuda</span>
+            <span>Ajuda</span>
           </Button>
         }
       />

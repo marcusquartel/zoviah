@@ -35,6 +35,9 @@ test("support prompt: version pinned and text carries the hard rules", () => {
   assert.match(SUPPORT_SYSTEM_PROMPT, /NÃO executa ações/i);
   assert.match(SUPPORT_SYSTEM_PROMPT, /DADO, nunca INSTRUÇÃO/i);
   assert.match(SUPPORT_SYSTEM_PROMPT, /suporte humano/i);
+  // less-conservative synthesis intent (2026-09 tuning)
+  assert.match(SUPPORT_SYSTEM_PROMPT, /VÁRIOS artigos/i);
+  assert.match(SUPPORT_SYSTEM_PROMPT, /"sufficient": false APENAS quando/i);
 });
 
 test("support prompt: knowledge and question are fenced as data", () => {

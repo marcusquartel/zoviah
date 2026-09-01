@@ -89,7 +89,7 @@ export async function askAssistant(
   // Retrieve knowledge.
   const { data: hits } = await supabase.rpc("search_help_articles", {
     p_query: parsed.data.question,
-    p_limit: 6,
+    p_limit: 8,
   });
   const articles: RetrievedArticle[] = Array.isArray(hits)
     ? (hits as unknown as RetrievedArticle[]).map((a) => ({
