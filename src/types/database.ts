@@ -80,7 +80,9 @@ export type FieldType =
   | "multi_select"
   | "checkbox"
   | "instagram"
-  | "tiktok";
+  | "tiktok"
+  | "br_state"
+  | "br_city";
 
 export type SocialPlatform =
   | "instagram"

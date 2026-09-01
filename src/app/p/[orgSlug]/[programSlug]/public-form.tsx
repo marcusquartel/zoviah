@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useForm, type Path } from "react-hook-form";
+import { useForm, useWatch, type Path } from "react-hook-form";
 import { useSearchParams } from "next/navigation";
 import { CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -34,6 +34,12 @@ export function PublicForm({
   const schema = useMemo(() => buildFieldSchema(fields), [fields]);
   const searchParams = useSearchParams();
 
+  // A `br_city` field filters its options by the sibling `br_state` field.
+  const stateFieldKey = useMemo(
+    () => fields.find((f) => f.field_type === "br_state")?.field_key,
+    [fields],
+  );
+
   const {
     register,
     control,
@@ -44,6 +50,11 @@ export function PublicForm({
   } = useForm<Values>({
     defaultValues: defaultFormValues(fields),
   });
+
+  const stateValue = useWatch({
+    control,
+    name: (stateFieldKey ?? "__no_state__") as Path<Values>,
+  }) as string | undefined;
 
   const [done, setDone] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -124,6 +135,9 @@ export function PublicForm({
           register={register}
           control={control}
           errors={errors}
+          stateValue={
+            field.field_type === "br_city" ? stateValue : undefined
+          }
         />
       ))}
 

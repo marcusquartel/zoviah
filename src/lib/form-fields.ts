@@ -1,6 +1,7 @@
 import { z } from "zod";
 // Relative (not "@/") so this module stays importable by the node test runner.
 import { parseCount } from "./normalize.ts";
+import { BR_UFS } from "./br-locations.ts";
 import type { FieldMapping, FieldOption, FieldType } from "@/types/database";
 
 /** All field types the MVP form builder supports. */
@@ -17,6 +18,8 @@ export const FIELD_TYPES: readonly FieldType[] = [
   "checkbox",
   "instagram",
   "tiktok",
+  "br_state",
+  "br_city",
 ] as const;
 
 export const FIELD_TYPE_LABELS: Record<FieldType, string> = {
@@ -32,7 +35,12 @@ export const FIELD_TYPE_LABELS: Record<FieldType, string> = {
   checkbox: "Confirmação (checkbox)",
   instagram: "Instagram (@handle)",
   tiktok: "TikTok (@handle)",
+  br_state: "Estado (BR)",
+  br_city: "Cidade (BR)",
 };
+
+/** Field types whose options / value list are fixed by the platform. */
+export const BR_LOCATION_TYPES: readonly FieldType[] = ["br_state", "br_city"];
 
 export const SELECT_TYPES: readonly FieldType[] = [
   "single_select",
@@ -72,6 +80,10 @@ export function mappingsForFieldType(type: FieldType): FieldMapping[] {
       return ["instagram"];
     case "tiktok":
       return ["tiktok"];
+    case "br_state":
+      return ["state"];
+    case "br_city":
+      return ["city"];
     default:
       return [];
   }
@@ -173,6 +185,23 @@ function schemaForField(field: PublicFieldDef): z.ZodTypeAny {
         .refine((v) => v === "" || /^\d{4}-\d{2}-\d{2}$/.test(v), {
           error: "Data inválida.",
         });
+    }
+    case "br_state": {
+      // Value is the 2-letter UF. Options are the platform list, not the field's.
+      return z
+        .string()
+        .trim()
+        .transform((v) => v.toUpperCase())
+        .refine((v) => (req ? v !== "" : true), { error: "Selecione o estado." })
+        .refine((v) => v === "" || (BR_UFS as readonly string[]).includes(v), {
+          error: "Estado inválido.",
+        });
+    }
+    case "br_city": {
+      // Value is the municipality name (validated against the UF client-side and
+      // in the submit action — kept lenient here so a rare IBGE gap never blocks).
+      const base = z.string().trim().max(120, { error: "Cidade muito longa." });
+      return req ? base.min(1, { error: "Selecione a cidade." }) : base;
     }
     case "single_select": {
       return z

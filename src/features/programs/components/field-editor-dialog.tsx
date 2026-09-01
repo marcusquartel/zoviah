@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  BR_LOCATION_TYPES,
   FIELD_TYPE_LABELS,
   FIELD_TYPES,
   FIELD_MAPPING_LABELS,
@@ -66,6 +67,7 @@ export function FieldEditorDialog({
 
   const allowedMappings = useMemo(() => mappingsForFieldType(type), [type]);
   const isSelect = SELECT_TYPES.includes(type);
+  const isBrLocation = BR_LOCATION_TYPES.includes(type);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -154,32 +156,49 @@ export function FieldEditorDialog({
             />
           </div>
 
-          <div className="grid gap-2">
-            <Label htmlFor="field-mapping">Mapear para</Label>
-            <Select
-              name="mapping"
-              value={mapping}
-              onValueChange={(v) => setMapping(v ?? NO_MAPPING)}
-              disabled={allowedMappings.length === 0}
-            >
-              <SelectTrigger id="field-mapping" className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={NO_MAPPING}>Nada (fica em answers)</SelectItem>
-                {allowedMappings.map((m) => (
-                  <SelectItem key={m} value={m}>
-                    {FIELD_MAPPING_LABELS[m]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {allowedMappings.length === 0 ? (
-              <p className="text-xs text-muted-foreground">
-                Este tipo de campo não alimenta colunas estruturadas.
+          {isBrLocation ? (
+            <>
+              <input
+                type="hidden"
+                name="mapping"
+                value={type === "br_state" ? "state" : "city"}
+              />
+              <p className="rounded-md border border-dashed bg-surface px-3 py-2 text-xs text-muted-foreground">
+                {type === "br_state"
+                  ? "Lista fixa com as 27 UFs. Alimenta creators.state automaticamente."
+                  : "Lista oficial do IBGE, filtrada pelo campo de Estado do formulário. Alimenta creators.city automaticamente."}
               </p>
-            ) : null}
-          </div>
+            </>
+          ) : (
+            <div className="grid gap-2">
+              <Label htmlFor="field-mapping">Mapear para</Label>
+              <Select
+                name="mapping"
+                value={mapping}
+                onValueChange={(v) => setMapping(v ?? NO_MAPPING)}
+                disabled={allowedMappings.length === 0}
+              >
+                <SelectTrigger id="field-mapping" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NO_MAPPING}>
+                    Nada (fica em answers)
+                  </SelectItem>
+                  {allowedMappings.map((m) => (
+                    <SelectItem key={m} value={m}>
+                      {FIELD_MAPPING_LABELS[m]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {allowedMappings.length === 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  Este tipo de campo não alimenta colunas estruturadas.
+                </p>
+              ) : null}
+            </div>
+          )}
 
           <label className="flex items-center gap-2 text-sm">
             <Checkbox name="required" defaultChecked={field.required} />

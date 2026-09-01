@@ -147,3 +147,39 @@ test("defaultFormValues + mappingsForFieldType", () => {
   assert.deepEqual(mappingsForFieldType("instagram"), ["instagram"]);
   assert.deepEqual(mappingsForFieldType("textarea"), []);
 });
+
+test("br_state: required enforces a real UF; uppercases input", () => {
+  const schema = buildFieldSchema([
+    field({ field_key: "uf", field_type: "br_state", required: true }),
+  ]);
+  assert.equal(schema.safeParse({ uf: "SP", ...consentOk }).success, true);
+  assert.equal(schema.safeParse({ uf: "sp", ...consentOk }).success, true); // normalised
+  assert.equal(schema.safeParse({ uf: "", ...consentOk }).success, false);
+  assert.equal(schema.safeParse({ uf: "XX", ...consentOk }).success, false);
+
+  const opt = buildFieldSchema([
+    field({ field_key: "uf", field_type: "br_state", required: false }),
+  ]);
+  assert.equal(opt.safeParse({ uf: "", ...consentOk }).success, true);
+  assert.equal(opt.safeParse({ uf: "ZZ", ...consentOk }).success, false);
+});
+
+test("br_city: required enforces non-empty, caps length", () => {
+  const schema = buildFieldSchema([
+    field({ field_key: "city", field_type: "br_city", required: true }),
+  ]);
+  assert.equal(
+    schema.safeParse({ city: "São Paulo", ...consentOk }).success,
+    true,
+  );
+  assert.equal(schema.safeParse({ city: "", ...consentOk }).success, false);
+  assert.equal(
+    schema.safeParse({ city: "x".repeat(121), ...consentOk }).success,
+    false,
+  );
+});
+
+test("mappingsForFieldType: br_state/br_city auto-map to state/city", () => {
+  assert.deepEqual(mappingsForFieldType("br_state"), ["state"]);
+  assert.deepEqual(mappingsForFieldType("br_city"), ["city"]);
+});

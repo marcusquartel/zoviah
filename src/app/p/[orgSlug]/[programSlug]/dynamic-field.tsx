@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import {
   Controller,
   type Control,
@@ -17,24 +18,61 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Combobox } from "@/components/ui/combobox";
+import { BR_STATES } from "@/lib/br-locations";
 import type { PublicFieldDef } from "@/lib/form-fields";
 
 type Values = Record<string, unknown>;
+
+/** Lazy-load the ~5.5k IBGE municipalities only when a Cidade field renders. */
+function useCitiesForUf(uf: string | undefined): {
+  cities: string[];
+  loading: boolean;
+} {
+  const [cities, setCities] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!uf) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setCities([]);
+      return;
+    }
+    setLoading(true);
+    void import("@/lib/br-cities").then((m) => {
+      if (cancelled) return;
+      setCities(m.citiesForUf(uf));
+      setLoading(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [uf]);
+
+  return { cities, loading };
+}
 
 export function DynamicField({
   field,
   register,
   control,
   errors,
+  stateValue,
 }: {
   field: PublicFieldDef;
   register: UseFormRegister<Values>;
   control: Control<Values>;
   errors: FieldErrors<Values>;
+  /** Current value of the sibling `br_state` field, for `br_city`. */
+  stateValue?: string;
 }) {
   const key = field.field_key;
   const error = errors[key]?.message as string | undefined;
   const describedBy = field.help_text ? `${key}-help` : undefined;
+  const { cities, loading: citiesLoading } = useCitiesForUf(
+    field.field_type === "br_city" ? stateValue : undefined,
+  );
   const inputProps = {
     id: key,
     placeholder: field.placeholder ?? undefined,
@@ -136,6 +174,62 @@ export function DynamicField({
                   ) : null}
                 </span>
               </label>
+            )}
+          />
+        );
+
+      case "br_state":
+        return (
+          <Controller
+            control={control}
+            name={key}
+            render={({ field: f }) => (
+              <Select
+                value={(f.value as string) || ""}
+                onValueChange={(v) => f.onChange(v ?? "")}
+              >
+                <SelectTrigger id={key} className="w-full">
+                  <SelectValue
+                    placeholder={field.placeholder ?? "Selecione o estado"}
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {BR_STATES.map((s) => (
+                    <SelectItem key={s.uf} value={s.uf}>
+                      {s.uf} — {s.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
+        );
+
+      case "br_city":
+        return (
+          <Controller
+            control={control}
+            name={key}
+            render={({ field: f }) => (
+              <Combobox
+                id={key}
+                value={(f.value as string) || ""}
+                onValueChange={f.onChange}
+                options={cities}
+                disabled={!stateValue}
+                aria-invalid={error ? true : undefined}
+                aria-describedby={describedBy}
+                placeholder={
+                  !stateValue
+                    ? "Selecione o estado primeiro"
+                    : citiesLoading
+                      ? "Carregando cidades…"
+                      : (field.placeholder ?? "Digite para buscar a cidade")
+                }
+                emptyLabel={
+                  citiesLoading ? "Carregando…" : "Nenhuma cidade encontrada."
+                }
+              />
             )}
           />
         );

@@ -18,6 +18,7 @@ import {
   parseCount,
   socialProfileUrl,
 } from "@/lib/normalize";
+import { BR_UFS } from "@/lib/br-locations";
 import { getPublicProgram } from "@/features/public/queries";
 import type { Database, FieldMapping, Json } from "@/types/database";
 
@@ -155,6 +156,11 @@ export async function submitApplication(
       ensureSocial("instagram", value);
     } else if (field.field_type === "tiktok" || mapping === "tiktok") {
       ensureSocial("tiktok", value);
+    } else if (field.field_type === "br_state" || mapping === "state") {
+      const uf = typeof value === "string" ? value.trim().toUpperCase() : "";
+      if ((BR_UFS as readonly string[]).includes(uf)) creator.state = uf;
+    } else if (field.field_type === "br_city" || mapping === "city") {
+      setCreator("city", value);
     } else if (mapping === "instagram_followers") {
       const n = parseCount(value);
       if (n != null) followers.instagram = n;
@@ -171,10 +177,6 @@ export async function submitApplication(
       setCreator("preferred_name", value);
     } else if (mapping === "birth_date") {
       setCreator("birth_date", value);
-    } else if (mapping === "city") {
-      setCreator("city", value);
-    } else if (mapping === "state") {
-      setCreator("state", value);
     } else if (mapping === "postal_code") {
       setCreator("postal_code", value);
     }
