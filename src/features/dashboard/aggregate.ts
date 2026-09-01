@@ -94,3 +94,36 @@ export function growthRatePct(current: number, previous: number): number | null 
   if (previous <= 0) return null;
   return Math.round(((current - previous) / previous) * 100);
 }
+
+export interface AttentionItem {
+  label: string;
+  count: number;
+  href: string;
+}
+
+/**
+ * Operational "needs a look" items for the dashboard. Deliberately excludes
+ * possible-duplicate applications — that lives in the CRM, not here. Order is
+ * fixed: missing address first (blocks shipping), then failed analyses.
+ */
+export function buildAttention(
+  crm: Record<string, number>,
+  failedAnalyses: number,
+): AttentionItem[] {
+  const items: AttentionItem[] = [];
+  if ((crm.awaiting_address ?? 0) > 0) {
+    items.push({
+      label: "Aguardando endereço",
+      count: crm.awaiting_address,
+      href: "/app/creators?status=awaiting_address",
+    });
+  }
+  if (failedAnalyses > 0) {
+    items.push({
+      label: "Análises que falharam",
+      count: failedAnalyses,
+      href: "/app/creators?analysis=failed",
+    });
+  }
+  return items;
+}

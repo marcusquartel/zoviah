@@ -2,11 +2,13 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentOrganization } from "@/features/organizations/queries";
 import { getCrmCounts } from "@/features/creators/queries";
 import {
+  buildAttention,
   bucketGrowth,
   growthRatePct,
   normalizeState,
   rank,
   titleCase,
+  type AttentionItem,
   type GrowthPoint,
   type RankItem,
 } from "@/features/dashboard/aggregate";
@@ -26,13 +28,7 @@ const FETCH_CAP = 5000;
 
 export type DashboardPeriodDays = 7 | 30 | 90;
 
-export type { RankItem, GrowthPoint };
-
-export interface AttentionItem {
-  label: string;
-  count: number;
-  href: string;
-}
+export type { RankItem, GrowthPoint, AttentionItem };
 
 export interface DashboardOverview {
   periodDays: DashboardPeriodDays;
@@ -162,28 +158,7 @@ export async function getDashboardOverview(
     count: cr[f.key] ?? 0,
   }));
 
-  const attention: AttentionItem[] = [];
-  if ((cr.possible_duplicate ?? 0) > 0) {
-    attention.push({
-      label: "Possíveis duplicadas",
-      count: cr.possible_duplicate,
-      href: "/app/creators?dup=1",
-    });
-  }
-  if ((cr.awaiting_address ?? 0) > 0) {
-    attention.push({
-      label: "Aguardando endereço",
-      count: cr.awaiting_address,
-      href: "/app/creators?status=awaiting_address",
-    });
-  }
-  if ((failedAnalyses.count ?? 0) > 0) {
-    attention.push({
-      label: "Análises que falharam",
-      count: failedAnalyses.count ?? 0,
-      href: "/app/creators?analysis=failed",
-    });
-  }
+  const attention = buildAttention(cr, failedAnalyses.count ?? 0);
 
   return {
     periodDays,

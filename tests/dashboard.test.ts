@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
+  buildAttention,
   bucketGrowth,
   growthRatePct,
   normalizeState,
@@ -70,4 +71,26 @@ test("bucketGrowth: empty input yields zeroed buckets", () => {
   const pts = bucketGrowth([], 7, Date.now(), 4);
   assert.equal(pts.length, 4);
   assert.ok(pts.every((p) => p.total === 0 && p.added === 0));
+});
+
+test("buildAttention: missing address shows; possible duplicates never do", () => {
+  const items = buildAttention(
+    { awaiting_address: 3, possible_duplicate: 9, approved: 5 },
+    2,
+  );
+  assert.deepEqual(
+    items.map((i) => i.label),
+    ["Aguardando endereço", "Análises que falharam"],
+  );
+  assert.ok(!items.some((i) => /duplicad/i.test(i.label)));
+  assert.equal(items[0].count, 3);
+  assert.equal(items[0].href, "/app/creators?status=awaiting_address");
+
+  // nothing pending -> empty
+  assert.deepEqual(buildAttention({ possible_duplicate: 4 }, 0), []);
+  // only failed analyses
+  assert.deepEqual(
+    buildAttention({}, 1).map((i) => i.label),
+    ["Análises que falharam"],
+  );
 });
