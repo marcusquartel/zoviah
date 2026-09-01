@@ -9,6 +9,10 @@ import {
   isPlanCode,
 } from "../src/features/platform/plans.ts";
 import { deriveOnboardingState } from "../src/features/onboarding/state.ts";
+import {
+  checkLogoFile,
+  LOGO_MAX_BYTES,
+} from "../src/features/platform/branding.ts";
 
 test("plan codes: the five commercial conditions, all labelled", () => {
   assert.deepEqual([...PLAN_CODES], [
@@ -85,4 +89,22 @@ test("onboarding: everything derived true -> complete", () => {
   });
   assert.equal(s.doneCount, 5);
   assert.equal(s.complete, true);
+});
+
+test("checkLogoFile: accepts PNG/JPG up to 1 MB, rejects the rest", () => {
+  assert.deepEqual(checkLogoFile({ type: "image/png", size: 500_000 }), {
+    ok: true,
+    ext: "png",
+  });
+  assert.deepEqual(checkLogoFile({ type: "image/jpeg", size: LOGO_MAX_BYTES }), {
+    ok: true,
+    ext: "jpg",
+  });
+  assert.equal(
+    checkLogoFile({ type: "image/png", size: LOGO_MAX_BYTES + 1 }).ok,
+    false,
+  );
+  assert.equal(checkLogoFile({ type: "image/gif", size: 1000 }).ok, false);
+  assert.equal(checkLogoFile({ type: "image/svg+xml", size: 1000 }).ok, false);
+  assert.equal(checkLogoFile({ type: "image/png", size: 0 }).ok, false);
 });

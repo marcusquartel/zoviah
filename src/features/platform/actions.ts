@@ -7,8 +7,11 @@ import { generateSecureToken, hashToken } from "@/lib/secure-token";
 import { buildInviteUrl } from "@/lib/app-url";
 import { isReservedSubdomain, isValidSubdomainFormat } from "@/lib/tenant/host";
 import { PLAN_CODES } from "@/features/platform/plans";
+import { checkLogoFile } from "@/features/platform/branding";
 import { getIsPlatformAdmin } from "@/features/platform/queries";
 import type { OrganizationStatus, PlanCode } from "@/types/database";
+
+const LOGO_BUCKET = "org-branding";
 
 export interface AdminActionResult {
   ok: boolean;
@@ -243,4 +246,42 @@ export async function setOrganizationBranding(
   revalidatePath("/admin");
   revalidatePath("/app", "layout");
   return { ok: true };
+}
+
+export interface UploadLogoResult extends AdminActionResult {
+  /** Public URL of the uploaded image, to store as the org's logo_url. */
+  url?: string;
+}
+
+/**
+ * Upload a tenant logo (PNG/JPG ≤ 1 MB) to the `org-branding` bucket and return
+ * its public URL. Does not persist anything on the org — the caller passes the
+ * URL to `setOrganizationBranding`. Platform-admin only (also enforced by the
+ * bucket's RLS policy).
+ */
+export async function uploadOrganizationLogo(
+  organizationId: string,
+  formData: FormData,
+): Promise<UploadLogoResult> {
+  if (!(await getIsPlatformAdmin())) {
+    return { ok: false, error: RPC_ERRORS.FORBIDDEN };
+  }
+  const file = formData.get("file");
+  if (!(file instanceof File)) {
+    return { ok: false, error: "Nenhum arquivo enviado." };
+  }
+  const check = checkLogoFile({ type: file.type, size: file.size });
+  if (!check.ok) return { ok: false, error: check.error };
+
+  const supabase = await createClient();
+  const path = `${organizationId}/logo-${Date.now()}.${check.ext}`;
+  const { error: upErr } = await supabase.storage
+    .from(LOGO_BUCKET)
+    .upload(path, file, { contentType: file.type, upsert: true });
+  if (upErr) {
+    console.error("[uploadOrganizationLogo]", upErr.message);
+    return { ok: false, error: "Não foi possível enviar a imagem." };
+  }
+  const { data } = supabase.storage.from(LOGO_BUCKET).getPublicUrl(path);
+  return { ok: true, url: data.publicUrl };
 }

@@ -28,6 +28,7 @@ import {
   setOrganizationPlan,
   setOrganizationStatus,
   setOrganizationSubdomain,
+  uploadOrganizationLogo,
 } from "@/features/platform/actions";
 import type { AdminOrgDetail } from "@/features/platform/queries";
 import { PRODUCT } from "@/config/product";
@@ -127,6 +128,32 @@ export function AdminOrgModal({
         onChanged();
       } else {
         toast.error(res.error ?? "Não foi possível salvar o branding.");
+      }
+    });
+  }
+
+  function uploadLogo(file: File) {
+    if (!data) return;
+    const fd = new FormData();
+    fd.set("file", file);
+    const orgId = data.id;
+    startTransition(async () => {
+      const up = await uploadOrganizationLogo(orgId, fd);
+      if (!up.ok || !up.url) {
+        toast.error(up.error ?? "Não foi possível enviar a imagem.");
+        return;
+      }
+      const saved = await setOrganizationBranding(orgId, {
+        logoUrl: up.url,
+        faviconUrl,
+      });
+      if (saved.ok) {
+        setLogoUrl(up.url);
+        toast.success("Logo enviada.");
+        await load(orgId);
+        onChanged();
+      } else {
+        toast.error(saved.error ?? "Imagem enviada, mas não foi salva.");
       }
     });
   }
@@ -268,9 +295,30 @@ export function AdminOrgModal({
 
             <div className="mt-2 space-y-3 border-t pt-3">
               <p className="text-sm font-medium">Branding</p>
+              <p className="text-xs text-muted-foreground">
+                A marca aparece sobre fundo claro (login, topo do sistema e
+                formulários) — evite logos brancas. PNG ou JPG, até 1 MB.
+              </p>
+              <div className="space-y-1.5">
+                <Label htmlFor="org-logo-file" className="text-xs">
+                  Enviar imagem da marca
+                </Label>
+                <input
+                  id="org-logo-file"
+                  type="file"
+                  accept="image/png,image/jpeg"
+                  disabled={pending}
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) uploadLogo(f);
+                    e.target.value = "";
+                  }}
+                  className="block w-full text-xs text-muted-foreground file:mr-3 file:rounded-md file:border file:border-input file:bg-background file:px-2.5 file:py-1 file:text-xs file:font-medium hover:file:bg-accent"
+                />
+              </div>
               <div className="space-y-1.5">
                 <Label htmlFor="org-logo-url" className="text-xs">
-                  Logo URL
+                  …ou cole uma URL de logo
                 </Label>
                 <Input
                   id="org-logo-url"
