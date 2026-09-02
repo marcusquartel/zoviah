@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/select";
 import { Combobox } from "@/components/ui/combobox";
 import { BR_STATES } from "@/lib/br-locations";
-import type { PublicFieldDef } from "@/lib/form-fields";
+import { brLocationKind, type PublicFieldDef } from "@/lib/form-fields";
 
 type Values = Record<string, unknown>;
 
@@ -70,8 +70,9 @@ export function DynamicField({
   const key = field.field_key;
   const error = errors[key]?.message as string | undefined;
   const describedBy = field.help_text ? `${key}-help` : undefined;
+  const locationKind = brLocationKind(field);
   const { cities, loading: citiesLoading } = useCitiesForUf(
-    field.field_type === "br_city" ? stateValue : undefined,
+    locationKind === "city" ? stateValue : undefined,
   );
   const inputProps = {
     id: key,
@@ -105,6 +106,64 @@ export function DynamicField({
   );
 
   function renderControl() {
+    // A state/city field is always a controlled list, whatever its stored type.
+    if (locationKind === "state") {
+      return (
+        <Controller
+          control={control}
+          name={key}
+          render={({ field: f }) => (
+            <Select
+              value={(f.value as string) || ""}
+              onValueChange={(v) => f.onChange(v ?? "")}
+            >
+              <SelectTrigger id={key} className="w-full">
+                <SelectValue
+                  placeholder={field.placeholder ?? "Selecione o estado"}
+                />
+              </SelectTrigger>
+              <SelectContent>
+                {BR_STATES.map((s) => (
+                  <SelectItem key={s.uf} value={s.uf}>
+                    {s.uf} — {s.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        />
+      );
+    }
+    if (locationKind === "city") {
+      return (
+        <Controller
+          control={control}
+          name={key}
+          render={({ field: f }) => (
+            <Combobox
+              id={key}
+              value={(f.value as string) || ""}
+              onValueChange={f.onChange}
+              options={cities}
+              disabled={!stateValue}
+              aria-invalid={error ? true : undefined}
+              aria-describedby={describedBy}
+              placeholder={
+                !stateValue
+                  ? "Selecione o estado primeiro"
+                  : citiesLoading
+                    ? "Carregando cidades…"
+                    : (field.placeholder ?? "Digite para buscar a cidade")
+              }
+              emptyLabel={
+                citiesLoading ? "Carregando…" : "Nenhuma cidade encontrada."
+              }
+            />
+          )}
+        />
+      );
+    }
+
     switch (field.field_type) {
       case "textarea":
         return <Textarea rows={4} {...inputProps} {...register(key)} />;
@@ -178,61 +237,7 @@ export function DynamicField({
           />
         );
 
-      case "br_state":
-        return (
-          <Controller
-            control={control}
-            name={key}
-            render={({ field: f }) => (
-              <Select
-                value={(f.value as string) || ""}
-                onValueChange={(v) => f.onChange(v ?? "")}
-              >
-                <SelectTrigger id={key} className="w-full">
-                  <SelectValue
-                    placeholder={field.placeholder ?? "Selecione o estado"}
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  {BR_STATES.map((s) => (
-                    <SelectItem key={s.uf} value={s.uf}>
-                      {s.uf} — {s.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          />
-        );
-
-      case "br_city":
-        return (
-          <Controller
-            control={control}
-            name={key}
-            render={({ field: f }) => (
-              <Combobox
-                id={key}
-                value={(f.value as string) || ""}
-                onValueChange={f.onChange}
-                options={cities}
-                disabled={!stateValue}
-                aria-invalid={error ? true : undefined}
-                aria-describedby={describedBy}
-                placeholder={
-                  !stateValue
-                    ? "Selecione o estado primeiro"
-                    : citiesLoading
-                      ? "Carregando cidades…"
-                      : (field.placeholder ?? "Digite para buscar a cidade")
-                }
-                emptyLabel={
-                  citiesLoading ? "Carregando…" : "Nenhuma cidade encontrada."
-                }
-              />
-            )}
-          />
-        );
+      // br_state / br_city are rendered above by the locationKind check.
 
       case "single_select":
         return (

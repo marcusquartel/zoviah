@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
+  brLocationKind,
   buildFieldSchema,
   CONSENT_FIELD_KEY,
   HONEYPOT_FIELD_KEY,
@@ -34,9 +35,9 @@ export function PublicForm({
   const schema = useMemo(() => buildFieldSchema(fields), [fields]);
   const searchParams = useSearchParams();
 
-  // A `br_city` field filters its options by the sibling `br_state` field.
+  // A city field filters its options by the sibling state field.
   const stateFieldKey = useMemo(
-    () => fields.find((f) => f.field_type === "br_state")?.field_key,
+    () => fields.find((f) => brLocationKind(f) === "state")?.field_key,
     [fields],
   );
 
@@ -136,7 +137,7 @@ export function PublicForm({
           control={control}
           errors={errors}
           stateValue={
-            field.field_type === "br_city" ? stateValue : undefined
+            brLocationKind(field) === "city" ? stateValue : undefined
           }
         />
       ))}

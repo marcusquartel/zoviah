@@ -6,7 +6,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentOrganization } from "@/features/organizations/queries";
 import { fieldKeyify, slugify } from "@/lib/slug";
-import { mappingsForFieldType } from "@/lib/form-fields";
+import { coerceFieldType, mappingsForFieldType } from "@/lib/form-fields";
 import {
   addFieldSchema,
   programGeneralSchema,
@@ -233,17 +233,21 @@ export async function addFormField(
   const autoMapping = mappingsForFieldType(field_type as FieldType);
   const configuration =
     autoMapping.length === 1 ? { mapping: autoMapping[0] } : {};
+  const storedType = coerceFieldType(
+    field_type as FieldType,
+    configuration.mapping,
+  );
 
   const { error } = await auth.supabase.from("form_fields").insert({
     organization_id: auth.orgId,
     program_id: programId,
     field_key: key,
     label,
-    field_type,
+    field_type: storedType,
     required: false,
     position,
     configuration,
-    options: (field_type === "single_select" || field_type === "multi_select")
+    options: (storedType === "single_select" || storedType === "multi_select")
       ? []
       : null,
   });
@@ -302,18 +306,19 @@ export async function updateFormField(
     .maybeSingle();
   if (!before) return { error: "Campo não encontrado." };
 
+  const storedType = coerceFieldType(v.field_type as FieldType, v.mapping);
   const { error } = await auth.supabase
     .from("form_fields")
     .update({
       field_key: v.field_key,
       label: v.label,
-      field_type: v.field_type,
+      field_type: storedType,
       placeholder: v.placeholder || null,
       help_text: v.help_text || null,
       required: v.required,
       configuration: v.mapping ? { mapping: v.mapping } : {},
       options:
-        v.field_type === "single_select" || v.field_type === "multi_select"
+        storedType === "single_select" || storedType === "multi_select"
           ? v.options
           : null,
     })

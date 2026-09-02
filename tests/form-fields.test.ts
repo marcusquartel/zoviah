@@ -1,7 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
+  brLocationKind,
   buildFieldSchema,
+  coerceFieldType,
   defaultFormValues,
   mappingsForFieldType,
   type PublicFieldDef,
@@ -182,4 +184,41 @@ test("br_city: required enforces non-empty, caps length", () => {
 test("mappingsForFieldType: br_state/br_city auto-map to state/city", () => {
   assert.deepEqual(mappingsForFieldType("br_state"), ["state"]);
   assert.deepEqual(mappingsForFieldType("br_city"), ["city"]);
+});
+
+test("brLocationKind: a legacy text field mapped to state/city is still a list", () => {
+  assert.equal(
+    brLocationKind({ field_type: "text", configuration: { mapping: "state" } }),
+    "state",
+  );
+  assert.equal(
+    brLocationKind({ field_type: "text", configuration: { mapping: "city" } }),
+    "city",
+  );
+  assert.equal(brLocationKind({ field_type: "br_state", configuration: null }), "state");
+  assert.equal(brLocationKind({ field_type: "br_city", configuration: null }), "city");
+  assert.equal(
+    brLocationKind({ field_type: "text", configuration: { mapping: "full_name" } }),
+    null,
+  );
+});
+
+test("a legacy text field mapped to state validates as a UF", () => {
+  const schema = buildFieldSchema([
+    field({
+      field_key: "uf",
+      field_type: "text",
+      required: true,
+      configuration: { mapping: "state" },
+    }),
+  ]);
+  assert.equal(schema.safeParse({ uf: "mg", ...consentOk }).success, true);
+  assert.equal(schema.safeParse({ uf: "Minas Gerais", ...consentOk }).success, false);
+});
+
+test("coerceFieldType: a state/city mapping forces the controlled type", () => {
+  assert.equal(coerceFieldType("text", "state"), "br_state");
+  assert.equal(coerceFieldType("text", "city"), "br_city");
+  assert.equal(coerceFieldType("text", "full_name"), "text");
+  assert.equal(coerceFieldType("email", undefined), "email");
 });

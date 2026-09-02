@@ -110,6 +110,36 @@ const HONEYPOT_KEY = "_hp";
 export const CONSENT_FIELD_KEY = CONSENT_KEY;
 export const HONEYPOT_FIELD_KEY = HONEYPOT_KEY;
 
+/**
+ * Whether a field should render as a Brazil location picker — a UF `<select>`
+ * for "state", a municipality combobox for "city". True for the dedicated
+ * `br_state` / `br_city` types AND for any field mapped to `state` / `city`
+ * (so forms built before those types still get the controlled list, never
+ * free text).
+ */
+export function brLocationKind(
+  field: Pick<PublicFieldDef, "field_type" | "configuration">,
+): "state" | "city" | null {
+  const mapping = field.configuration?.mapping;
+  if (field.field_type === "br_state" || mapping === "state") return "state";
+  if (field.field_type === "br_city" || mapping === "city") return "city";
+  return null;
+}
+
+/**
+ * The stored `field_type` for a field, coerced so a state/city mapping always
+ * lands on the controlled `br_state` / `br_city` type. Used when creating or
+ * editing a field so the builder and the public form agree.
+ */
+export function coerceFieldType(
+  type: FieldType,
+  mapping: FieldMapping | undefined,
+): FieldType {
+  if (mapping === "state") return "br_state";
+  if (mapping === "city") return "br_city";
+  return type;
+}
+
 /** Default RHF value for a field (also the "empty" answer). */
 export function defaultAnswerFor(field: PublicFieldDef): unknown {
   if (field.field_type === "multi_select") return [];
@@ -135,6 +165,24 @@ export function defaultFormValues(
 function schemaForField(field: PublicFieldDef): z.ZodTypeAny {
   const req = field.required;
   const optionValues = (field.options ?? []).map((o) => o.value);
+
+  // A state/city field validates as a UF / municipality name regardless of its
+  // stored `field_type` (see brLocationKind).
+  const loc = brLocationKind(field);
+  if (loc === "state") {
+    return z
+      .string()
+      .trim()
+      .transform((v) => v.toUpperCase())
+      .refine((v) => (req ? v !== "" : true), { error: "Selecione o estado." })
+      .refine((v) => v === "" || (BR_UFS as readonly string[]).includes(v), {
+        error: "Estado inválido.",
+      });
+  }
+  if (loc === "city") {
+    const base = z.string().trim().max(120, { error: "Cidade muito longa." });
+    return req ? base.min(1, { error: "Selecione a cidade." }) : base;
+  }
 
   switch (field.field_type) {
     case "textarea":
@@ -186,23 +234,7 @@ function schemaForField(field: PublicFieldDef): z.ZodTypeAny {
           error: "Data inválida.",
         });
     }
-    case "br_state": {
-      // Value is the 2-letter UF. Options are the platform list, not the field's.
-      return z
-        .string()
-        .trim()
-        .transform((v) => v.toUpperCase())
-        .refine((v) => (req ? v !== "" : true), { error: "Selecione o estado." })
-        .refine((v) => v === "" || (BR_UFS as readonly string[]).includes(v), {
-          error: "Estado inválido.",
-        });
-    }
-    case "br_city": {
-      // Value is the municipality name (validated against the UF client-side and
-      // in the submit action — kept lenient here so a rare IBGE gap never blocks).
-      const base = z.string().trim().max(120, { error: "Cidade muito longa." });
-      return req ? base.min(1, { error: "Selecione a cidade." }) : base;
-    }
+    // br_state / br_city are handled by the brLocationKind() check above.
     case "single_select": {
       return z
         .string()
