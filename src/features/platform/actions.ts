@@ -254,10 +254,31 @@ export interface UploadLogoResult extends AdminActionResult {
 }
 
 /**
+ * Trim uniform (transparent or solid) borders so a logo with baked-in margins
+ * doesn't render tiny under `object-contain`. Always re-encodes to PNG so
+ * transparency survives. Falls back to the original bytes if sharp can't
+ * process the file or the trim leaves nothing.
+ */
+async function trimLogo(input: Buffer): Promise<{ bytes: Buffer; ext: "png" }> {
+  try {
+    const { default: sharp } = await import("sharp");
+    const out = await sharp(input)
+      .trim({ threshold: 10 })
+      .png({ compressionLevel: 9 })
+      .toBuffer();
+    if (out.length > 0) return { bytes: out, ext: "png" };
+  } catch (err) {
+    console.error("[uploadOrganizationLogo] trim skipped", (err as Error).message);
+  }
+  return { bytes: input, ext: "png" };
+}
+
+/**
  * Upload a tenant logo (PNG/JPG ≤ 1 MB) to the `org-branding` bucket and return
- * its public URL. Does not persist anything on the org — the caller passes the
- * URL to `setOrganizationBranding`. Platform-admin only (also enforced by the
- * bucket's RLS policy).
+ * its public URL. The image is trimmed of empty margins first so it renders at
+ * a consistent size everywhere. Does not persist anything on the org — the
+ * caller passes the URL to `setOrganizationBranding`. Platform-admin only (also
+ * enforced by the bucket's RLS policy).
  */
 export async function uploadOrganizationLogo(
   organizationId: string,
@@ -273,11 +294,14 @@ export async function uploadOrganizationLogo(
   const check = checkLogoFile({ type: file.type, size: file.size });
   if (!check.ok) return { ok: false, error: check.error };
 
+  const original = Buffer.from(await file.arrayBuffer());
+  const { bytes, ext } = await trimLogo(original);
+
   const supabase = await createClient();
-  const path = `${organizationId}/logo-${Date.now()}.${check.ext}`;
+  const path = `${organizationId}/logo-${Date.now()}.${ext}`;
   const { error: upErr } = await supabase.storage
     .from(LOGO_BUCKET)
-    .upload(path, file, { contentType: file.type, upsert: true });
+    .upload(path, bytes, { contentType: "image/png", upsert: true });
   if (upErr) {
     console.error("[uploadOrganizationLogo]", upErr.message);
     return { ok: false, error: "Não foi possível enviar a imagem." };

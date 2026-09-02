@@ -298,7 +298,9 @@ export function AdminOrgModal({
               <p className="text-sm font-medium">Branding</p>
               <p className="text-xs text-muted-foreground">
                 A marca aparece sobre fundo claro (login, topo do sistema e
-                formulários) — evite logos brancas. PNG ou JPG, até 1 MB.
+                formulários) — evite logos brancas. PNG ou JPG, até 1 MB. A
+                imagem é recortada automaticamente; envie o arquivo sem muita
+                margem em volta da marca.
               </p>
               <div className="space-y-1.5">
                 <Label htmlFor="org-logo-file" className="text-xs">

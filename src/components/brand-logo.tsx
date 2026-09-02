@@ -8,11 +8,15 @@ import { cn } from "@/lib/utils";
  * Always `object-contain object-left`, never distorted, never cropped.
  */
 
+// Height governs; max-width is as wide as the surface allows so a wordmark
+// isn't scaled down shorter than the nominal height. Uploads are auto-trimmed
+// of empty margins (see uploadOrganizationLogo), which is what actually keeps
+// different logos at a consistent visual weight.
 const SIZES = {
-  xs: "h-6 max-w-[168px]", // dense chrome (mobile topbar)
-  sm: "h-8 max-w-[208px]", // sidebar badge, mobile nav sheet
-  md: "h-10 max-w-[248px]", // login, address page
-  lg: "h-12 max-w-[288px]", // public program form header
+  xs: "h-6 max-w-[180px]", // dense chrome (mobile topbar)
+  sm: "h-8 max-w-[200px]", // sidebar badge (w-64), mobile nav sheet
+  md: "h-10 max-w-[300px]", // login card, address page
+  lg: "h-12 max-w-[360px]", // public program form header
 } as const;
 
 export type BrandLogoSize = keyof typeof SIZES;
