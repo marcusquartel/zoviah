@@ -13,7 +13,6 @@ import { formatDate } from "@/features/creators/format";
 import { getCurrentOrganization } from "@/features/organizations/queries";
 import { getOnboardingState } from "@/features/onboarding/queries";
 import { OnboardingChecklist } from "@/features/onboarding/components/onboarding-checklist";
-import { HelpCenter } from "@/features/support/components/help-center";
 import {
   getDashboardOverview,
   type DashboardPeriodDays,
@@ -55,8 +54,6 @@ export default async function OverviewPage({
           title="Visão Geral"
           description={`${current.organization.name} · painel operacional`}
         />
-        <div className="flex items-center gap-2">
-          <HelpCenter />
         <div className="flex items-center gap-1 rounded-lg border border-border bg-card p-0.5 shadow-xs">
           {PERIODS.map((p) => (
             <Link
@@ -73,7 +70,6 @@ export default async function OverviewPage({
               {p.label}
             </Link>
           ))}
-        </div>
         </div>
       </div>
 

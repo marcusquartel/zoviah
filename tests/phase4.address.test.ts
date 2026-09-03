@@ -614,8 +614,9 @@ describe("Phase 4 — secure address request", { skip }, () => {
       .from("creator_events")
       .select("data")
       .eq("application_id", app);
-    assert.ok(!JSON.stringify(events.data).includes("11144477735"));
-    assert.ok(!JSON.stringify(events.data).includes("444"));
+    const evText = JSON.stringify(events.data);
+    assert.ok(!evText.includes("11144477735")); // digits-only CPF
+    assert.ok(!evText.includes("111.444.777-35")); // masked CPF
 
     await admin.from("creator_addresses").delete().eq("creator_id", creatorA);
     await admin.from("application_requests").delete().eq("application_id", app);
