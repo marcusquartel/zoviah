@@ -215,6 +215,13 @@ export function HelpCenter() {
 
           <div className="flex flex-wrap gap-3 border-t pt-3 text-sm">
             <Link
+              href="/app/ajuda"
+              className="font-medium text-primary hover:underline"
+              onClick={() => setOpen(false)}
+            >
+              Base de conhecimento
+            </Link>
+            <Link
               href="/app/support"
               className="text-muted-foreground hover:text-foreground"
               onClick={() => setOpen(false)}

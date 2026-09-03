@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -28,6 +29,13 @@ export default async function MySupportPage() {
         title="Minhas solicitações"
         description="Tickets que você abriu com o suporte."
       />
+      <p className="text-sm text-muted-foreground">
+        Procurando como fazer algo?{" "}
+        <Link href="/app/ajuda" className="font-medium text-primary hover:underline">
+          Consulte a base de conhecimento
+        </Link>
+        .
+      </p>
       {tickets.length === 0 ? (
         <p className="text-sm text-muted-foreground">
           Você não tem solicitações abertas. Use o botão “Ajuda” no topo para

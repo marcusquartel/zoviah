@@ -32,6 +32,51 @@ export async function searchHelpArticles(
   return data as unknown as HelpArticleHit[];
 }
 
+export interface HelpArticleSummary {
+  id: string;
+  category: string;
+  title: string;
+  slug: string;
+  summary: string | null;
+}
+
+/** Every published article (no body) for the browse-by-category view. */
+export const getAllHelpArticles = cache(
+  async (): Promise<HelpArticleSummary[]> => {
+    if (!isSupabaseConfigured()) return [];
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("help_articles")
+      .select("id, category, title, slug, summary")
+      .eq("status", "published")
+      .order("category", { ascending: true })
+      .order("title", { ascending: true });
+    if (error || !Array.isArray(data)) return [];
+    return data as HelpArticleSummary[];
+  },
+);
+
+export interface HelpArticleFull extends HelpArticleSummary {
+  content: string;
+  updated_at: string;
+}
+
+/** One published article by slug, with its body. `null` when not found. */
+export async function getHelpArticle(
+  slug: string,
+): Promise<HelpArticleFull | null> {
+  if (!isSupabaseConfigured()) return null;
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("help_articles")
+    .select("id, category, title, slug, summary, content, updated_at")
+    .eq("status", "published")
+    .eq("slug", slug)
+    .maybeSingle();
+  if (error || !data) return null;
+  return data as HelpArticleFull;
+}
+
 export const getMyTickets = cache(async (): Promise<SupportTicket[]> => {
   if (!isSupabaseConfigured()) return [];
   const supabase = await createClient();
