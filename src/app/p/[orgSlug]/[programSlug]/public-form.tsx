@@ -14,7 +14,7 @@ import {
   type PublicFieldDef,
 } from "@/lib/form-fields";
 import { submitApplication } from "@/features/public/actions";
-import { DynamicField } from "./dynamic-field";
+import { DynamicField } from "@/components/dynamic-field";
 
 const CONSENT_TEXT =
   "Autorizo o uso das informações fornecidas para avaliação e contato relacionados ao programa.";

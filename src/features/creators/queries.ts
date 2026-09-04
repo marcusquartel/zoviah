@@ -2,15 +2,60 @@ import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentOrganization } from "@/features/organizations/queries";
 import type { CreatorQuery } from "@/lib/query-state";
+import type { PublicFieldDef } from "@/lib/form-fields";
 import type {
   Application,
   ApplicationListItem,
   Creator,
   CreatorEvent,
   CreatorSocialProfile,
+  ProgramStatus,
 } from "@/types/database";
 
 export const PAGE_SIZE = 50;
+
+export interface CreatorFormProgram {
+  id: string;
+  slug: string;
+  name: string;
+  status: ProgramStatus;
+  form_version: number;
+}
+
+/**
+ * A program's active fields, for the "Adicionar creator" dialog — same shape
+ * the public form renders, reused so manual entry and spreadsheet import
+ * validate exactly like a real submission.
+ */
+export const getCreatorFormFields = cache(
+  async (
+    programId: string,
+  ): Promise<{ program: CreatorFormProgram | null; fields: PublicFieldDef[] }> => {
+    const current = await getCurrentOrganization();
+    if (!current) return { program: null, fields: [] };
+
+    const supabase = await createClient();
+    const { data: program } = await supabase
+      .from("programs")
+      .select("id, slug, name, status, form_version")
+      .eq("organization_id", current.organization.id)
+      .eq("id", programId)
+      .maybeSingle();
+    if (!program) return { program: null, fields: [] };
+
+    const { data: fields } = await supabase
+      .from("form_fields")
+      .select(
+        "field_key, label, field_type, placeholder, help_text, required, options, configuration, position",
+      )
+      .eq("organization_id", current.organization.id)
+      .eq("program_id", programId)
+      .eq("active", true)
+      .order("position", { ascending: true });
+
+    return { program, fields: (fields ?? []) as PublicFieldDef[] };
+  },
+);
 
 export interface CrmCounts {
   total_active: number;

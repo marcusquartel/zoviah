@@ -5,22 +5,11 @@ import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { hashToken } from "@/lib/secure-token";
 import { rateLimit, sweepRateLimits } from "@/lib/rate-limit";
-import {
-  buildFieldSchema,
-  CONSENT_FIELD_KEY,
-  HONEYPOT_FIELD_KEY,
-  type PublicFieldDef,
-} from "@/lib/form-fields";
-import {
-  normalizeEmail,
-  normalizeHandle,
-  normalizePhoneBR,
-  parseCount,
-  socialProfileUrl,
-} from "@/lib/normalize";
-import { BR_UFS } from "@/lib/br-locations";
+import { buildFieldSchema, HONEYPOT_FIELD_KEY } from "@/lib/form-fields";
+import { buildApplicationPayload } from "@/lib/application-payload";
+import { mapSubmitApplicationError } from "@/lib/submit-application-errors";
 import { getPublicProgram } from "@/features/public/queries";
-import type { Database, FieldMapping, Json } from "@/types/database";
+import type { Database, Json } from "@/types/database";
 
 export interface SubmitInput {
   orgSlug: string;
@@ -37,14 +26,6 @@ export interface SubmitResult {
   error?: string;
   possibleDuplicate?: boolean;
 }
-
-type SocialDraft = {
-  platform: "instagram" | "tiktok";
-  handle: string;
-  handle_normalized: string;
-  profile_url: string | null;
-  followers_declared?: number | null;
-};
 
 function coarseSource(referrer: string | null): string | null {
   if (!referrer) return null;
@@ -120,82 +101,9 @@ export async function submitApplication(
         "Revise os campos destacados e tente novamente.",
     };
   }
-  const values = parsed.data;
 
-  // ---- extract structured data -------------------------------------------
-  const answersClean: Record<string, unknown> = {};
-  const creator: Record<string, string | null> = {};
-  const socials: Partial<Record<"instagram" | "tiktok", SocialDraft>> = {};
-  const followers: Partial<Record<"instagram" | "tiktok", number>> = {};
-
-  const ensureSocial = (
-    platform: "instagram" | "tiktok",
-    raw: unknown,
-  ): void => {
-    const normalized = normalizeHandle(raw, platform);
-    if (!normalized) return;
-    socials[platform] = {
-      platform,
-      handle: String(raw).trim(),
-      handle_normalized: normalized,
-      profile_url: socialProfileUrl(platform, normalized),
-    };
-  };
-
-  const setCreator = (key: string, raw: unknown): void => {
-    const s = typeof raw === "string" ? raw.trim() : "";
-    if (s) creator[key] = s;
-  };
-
-  for (const field of data.fields as PublicFieldDef[]) {
-    const value = values[field.field_key];
-    answersClean[field.field_key] = value;
-    const mapping: FieldMapping | undefined = field.configuration?.mapping;
-
-    if (field.field_type === "instagram" || mapping === "instagram") {
-      ensureSocial("instagram", value);
-    } else if (field.field_type === "tiktok" || mapping === "tiktok") {
-      ensureSocial("tiktok", value);
-    } else if (field.field_type === "br_state" || mapping === "state") {
-      const uf = typeof value === "string" ? value.trim().toUpperCase() : "";
-      if ((BR_UFS as readonly string[]).includes(uf)) creator.state = uf;
-    } else if (field.field_type === "br_city" || mapping === "city") {
-      setCreator("city", value);
-    } else if (mapping === "instagram_followers") {
-      const n = parseCount(value);
-      if (n != null) followers.instagram = n;
-    } else if (mapping === "tiktok_followers") {
-      const n = parseCount(value);
-      if (n != null) followers.tiktok = n;
-    } else if (mapping === "email") {
-      creator.email = normalizeEmail(value);
-    } else if (mapping === "phone") {
-      creator.phone_e164 = normalizePhoneBR(value);
-    } else if (mapping === "full_name") {
-      setCreator("full_name", value);
-    } else if (mapping === "preferred_name") {
-      setCreator("preferred_name", value);
-    } else if (mapping === "birth_date") {
-      setCreator("birth_date", value);
-    } else if (mapping === "postal_code") {
-      setCreator("postal_code", value);
-    }
-  }
-
-  for (const platform of ["instagram", "tiktok"] as const) {
-    if (socials[platform] && followers[platform] != null) {
-      socials[platform]!.followers_declared = followers[platform];
-    }
-  }
-
-  const fieldSnapshot = (data.fields as PublicFieldDef[]).map((f) => ({
-    field_key: f.field_key,
-    label: f.label,
-    field_type: f.field_type,
-  }));
-
-  delete answersClean[CONSENT_FIELD_KEY];
-  delete answersClean[HONEYPOT_FIELD_KEY];
+  const { answersClean, creator, socials, fieldSnapshot } =
+    buildApplicationPayload(data.fields, parsed.data);
 
   const referrer =
     input.referrer?.slice(0, 500) || requestHeaders.get("referer") || null;
@@ -210,7 +118,7 @@ export async function submitApplication(
     p_answers: answersClean as Json,
     p_field_snapshot: fieldSnapshot as Json,
     p_creator: creator as Json,
-    p_socials: Object.values(socials) as Json,
+    p_socials: socials as Json,
     p_utm: {
       source: input.utm.source ?? null,
       medium: input.utm.medium ?? null,
@@ -226,26 +134,16 @@ export async function submitApplication(
   const { data: rpc, error } = await supabase.rpc("submit_application", rpcArgs);
 
   if (error) {
-    const msg = error.message ?? "";
-    if (msg.includes("PROGRAM_NOT_ACCEPTING")) {
-      return {
-        ok: false,
-        error: "As inscrições deste programa não estão abertas no momento.",
-      };
+    const mapped = mapSubmitApplicationError(error.message);
+    if (!mapped) {
+      console.error("[submit_application] unexpected error", {
+        code: error.code,
+        message: error.message,
+      });
     }
-    if (msg.includes("PROGRAM_NOT_FOUND")) {
-      return { ok: false, error: "Formulário indisponível." };
-    }
-    if (msg.includes("MISSING_NAME")) {
-      return { ok: false, error: "Informe seu nome completo." };
-    }
-    console.error("[submit_application] unexpected error", {
-      code: error.code,
-      message: error.message,
-    });
     return {
       ok: false,
-      error: "Não foi possível enviar sua candidatura. Tente novamente.",
+      error: mapped ?? "Não foi possível enviar sua candidatura. Tente novamente.",
     };
   }
 

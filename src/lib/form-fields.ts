@@ -190,7 +190,11 @@ function schemaForField(field: PublicFieldDef): z.ZodTypeAny {
     case "phone":
     case "instagram":
     case "tiktok": {
-      const base = z.string().trim();
+      // Cap mirrors the per-answer limit enforced in submit_application (SEC-003).
+      const base = z
+        .string()
+        .trim()
+        .max(5000, { error: "Resposta muito longa." });
       return req ? base.min(1, { error: "Campo obrigatório." }) : base;
     }
     case "email": {

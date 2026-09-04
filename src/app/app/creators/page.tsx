@@ -7,6 +7,7 @@ import {
   listApplicationItems,
 } from "@/features/creators/queries";
 import { CreatorsToolbar } from "@/features/creators/components/creators-toolbar";
+import { AddCreatorButton } from "@/features/creators/components/add-creator-button";
 import { CrmCounters } from "@/features/creators/components/crm-counters";
 import { CreatorsResults } from "@/features/creators/components/creators-results";
 
@@ -30,10 +31,13 @@ export default async function CreatorsPage({
 
   return (
     <div className="space-y-5">
-      <PageHeader
-        title="Creators"
-        description="Cada linha é uma inscrição (application) com a creator dela. Uma creator pode ter várias inscrições."
-      />
+      <div className="flex items-start justify-between gap-4">
+        <PageHeader
+          title="Creators"
+          description="Cada linha é uma inscrição (application) com a creator dela. Uma creator pode ter várias inscrições."
+        />
+        <AddCreatorButton programs={programs} />
+      </div>
 
       <CreatorsToolbar
         query={query}

@@ -5,7 +5,10 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentOrganization } from "@/features/organizations/queries";
 import { APPLICATION_STATUSES } from "@/features/applications/status";
-import type { ApplicationStatus } from "@/types/database";
+import { buildFieldSchema, type PublicFieldDef } from "@/lib/form-fields";
+import { buildApplicationPayload } from "@/lib/application-payload";
+import { mapSubmitApplicationError } from "@/lib/submit-application-errors";
+import type { ApplicationStatus, Json } from "@/types/database";
 
 export interface ActionResult {
   ok: boolean;
@@ -103,4 +106,92 @@ export async function addCreatorNote(input: {
 
   revalidatePath("/app/creators");
   return { ok: true };
+}
+
+export interface CreateCreatorResult extends ActionResult {
+  possibleDuplicate?: boolean;
+}
+
+/**
+ * Manual entry / spreadsheet-import row — both funnel through this. Same
+ * `submit_application` RPC the public form uses (dedup, caps, rate limits
+ * included), just called with the staff member's own session instead of the
+ * anon key, and the org/program slugs resolved server-side, never trusted
+ * from the caller.
+ */
+export async function createCreatorManually(
+  programId: string,
+  answers: Record<string, unknown>,
+): Promise<CreateCreatorResult> {
+  const current = await getCurrentOrganization();
+  if (!current) return { ok: false, error: "Organização não encontrada." };
+
+  const supabase = await createClient();
+  const { data: program } = await supabase
+    .from("programs")
+    .select("id, slug, status, form_version")
+    .eq("organization_id", current.organization.id)
+    .eq("id", programId)
+    .maybeSingle();
+  if (!program) return { ok: false, error: "Programa não encontrado." };
+  if (program.status !== "active") {
+    return {
+      ok: false,
+      error: "Só é possível adicionar creators em programas ativos.",
+    };
+  }
+
+  const { data: fieldRows } = await supabase
+    .from("form_fields")
+    .select(
+      "field_key, label, field_type, placeholder, help_text, required, options, configuration, position",
+    )
+    .eq("organization_id", current.organization.id)
+    .eq("program_id", programId)
+    .eq("active", true)
+    .order("position", { ascending: true });
+  const fields = (fieldRows ?? []) as PublicFieldDef[];
+  if (fields.length === 0) {
+    return { ok: false, error: "Este programa não tem campos ativos no formulário." };
+  }
+
+  const schema = buildFieldSchema(fields, { consent: false });
+  const parsed = schema.safeParse(answers);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: parsed.error.issues[0]?.message ?? "Revise os campos destacados.",
+    };
+  }
+
+  const { answersClean, creator, socials, fieldSnapshot } =
+    buildApplicationPayload(fields, parsed.data);
+
+  const { data: rpc, error } = await supabase.rpc("submit_application", {
+    p_org_slug: current.organization.slug,
+    p_program_slug: program.slug,
+    p_form_version: program.form_version,
+    p_answers: answersClean as Json,
+    p_field_snapshot: fieldSnapshot as Json,
+    p_creator: creator as Json,
+    p_socials: socials as Json,
+    p_utm: {} as Json,
+    p_referrer: null,
+    p_source: "manual",
+  });
+
+  if (error) {
+    const mapped = mapSubmitApplicationError(error.message);
+    if (!mapped) {
+      console.error("[createCreatorManually] unexpected error", {
+        code: error.code,
+        message: error.message,
+      });
+    }
+    return { ok: false, error: mapped ?? "Não foi possível criar a inscrição." };
+  }
+
+  revalidatePath("/app/creators");
+  const result = (rpc ?? {}) as { possible_duplicate?: boolean };
+  return { ok: true, possibleDuplicate: result.possible_duplicate ?? false };
 }

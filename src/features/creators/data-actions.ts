@@ -1,12 +1,15 @@
 "use server";
 
 import { parseCreatorQuery } from "@/lib/query-state";
+import type { PublicFieldDef } from "@/lib/form-fields";
 import {
   getApplicationDetail,
+  getCreatorFormFields,
   getCreatorTimeline,
   listApplicationItems,
   type ApplicationDetail,
   type ApplicationListPage,
+  type CreatorFormProgram,
 } from "@/features/creators/queries";
 import {
   getAnalysisById,
@@ -44,6 +47,13 @@ export async function loadMoreApplications(
 ): Promise<ApplicationListPage> {
   const query = parseCreatorQuery(new URLSearchParams(search));
   return listApplicationItems({ ...query, page: Math.max(1, page) });
+}
+
+/** A program's active form fields, for the "Adicionar creator" dialog. */
+export async function loadCreatorFormFields(
+  programId: string,
+): Promise<{ program: CreatorFormProgram | null; fields: PublicFieldDef[] }> {
+  return getCreatorFormFields(programId);
 }
 
 export interface DrawerAnalysis {
