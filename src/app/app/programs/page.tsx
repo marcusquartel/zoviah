@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/table";
 import { PageHeader } from "@/components/page-header";
 import { NewProgramButton } from "@/features/programs/components/new-program-button";
+import { DeleteProgramButton } from "@/features/programs/components/delete-program-button";
 import { listPrograms } from "@/features/programs/queries";
 import {
   PROGRAM_STATUS_LABELS,
@@ -52,6 +53,7 @@ export default async function ProgramsPage() {
                 <TableHead className="text-right">Inscrições</TableHead>
                 <TableHead>Criado em</TableHead>
                 <TableHead className="w-8" />
+                <TableHead className="w-8" />
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -86,6 +88,9 @@ export default async function ProgramsPage() {
                     >
                       <ChevronRight className="size-4 text-muted-foreground" />
                     </Link>
+                  </TableCell>
+                  <TableCell>
+                    <DeleteProgramButton programId={p.id} programName={p.name} />
                   </TableCell>
                 </TableRow>
               ))}

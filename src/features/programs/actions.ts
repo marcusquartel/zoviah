@@ -94,6 +94,31 @@ export async function createProgram(): Promise<void> {
   redirect(`/app/programs/${data.id}/general`);
 }
 
+export async function deleteProgram(programId: string): Promise<ActionState> {
+  const auth = await requireAdmin();
+  if (!auth.ok) return { error: auth.error };
+
+  const { error } = await auth.supabase
+    .from("programs")
+    .delete()
+    .eq("organization_id", auth.orgId)
+    .eq("id", programId);
+
+  if (error) {
+    // applications.program_id references programs ON DELETE RESTRICT.
+    if (error.code === "23503") {
+      return {
+        error:
+          "Não é possível excluir: este programa já tem inscrições. Arquive-o em vez de excluir.",
+      };
+    }
+    return { error: "Não foi possível excluir o programa." };
+  }
+
+  revalidatePath("/app/programs");
+  return { success: true };
+}
+
 export async function updateProgram(
   programId: string,
   _prev: ActionState,
