@@ -27,7 +27,11 @@ async function requireAdmin(): Promise<
   const current = await getCurrentOrganization();
   if (!current) return { ok: false, error: "Organização não encontrada." };
   if (current.role === "analyst") {
-    return { ok: false, error: "Você não tem permissão para esta ação." };
+    return {
+      ok: false,
+      error:
+        "Apenas administradores da conta podem alterar programas. Peça a um administrador para fazer essa mudança.",
+    };
   }
   const supabase = await createClient();
   return { ok: true, orgId: current.organization.id, supabase };

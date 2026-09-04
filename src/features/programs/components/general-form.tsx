@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useId } from "react";
+import { useActionState, useEffect, useId } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,6 +26,13 @@ export function GeneralForm({ program }: { program: Program }) {
   const action = updateProgram.bind(null, program.id);
   const [state, formAction, pending] = useActionState(action, initial);
   const uid = useId();
+
+  useEffect(() => {
+    // Depend on `state` itself (not `state.error`) so a repeated identical
+    // error — e.g. clicking Salvar twice without permission — toasts again
+    // instead of silently no-op'ing on an unchanged string value.
+    if (state.error) toast.error(state.error);
+  }, [state]);
 
   return (
     <form action={formAction} className="max-w-2xl space-y-8">
@@ -117,7 +125,10 @@ export function GeneralForm({ program }: { program: Program }) {
       </section>
 
       {state.error ? (
-        <p className="text-sm text-danger" role="alert">
+        <p
+          className="rounded-md bg-danger/10 px-3 py-2 text-sm text-danger"
+          role="alert"
+        >
           {state.error}
         </p>
       ) : null}
