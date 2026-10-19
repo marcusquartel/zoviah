@@ -11,6 +11,10 @@ export async function proxy(request: NextRequest) {
   if (request.nextUrl.pathname.startsWith("/p/")) {
     return NextResponse.next();
   }
+  // Shopify webhooks carry no session (they are HMAC-verified in the route).
+  if (request.nextUrl.pathname.startsWith("/api/shopify/")) {
+    return NextResponse.next();
+  }
   // Without credentials there is no session to manage; let every route render
   // its own "configure Supabase" notice instead of crashing here.
   if (!isSupabaseConfigured()) {

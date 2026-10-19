@@ -120,6 +120,19 @@ export function checkProductionEnv(
     }
   }
 
+  // --- Shopify integration (optional, degrades) ------------------------
+  const encKey = val(env, "SHOPIFY_ENC_KEY");
+  if (encKey && Buffer.from(encKey, "base64").length === 32) {
+    add("SHOPIFY_ENC_KEY", "ok", false, "integração Shopify habilitada");
+  } else {
+    add(
+      "SHOPIFY_ENC_KEY",
+      "warn",
+      false,
+      encKey ? "inválida — precisa ter 32 bytes em base64" : "ausente — integração Shopify indisponível",
+    );
+  }
+
   // --- Anthropic: support assistant (optional, degrades to ticket) ------
   const anthKey = val(env, "ANTHROPIC_API_KEY");
   const supportModel = val(env, "ANTHROPIC_SUPPORT_MODEL");

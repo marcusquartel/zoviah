@@ -102,6 +102,15 @@ export type ApplicationStatus =
   | "archived";
 
 export type AddressRequestType = "shipping_address";
+export type CommissionStatus = "awaiting_payment" | "pending" | "paid" | "reversed";
+export type ShopifyAttribution = "coupon" | "utm_last" | "utm_first";
+export interface ShopifyUtm {
+  source?: string | null;
+  medium?: string | null;
+  campaign?: string | null;
+  content?: string | null;
+  term?: string | null;
+}
 export type CreatorAddressSource = "signup" | "secure_request";
 export type AddressRequestStatus =
   | "pending"
@@ -235,6 +244,7 @@ export interface Database {
           favicon_url: string | null;
           primary_color: string | null;
           secondary_color: string | null;
+          commission_hold_days?: number;
         } & Timestamps;
         Insert: {
           organization_id: string;
@@ -1195,6 +1205,81 @@ export interface Database {
           },
         ];
       };
+      creator_affiliations: {
+        Row: {
+          id: string;
+          organization_id: string;
+          creator_id: string;
+          code: string;
+          commission_rate: number;
+          discount_percent: number | null;
+          shopify_discount_id: string | null;
+          active: boolean;
+        } & Timestamps;
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
+      shopify_orders: {
+        Row: {
+          id: string;
+          organization_id: string;
+          shopify_order_id: string;
+          name: string | null;
+          processed_at: string;
+          cancelled_at: string | null;
+          financial_status: string | null;
+          currency: string;
+          subtotal: number;
+          total_discounts: number;
+          total_refunded: number;
+          discount_codes: string[];
+          utm_last: ShopifyUtm | null;
+          utm_first: ShopifyUtm | null;
+          creator_id: string | null;
+          attribution: ShopifyAttribution | null;
+          test: boolean;
+          synced_at: string;
+          created_at: string;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
+      commissions: {
+        Row: {
+          id: string;
+          organization_id: string;
+          creator_id: string;
+          order_id: string;
+          base_amount: number;
+          rate: number;
+          amount: number;
+          currency: string;
+          status: CommissionStatus;
+          approvable_at: string;
+          paid_at: string | null;
+          paid_by: string | null;
+        } & Timestamps;
+        Insert: never;
+        Update: never;
+        Relationships: [
+          {
+            foreignKeyName: "commissions_order_id_fkey";
+            columns: ["order_id"];
+            isOneToOne: true;
+            referencedRelation: "shopify_orders";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "commissions_creator_id_fkey";
+            columns: ["creator_id"];
+            isOneToOne: false;
+            referencedRelation: "creators";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: {
       latest_metric_snapshots: {
@@ -1256,6 +1341,50 @@ export interface Database {
       };
     };
     Functions: {
+      shopify_connect: {
+        Args: {
+          p_org: string;
+          p_shop_domain: string;
+          p_client_id: string;
+          p_secret_enc: string;
+          p_token_enc: string;
+          p_token_expires_at: string;
+          p_scopes: string;
+          p_ingest_key_hash: string;
+        };
+        Returns: Json;
+      };
+      shopify_disconnect: { Args: { p_org: string }; Returns: Json };
+      shopify_connection_status: { Args: { p_org: string }; Returns: Json };
+      shopify_connection_secrets_for_org: { Args: { p_org: string }; Returns: Json };
+      shopify_connection_secrets: { Args: { p_shop_domain: string }; Returns: Json };
+      shopify_save_token: {
+        Args: { p_org: string; p_ingest_key: string; p_token_enc: string; p_expires_at: string };
+        Returns: undefined;
+      };
+      shopify_record_sync: {
+        Args: { p_org: string; p_ingest_key: string; p_error: string | null; p_webhooks_ok: boolean | null };
+        Returns: undefined;
+      };
+      shopify_mark_uninstalled: { Args: { p_org: string; p_ingest_key: string }; Returns: undefined };
+      shopify_ingest_orders: {
+        Args: { p_org: string; p_ingest_key: string; p_orders: Json };
+        Returns: Json;
+      };
+      set_creator_affiliation: {
+        Args: {
+          p_org: string;
+          p_creator_id: string;
+          p_code: string;
+          p_commission_rate: number;
+          p_discount_percent: number | null;
+          p_shopify_discount_id: string | null;
+          p_active?: boolean;
+        };
+        Returns: Json;
+      };
+      mark_commissions_paid: { Args: { p_org: string; p_ids: string[] }; Returns: Json };
+      set_commission_hold_days: { Args: { p_org: string; p_days: number }; Returns: Json };
       is_organization_member: {
         Args: { org_id: string };
         Returns: boolean;
@@ -1694,3 +1823,7 @@ export type RoadmapItem =
   Database["public"]["Tables"]["roadmap_items"]["Row"];
 export type ChangelogEntry =
   Database["public"]["Tables"]["changelog_entries"]["Row"];
+export type CreatorAffiliation =
+  Database["public"]["Tables"]["creator_affiliations"]["Row"];
+export type ShopifyOrder = Database["public"]["Tables"]["shopify_orders"]["Row"];
+export type Commission = Database["public"]["Tables"]["commissions"]["Row"];

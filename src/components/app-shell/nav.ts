@@ -27,6 +27,8 @@ export const primaryNav: NavItem[] = [
   { title: "Creators", href: "/app/creators", icon: Users },
   { title: "Programas", href: "/app/programs", icon: FolderKanban },
   { title: "Envios", href: "/app/shipments", icon: Send },
+  { title: "Comissões", href: "/app/commissions", icon: BadgeDollarSign },
+  { title: "Shopify", href: "/app/shopify", icon: ShoppingBag },
   { title: "Equipe", href: "/app/team", icon: UsersRound },
   { title: "Novidades", href: "/app/changelog", icon: Sparkle },
   { title: "Configurações", href: "/app/settings/appearance", icon: Settings },
@@ -41,8 +43,6 @@ export interface ComingSoonItem {
 export const comingSoonNav: ComingSoonItem[] = [
   { title: "Campanhas", icon: Megaphone },
   { title: "Performance", icon: BarChart3 },
-  { title: "Comissões", icon: BadgeDollarSign },
   { title: "Portal Creator", icon: UserRound },
-  { title: "Shopify", icon: ShoppingBag },
   { title: "TikTok Shop", icon: Music2 },
 ];
