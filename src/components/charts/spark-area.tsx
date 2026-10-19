@@ -43,7 +43,7 @@ export function SparkArea({
     >
       <defs>
         <linearGradient id={id} x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0%" stopColor="currentColor" stopOpacity="0.18" />
+          <stop offset="0%" stopColor="currentColor" stopOpacity="0.22" />
           <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
         </linearGradient>
       </defs>
@@ -52,7 +52,7 @@ export function SparkArea({
         points={line}
         fill="none"
         stroke="currentColor"
-        strokeWidth="1.75"
+        strokeWidth="2.5"
         strokeLinecap="round"
         strokeLinejoin="round"
         vectorEffect="non-scaling-stroke"

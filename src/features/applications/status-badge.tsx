@@ -4,11 +4,11 @@ import { APPLICATION_STATUS_LABELS } from "@/features/applications/status";
 import type { ApplicationStatus } from "@/types/database";
 
 const STYLES: Record<ApplicationStatus, string> = {
-  new: "bg-primary/10 text-primary",
-  awaiting_review: "bg-warning/15 text-warning-foreground",
-  information_requested: "bg-accent text-accent-foreground",
-  approved: "bg-success/15 text-success",
-  archived: "bg-muted text-muted-foreground",
+  new: "bg-primary-soft text-foreground",
+  awaiting_review: "bg-muted text-foreground",
+  information_requested: "border-[1.4px] border-input bg-transparent text-foreground",
+  approved: "bg-border-strong text-foreground",
+  archived: "border-[1.4px] border-input bg-transparent text-faint",
 };
 
 export function ApplicationStatusBadge({

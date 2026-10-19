@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { buildThemeCss } from "../src/lib/theme.ts";
+import { buildThemeCss, readableOn } from "../src/lib/theme.ts";
 
 test("returns null when no colors are set", () => {
   assert.equal(buildThemeCss({}), null);
@@ -29,5 +29,17 @@ test("emits overrides for valid hex values", () => {
 
 test("accepts shorthand hex and handles a single color", () => {
   const css = buildThemeCss({ primaryColor: "#abc" });
-  assert.equal(css, ":root{--primary: #abc;--sidebar-primary: #abc;--ring: #abc;}");
+  assert.equal(
+    css,
+    ":root{--primary: #abc;--primary-foreground: #26262d;--primary-on-ink: #abc;--sidebar-primary: #abc;--sidebar-primary-foreground: #26262d;--ring: #abc;}",
+  );
+});
+
+test("readableOn: ink on light accents, white on dark ones", () => {
+  assert.equal(readableOn("#89E8A2"), "#26262d");
+  assert.equal(readableOn("#55AEFF"), "#26262d");
+  assert.equal(readableOn("#ffffff"), "#26262d");
+  assert.equal(readableOn("#B4356E"), "#ffffff");
+  assert.equal(readableOn("#26262D"), "#ffffff");
+  assert.equal(readableOn("#000"), "#ffffff");
 });

@@ -17,13 +17,33 @@ interface NavListProps {
 }
 
 const linkBase =
-  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors";
+  "flex items-center gap-3 rounded-2xl px-2 py-1.5 text-[0.9375rem] transition-colors";
+
+/** The 30px icon mark: accent disc when active, bare glyph otherwise. */
+function NavIcon({
+  icon: Icon,
+  active,
+}: {
+  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
+  active: boolean;
+}) {
+  return (
+    <span
+      className={cn(
+        "flex size-[30px] shrink-0 items-center justify-center rounded-full transition-colors",
+        active ? "bg-primary text-primary-foreground" : "text-muted-foreground",
+      )}
+    >
+      <Icon className="size-[17px]" strokeWidth={1.6} />
+    </span>
+  );
+}
 
 export function NavList({ onNavigate, isPlatformAdmin }: NavListProps) {
   const pathname = usePathname();
 
   return (
-    <nav className="flex flex-1 flex-col gap-6 overflow-y-auto px-3 py-4">
+    <nav className="flex flex-1 flex-col gap-6 overflow-y-auto pb-4">
       <ul className="space-y-0.5">
         {primaryNav.map((item) => {
           const active = isActive(pathname, item.href);
@@ -36,16 +56,11 @@ export function NavList({ onNavigate, isPlatformAdmin }: NavListProps) {
                 className={cn(
                   linkBase,
                   active
-                    ? "bg-secondary text-secondary-foreground shadow-xs"
-                    : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground",
+                    ? "bg-sidebar-accent font-medium text-foreground"
+                    : "text-muted-foreground hover:bg-accent hover:text-foreground",
                 )}
               >
-                <item.icon
-                  className={cn(
-                    "size-4 shrink-0 transition-colors",
-                    active ? "text-foreground" : "text-muted-foreground/80",
-                  )}
-                />
+                <NavIcon icon={item.icon} active={active} />
                 {item.title}
               </Link>
             </li>
@@ -55,7 +70,7 @@ export function NavList({ onNavigate, isPlatformAdmin }: NavListProps) {
 
       {isPlatformAdmin ? (
         <div className="space-y-1.5">
-          <p className="eyebrow px-3">Plataforma</p>
+          <p className="eyebrow px-2">Plataforma</p>
           <ul className="space-y-0.5">
             <li>
               <Link
@@ -65,11 +80,14 @@ export function NavList({ onNavigate, isPlatformAdmin }: NavListProps) {
                 className={cn(
                   linkBase,
                   pathname.startsWith("/admin")
-                    ? "bg-secondary text-secondary-foreground shadow-xs"
-                    : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground",
+                    ? "bg-sidebar-accent font-medium text-foreground"
+                    : "text-muted-foreground hover:bg-accent hover:text-foreground",
                 )}
               >
-                <ShieldCheck className="size-4 shrink-0" />
+                <NavIcon
+                  icon={ShieldCheck}
+                  active={pathname.startsWith("/admin")}
+                />
                 Admin SaaS
               </Link>
             </li>
@@ -78,7 +96,7 @@ export function NavList({ onNavigate, isPlatformAdmin }: NavListProps) {
       ) : null}
 
       <div className="mt-auto space-y-1.5">
-        <p className="eyebrow px-3">Em breve</p>
+        <p className="eyebrow px-2">Em breve</p>
         <ul className="space-y-0.5">
           {comingSoonNav.map((item) => (
             <li key={item.title}>
@@ -86,10 +104,12 @@ export function NavList({ onNavigate, isPlatformAdmin }: NavListProps) {
                 aria-disabled
                 className={cn(
                   linkBase,
-                  "cursor-not-allowed text-muted-foreground/45 select-none",
+                  "cursor-not-allowed text-faint/70 select-none",
                 )}
               >
-                <item.icon className="size-4 shrink-0" />
+                <span className="flex size-[30px] shrink-0 items-center justify-center rounded-full border-[1.4px] border-dashed border-input">
+                  <item.icon className="size-[15px]" />
+                </span>
                 <span className="flex-1">{item.title}</span>
                 <Lock className="size-3" />
               </span>

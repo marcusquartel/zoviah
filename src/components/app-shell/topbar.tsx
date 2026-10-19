@@ -19,7 +19,7 @@ export function Topbar({
   isPlatformAdmin,
 }: TopbarProps) {
   return (
-    <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center justify-between gap-3 border-b border-border bg-background/85 px-4 backdrop-blur supports-backdrop-filter:bg-background/70">
+    <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between gap-3 bg-background/85 px-4 backdrop-blur supports-backdrop-filter:bg-background/70 sm:px-6 md:rounded-t-[22px] lg:px-10">
       <div className="flex items-center gap-2 md:hidden">
         <MobileNav orgName={orgName} logoUrl={logoUrl} />
         {logoUrl ? (
@@ -31,12 +31,15 @@ export function Topbar({
       <div className="hidden md:block" />
       <div className="flex items-center gap-1">
         <HelpCenter />
-        <UserMenu
-          email={userEmail}
-          role={role}
-          orgName={orgName}
-          isPlatformAdmin={isPlatformAdmin}
-        />
+        {/* On desktop the account card lives at the foot of the sidebar. */}
+        <div className="md:hidden">
+          <UserMenu
+            email={userEmail}
+            role={role}
+            orgName={orgName}
+            isPlatformAdmin={isPlatformAdmin}
+          />
+        </div>
       </div>
     </header>
   );

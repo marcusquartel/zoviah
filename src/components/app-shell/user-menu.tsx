@@ -2,7 +2,7 @@
 
 import { useTransition } from "react";
 import Link from "next/link";
-import { ChevronsUpDown, LogOut, ShieldCheck } from "lucide-react";
+import { ChevronRight, ChevronsUpDown, LogOut, ShieldCheck } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,6 +18,8 @@ import { logout } from "@/features/auth/actions";
 import { buildUserMenuItems } from "@/components/app-shell/user-menu-items";
 
 interface UserMenuProps {
+  /** `sidebar`: the white account card at the foot of the sidebar. */
+  variant?: "topbar" | "sidebar";
   email: string;
   role: string;
   orgName?: string;
@@ -29,6 +31,7 @@ function initials(email: string): string {
 }
 
 export function UserMenu({
+  variant = "topbar",
   email,
   role,
   orgName,
@@ -48,20 +51,47 @@ export function UserMenu({
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger
-        render={<Button variant="ghost" size="sm" className="h-9 gap-2 px-2" />}
-      >
-        <Avatar className="size-6">
-          <AvatarFallback className="text-[0.65rem]">
+      {variant === "sidebar" ? (
+        <DropdownMenuTrigger
+          render={
+            <button
+              type="button"
+              className="flex w-full items-center gap-3 rounded-2xl bg-card px-3 py-2.5 text-left transition-shadow outline-none hover:shadow-sm focus-visible:ring-3 focus-visible:ring-ring/50 aria-expanded:ring-[1.5px] aria-expanded:ring-input"
+            />
+          }
+        >
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary text-[0.75rem] font-medium tracking-[0.03em] text-primary-foreground">
             {initials(email)}
-          </AvatarFallback>
-        </Avatar>
-        <span className="hidden max-w-[12rem] truncate text-sm sm:inline">
-          {email}
-        </span>
-        <ChevronsUpDown className="size-3.5 text-muted-foreground" />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-sm font-medium">{email}</span>
+            <span className="block truncate text-[0.75rem] text-muted-foreground capitalize">
+              {role}
+            </span>
+          </span>
+          <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+        </DropdownMenuTrigger>
+      ) : (
+        <DropdownMenuTrigger
+          render={<Button variant="ghost" size="sm" className="h-9 gap-2 px-2" />}
+        >
+          <Avatar className="size-6">
+            <AvatarFallback className="text-[0.65rem]">
+              {initials(email)}
+            </AvatarFallback>
+          </Avatar>
+          <span className="hidden max-w-[12rem] truncate text-sm sm:inline">
+            {email}
+          </span>
+          <ChevronsUpDown className="size-3.5 text-muted-foreground" />
+        </DropdownMenuTrigger>
+      )}
+      <DropdownMenuContent
+        align={variant === "sidebar" ? "start" : "end"}
+        side={variant === "sidebar" ? "top" : "bottom"}
+        sideOffset={variant === "sidebar" ? 8 : 4}
+        className={variant === "sidebar" ? "w-(--anchor-width) min-w-60" : "w-56"}
+      >
         {/* Base UI's Menu.GroupLabel (= DropdownMenuLabel) throws
             "MenuGroupContext is missing" unless it is inside a Menu.Group. */}
         <DropdownMenuGroup>

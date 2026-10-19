@@ -1,10 +1,11 @@
 import Link from "next/link";
+import { ArrowUpRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
  * A titled content region — the standard container for dashboard blocks,
- * lists and charts. Lighter than <Card>: one border, a header row with an
- * optional action, and padded content.
+ * lists and charts. A borderless white card (28px radius) with a header row
+ * and an optional action. `tone="ink"` renders the dark variant.
  */
 export function Panel({
   title,
@@ -13,6 +14,7 @@ export function Panel({
   children,
   className,
   bodyClassName,
+  tone = "default",
 }: {
   title?: React.ReactNode;
   description?: React.ReactNode;
@@ -20,31 +22,52 @@ export function Panel({
   children: React.ReactNode;
   className?: string;
   bodyClassName?: string;
+  tone?: "default" | "ink";
 }) {
+  const ink = tone === "ink";
   return (
     <section
       className={cn(
-        "flex flex-col rounded-xl border border-border bg-card shadow-xs",
+        "flex flex-col rounded-[28px]",
+        ink ? "bg-ink text-ink-foreground" : "bg-card",
         className,
       )}
     >
       {title || action ? (
-        <header className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
+        <header className="flex items-start justify-between gap-3 px-5 pt-5 sm:px-6">
           <div className="min-w-0">
             {title ? (
-              <h2 className="font-heading text-sm font-semibold">{title}</h2>
+              <h2 className="font-heading text-lg leading-tight font-medium tracking-[-0.009em]">
+                {title}
+              </h2>
             ) : null}
             {description ? (
-              <p className="text-xs text-muted-foreground">{description}</p>
+              <p
+                className={cn(
+                  "mt-1 text-[0.8125rem]",
+                  ink ? "text-ink-muted" : "text-muted-foreground",
+                )}
+              >
+                {description}
+              </p>
             ) : null}
           </div>
           {action ? (
-            "label" in (action as { label?: string }) && (action as { href?: string }).href ? (
+            "label" in (action as { label?: string }) &&
+            (action as { href?: string }).href ? (
               <Link
                 href={(action as { href: string }).href}
-                className="shrink-0 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+                className="group inline-flex shrink-0 items-center gap-2 text-[0.8125rem] transition-opacity hover:opacity-70"
               >
-                {(action as { label: string }).label} →
+                {(action as { label: string }).label}
+                <span
+                  className={cn(
+                    "inline-flex size-7 items-center justify-center rounded-full border-[1.5px]",
+                    ink ? "border-ink-foreground" : "border-ink",
+                  )}
+                >
+                  <ArrowUpRight className="size-4" strokeWidth={1.6} />
+                </span>
               </Link>
             ) : (
               (action as React.ReactNode)
@@ -52,7 +75,9 @@ export function Panel({
           ) : null}
         </header>
       ) : null}
-      <div className={cn("p-4", bodyClassName)}>{children}</div>
+      <div className={cn("px-5 pt-4 pb-5 sm:px-6", bodyClassName)}>
+        {children}
+      </div>
     </section>
   );
 }

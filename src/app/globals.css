@@ -5,21 +5,29 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * Design System V2 (Phase 7B).
+ * Design System V3 — warm off-white identity.
  *
- * Only semantic tokens live here — no client-specific hex values. A tenant's
- * `organization_settings.primary_color` / `secondary_color` are injected at
- * runtime by <ThemeStyle> as plain overrides of `--primary` / `--secondary`,
- * so structural chrome deliberately leans on the NEUTRAL palette (a faint cool
- * slate, not pure gray) and a fixed chart palette — the premium feel comes
- * from those, not from a loud accent, and a tenant colour can't break the
- * layout.
+ * Paper neutrals (#EFEDE8 frame, #F6F5F2 canvas, white cards), a near-black
+ * ink (#26262D) for text, dark cards and active states, beige hairlines, and
+ * ONE accent: the tenant's `organization_settings.primary_color`, injected at
+ * runtime by <ThemeStyle> as `--primary` (default: Zoviah magenta). The accent
+ * paints primary actions, active tabs and highlight figures; everything else
+ * stays neutral so a tenant colour can't break the layout.
+ *
+ * Shape language: 28px cards, pill buttons / chips / tabs, ring icons.
  */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-surface: var(--surface);
   --color-surface-foreground: var(--surface-foreground);
+  --color-frame: var(--frame);
+  --color-ink: var(--ink);
+  --color-ink-foreground: var(--ink-foreground);
+  --color-ink-muted: var(--ink-muted);
+  --color-primary-soft: var(--primary-soft);
+  --color-primary-on-ink: var(--primary-on-ink);
+  --color-faint: var(--faint);
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
   --font-heading: var(--font-sans);
@@ -73,61 +81,71 @@
 }
 
 :root {
-  /* Neutrals — a faint cool slate (hue 265, very low chroma). */
-  --background: oklch(0.994 0.001 265);
-  --foreground: oklch(0.21 0.02 265);
-  --surface: oklch(0.972 0.003 265);
-  --surface-foreground: oklch(0.21 0.02 265);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.21 0.02 265);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.21 0.02 265);
+  /* Paper neutrals. */
+  --frame: #efede8;
+  --background: #f6f5f2;
+  --foreground: #26262d;
+  --surface: #f6f5f2;
+  --surface-foreground: #26262d;
+  --card: #ffffff;
+  --card-foreground: #26262d;
+  --popover: #ffffff;
+  --popover-foreground: #26262d;
 
-  /* Action colour — tenant-overridable. Default: deep slate. */
-  --primary: oklch(0.26 0.03 265);
-  --primary-foreground: oklch(0.985 0.002 265);
-  --secondary: oklch(0.955 0.004 265);
-  --secondary-foreground: oklch(0.26 0.03 265);
+  /* Ink: dark cards, active tabs, strong text. */
+  --ink: #26262d;
+  --ink-foreground: #ffffff;
+  --ink-muted: #a9a9b2;
 
-  --muted: oklch(0.965 0.004 265);
-  --muted-foreground: oklch(0.52 0.02 265);
-  --accent: oklch(0.955 0.006 265);
-  --accent-foreground: oklch(0.26 0.03 265);
+  /* Accent — tenant-overridable (ThemeStyle). Default: Zoviah magenta. */
+  --primary: #b4356e;
+  --primary-foreground: #ffffff;
+  --primary-soft: color-mix(in oklch, var(--primary) 18%, white);
+  /* Accent as it reads on ink: the colour itself when light, else softened. */
+  --primary-on-ink: color-mix(in oklch, var(--primary) 45%, white);
+  --secondary: #efede8;
+  --secondary-foreground: #26262d;
 
-  --success: oklch(0.63 0.15 155);
-  --success-foreground: oklch(0.985 0 0);
-  --warning: oklch(0.8 0.15 82);
-  --warning-foreground: oklch(0.32 0.06 82);
-  --danger: oklch(0.585 0.2 25);
-  --danger-foreground: oklch(0.985 0 0);
+  --muted: #efede8;
+  --muted-foreground: #5f5f68;
+  --faint: #82828a;
+  --accent: #f5f3ef;
+  --accent-foreground: #26262d;
 
-  --border: oklch(0.912 0.005 265);
-  --border-strong: oklch(0.86 0.008 265);
-  --input: oklch(0.9 0.006 265);
-  --ring: oklch(0.62 0.03 265);
+  --success: #2f8f5b;
+  --success-foreground: #ffffff;
+  --warning: #e0a33a;
+  --warning-foreground: #26262d;
+  --danger: #c8443f;
+  --danger-foreground: #ffffff;
 
-  /* Chart palette — cohesive, slightly desaturated for a premium look. */
-  --chart-1: oklch(0.55 0.14 264);
-  --chart-2: oklch(0.62 0.11 195);
-  --chart-3: oklch(0.72 0.13 85);
-  --chart-4: oklch(0.62 0.16 15);
-  --chart-5: oklch(0.55 0.12 305);
+  --border: #eae7e0;
+  --border-strong: #e0dcd3;
+  --input: #e0dcd3;
+  --ring: var(--primary);
 
-  --radius: 0.7rem;
+  /* Chart palette — ink first, then the accent and warm neutrals. */
+  --chart-1: #26262d;
+  --chart-2: var(--primary);
+  --chart-3: #82828a;
+  --chart-4: #c9c6bf;
+  --chart-5: #e0dcd3;
 
-  --elevation-xs: 0 1px 2px 0 oklch(0.21 0.02 265 / 0.05);
-  --elevation-sm: 0 1px 3px 0 oklch(0.21 0.02 265 / 0.08), 0 1px 2px -1px oklch(0.21 0.02 265 / 0.06);
-  --elevation-md: 0 4px 12px -2px oklch(0.21 0.02 265 / 0.1), 0 2px 6px -2px oklch(0.21 0.02 265 / 0.06);
-  --elevation-lg: 0 12px 32px -6px oklch(0.21 0.02 265 / 0.14), 0 6px 14px -6px oklch(0.21 0.02 265 / 0.08);
+  --radius: 1rem;
 
-  --sidebar: oklch(0.978 0.003 265);
-  --sidebar-foreground: oklch(0.21 0.02 265);
-  --sidebar-primary: oklch(0.26 0.03 265);
-  --sidebar-primary-foreground: oklch(0.985 0.002 265);
-  --sidebar-accent: oklch(0.95 0.006 265);
-  --sidebar-accent-foreground: oklch(0.26 0.03 265);
-  --sidebar-border: oklch(0.91 0.005 265);
-  --sidebar-ring: oklch(0.62 0.03 265);
+  --elevation-xs: 0 1px 2px 0 rgb(38 38 45 / 0.04);
+  --elevation-sm: 0 2px 10px rgb(38 38 45 / 0.06);
+  --elevation-md: 0 8px 24px rgb(38 38 45 / 0.1);
+  --elevation-lg: 0 20px 48px rgb(38 38 45 / 0.16);
+
+  --sidebar: #efede8;
+  --sidebar-foreground: #26262d;
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: #ffffff;
+  --sidebar-accent-foreground: #26262d;
+  --sidebar-border: #e0dcd3;
+  --sidebar-ring: var(--primary);
 }
 
 .dark {
@@ -198,7 +216,8 @@
   h1,
   h2,
   h3 {
-    @apply font-heading tracking-tight;
+    @apply font-heading font-medium;
+    letter-spacing: -0.014em;
   }
   /* Tabular figures for every metric / count in the product. */
   .tabular-nums {
@@ -207,8 +226,15 @@
 }
 
 @layer components {
-  /* Small uppercase label used above metrics and section groups. */
+  /* Small label used above metrics and section groups. */
   .eyebrow {
-    @apply text-[0.6875rem] font-medium uppercase tracking-[0.08em] text-muted-foreground;
+    @apply text-[0.8125rem] font-normal text-faint;
+  }
+  /* Large display figure (metrics): light weight, tight tracking. */
+  .figure {
+    font-weight: 400;
+    letter-spacing: -0.034em;
+    line-height: 0.95;
+    font-variant-numeric: tabular-nums;
   }
 }

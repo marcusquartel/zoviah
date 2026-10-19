@@ -1,10 +1,18 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { AlertTriangle } from "lucide-react";
+import {
+  ArrowUpRight,
+  CheckCircle2,
+  MapPin,
+  Send,
+  UserPlus,
+  Users,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/page-header";
 import { Panel } from "@/components/ui/panel";
 import { StatCard } from "@/components/ui/stat-card";
+import { RingIcon } from "@/components/ui/ring-icon";
 import { SparkArea } from "@/components/charts/spark-area";
 import { RankBars } from "@/components/charts/rank-bars";
 import { FunnelBars } from "@/components/charts/funnel-bars";
@@ -49,22 +57,22 @@ export default async function OverviewPage({
     PERIODS.find((p) => p.days === period)?.label ?? `${period} dias`;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-end justify-between gap-3 pb-4">
         <PageHeader
           title="Visão Geral"
           description={`${current.organization.name} · painel operacional`}
         />
-        <div className="flex items-center gap-1 rounded-lg border border-border bg-card p-0.5 shadow-xs">
+        <div className="flex items-center gap-0.5 rounded-full bg-muted p-1">
           {PERIODS.map((p) => (
             <Link
               key={p.days}
               href={p.days === 30 ? "/app" : `/app?period=${p.days}`}
               scroll={false}
               className={cn(
-                "rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
+                "rounded-full px-3.5 py-1.5 text-[0.8125rem] transition-colors",
                 p.days === period
-                  ? "bg-secondary text-secondary-foreground"
+                  ? "bg-card font-medium text-foreground shadow-xs"
                   : "text-muted-foreground hover:text-foreground",
               )}
             >
@@ -76,56 +84,85 @@ export default async function OverviewPage({
 
       {onboarding ? <OnboardingChecklist state={onboarding} /> : null}
 
-      {/* Primary metrics */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-5">
-        <StatCard
-          label="Total de creators"
-          value={data.totalCreators.toLocaleString("pt-BR")}
-          href="/app/creators"
-          visual={
-            <SparkArea values={data.growth.map((g) => g.total)} height={36} />
-          }
-        />
-        <StatCard
-          label={`Novos · ${periodLabel}`}
-          value={data.newCreators.toLocaleString("pt-BR")}
-          deltaPct={data.growthRatePct}
-          hint={`${data.newCreatorsPrev} no período anterior`}
-        />
-        <StatCard
-          label="Aprovadas"
-          value={data.approved.toLocaleString("pt-BR")}
-          href="/app/creators?status=approved"
-        />
-        <StatCard
-          label="Aprovadas sem endereço"
-          value={data.approvedWithoutAddress.toLocaleString("pt-BR")}
-          href={APPROVED_WITHOUT_ADDRESS_HREF}
-        />
-        <StatCard
-          label="Envios ativos"
-          value={data.activeShipments.toLocaleString("pt-BR")}
-          href="/app/shipments"
-          hint="rascunho, preparando ou enviado"
-        />
+      {/* Hero: new creators (ink) + the four operating figures */}
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)]">
+        <section className="flex min-h-72 flex-col rounded-[28px] bg-ink p-6 text-ink-foreground">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-sm">Novos creators</p>
+              <p className="mt-1 text-[0.8125rem] text-ink-muted">
+                últimos {periodLabel}
+              </p>
+            </div>
+            <RingIcon icon={UserPlus} size={38} variant="disc" />
+          </div>
+          <div className="mt-auto flex flex-wrap items-end justify-between gap-4 pt-8">
+            <span className="figure text-[4.5rem] text-primary-on-ink">
+              {data.newCreators.toLocaleString("pt-BR")}
+            </span>
+            {data.growthRatePct != null ? (
+              <span
+                className={cn(
+                  "mb-2 rounded-full border-2 border-ink-foreground px-3 py-0.5 text-[0.8125rem] tabular-nums",
+                  data.growthRatePct > 0 && "bg-primary text-primary-foreground",
+                )}
+              >
+                {data.growthRatePct > 0 ? "+" : ""}
+                {data.growthRatePct}%
+              </span>
+            ) : null}
+          </div>
+          <p className="mt-3 text-[0.8125rem] text-ink-muted">
+            {data.newCreatorsPrev.toLocaleString("pt-BR")} no período anterior
+          </p>
+        </section>
+
+        <div className="grid grid-cols-2 gap-4">
+          <StatCard
+            label="Total de creators"
+            value={data.totalCreators.toLocaleString("pt-BR")}
+            href="/app/creators"
+            icon={Users}
+          />
+          <StatCard
+            label="Aprovadas"
+            value={data.approved.toLocaleString("pt-BR")}
+            href="/app/creators?status=approved"
+            icon={CheckCircle2}
+          />
+          <StatCard
+            label="Aprovadas sem endereço"
+            value={data.approvedWithoutAddress.toLocaleString("pt-BR")}
+            href={APPROVED_WITHOUT_ADDRESS_HREF}
+            icon={MapPin}
+          />
+          <StatCard
+            label="Envios ativos"
+            value={data.activeShipments.toLocaleString("pt-BR")}
+            href="/app/shipments"
+            icon={Send}
+            hint="rascunho, preparando ou enviado"
+          />
+        </div>
       </div>
 
-      {/* Growth + funnel */}
-      <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
+      {/* Growth (ink) + funnel */}
+      <div className="grid gap-4 lg:grid-cols-[1.5fr_1fr]">
         <Panel
+          tone="ink"
           title="Crescimento da base"
           description={`Creators acumuladas · últimos ${periodLabel}`}
         >
-          <div className="text-chart-1">
-            <SparkArea values={data.growth.map((g) => g.total)} height={120} />
-          </div>
-          <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
+          <SparkArea
+            values={data.growth.map((g) => g.total)}
+            height={150}
+            className="text-primary-on-ink"
+          />
+          <div className="mt-4 flex items-center justify-between gap-3 text-[0.8125rem] text-ink-muted">
             <span>
-              {data.growth.length > 0
-                ? formatDate(data.growth[0].date)
-                : ""}
+              {data.growth.length > 0 ? formatDate(data.growth[0].date) : ""}
             </span>
-            <span className="tabular-nums">
+            <span className="rounded-full bg-primary px-3 py-0.5 tabular-nums text-primary-foreground">
               +{data.growth.reduce((s, g) => s + g.added, 0)} no período
             </span>
             <span>
@@ -143,26 +180,23 @@ export default async function OverviewPage({
 
       {/* Attention */}
       {data.attention.length > 0 ? (
-        <Panel title="Pontos de atenção">
-          <ul className="grid gap-2 sm:grid-cols-3">
-            {data.attention.map((a) => (
-              <li key={a.label}>
-                <Link
-                  href={a.href}
-                  className="flex items-center gap-3 rounded-lg border border-warning/30 bg-warning/5 px-3 py-2.5 transition-colors hover:border-warning/50"
-                >
-                  <AlertTriangle className="size-4 shrink-0 text-warning" />
-                  <span className="min-w-0 flex-1 truncate text-sm">
-                    {a.label}
-                  </span>
-                  <span className="shrink-0 text-sm font-semibold tabular-nums">
-                    {a.count}
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </Panel>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {data.attention.map((a) => (
+            <Link
+              key={a.label}
+              href={a.href}
+              className="flex items-center gap-3 rounded-full bg-card py-2 pr-2 pl-2 transition-shadow hover:shadow-sm"
+            >
+              <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary text-[1.05rem] font-medium tabular-nums text-primary-foreground">
+                {a.count}
+              </span>
+              <span className="min-w-0 flex-1 truncate text-sm font-medium">
+                {a.label}
+              </span>
+              <RingIcon icon={ArrowUpRight} size={32} />
+            </Link>
+          ))}
+        </div>
       ) : null}
 
       {/* Distribution */}
@@ -191,23 +225,28 @@ export default async function OverviewPage({
       <Panel
         title="Últimas inscrições"
         action={{ label: "Ver todas", href: "/app/creators" }}
-        bodyClassName="p-0"
+        bodyClassName="px-5 pt-2 pb-2 sm:px-6"
       >
         {data.latest.length === 0 ? (
-          <p className="p-6 text-center text-sm text-muted-foreground">
+          <p className="py-6 text-center text-sm text-muted-foreground">
             Nenhuma inscrição ainda.
           </p>
         ) : (
-          <ul className="divide-y divide-border">
-            {data.latest.map((a) => (
-              <li key={a.id}>
+          <ul>
+            {data.latest.map((a, i) => (
+              <li key={a.id} className={cn(i > 0 && "border-t border-border")}>
                 <Link
                   href={`/app/creators?a=${a.id}`}
-                  className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm transition-colors hover:bg-muted/50"
+                  className="-mx-2 flex items-center gap-4 rounded-2xl px-2 py-3 transition-colors hover:bg-accent"
                 >
-                  <div className="min-w-0">
-                    <p className="truncate font-medium">{a.creator_name}</p>
-                    <p className="truncate text-xs text-muted-foreground">
+                  <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted text-[0.8rem] font-medium">
+                    {initials(a.creator_name)}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[0.9375rem] font-medium">
+                      {a.creator_name}
+                    </p>
+                    <p className="truncate text-[0.8125rem] text-muted-foreground">
                       {a.program_name} · {formatDate(a.submitted_at)}
                     </p>
                   </div>
@@ -220,10 +259,15 @@ export default async function OverviewPage({
       </Panel>
 
       {data.capped ? (
-        <p className="text-center text-[0.6875rem] text-muted-foreground/70">
+        <p className="text-center text-[0.75rem] text-faint">
           Distribuições calculadas sobre as 5.000 inscrições mais recentes.
         </p>
       ) : null}
     </div>
   );
+}
+
+function initials(name: string | null): string {
+  const parts = (name ?? "").trim().split(/\s+/).filter(Boolean);
+  return (parts[0]?.[0] ?? "?").toUpperCase() + (parts[1]?.[0] ?? "").toUpperCase();
 }

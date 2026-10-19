@@ -90,23 +90,28 @@ export default async function AppLayout({
         primaryColor={settings?.primary_color}
         secondaryColor={settings?.secondary_color}
       />
-      <div className="flex min-h-svh bg-surface">
+      <div className="flex min-h-svh bg-frame">
         <Sidebar
           orgName={organization.name}
           logoUrl={settings?.logo_url}
+          userEmail={user.email ?? ""}
+          role={role}
           isPlatformAdmin={isPlatformAdmin}
         />
-        <div className="flex min-w-0 flex-1 flex-col">
-          <Topbar
-            orgName={organization.name}
-            logoUrl={settings?.logo_url}
-            userEmail={user.email ?? ""}
-            role={role}
-            isPlatformAdmin={isPlatformAdmin}
-          />
-          <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">
-            <div className="mx-auto max-w-7xl">{children}</div>
-          </main>
+        {/* The content canvas sits inset in the paper frame, like a sheet. */}
+        <div className="flex min-w-0 flex-1 flex-col md:py-2 md:pr-2">
+          <div className="flex flex-1 flex-col bg-background md:rounded-[22px]">
+            <Topbar
+              orgName={organization.name}
+              logoUrl={settings?.logo_url}
+              userEmail={user.email ?? ""}
+              role={role}
+              isPlatformAdmin={isPlatformAdmin}
+            />
+            <main className="flex-1 px-4 pt-2 pb-10 sm:px-6 lg:px-10">
+              <div className="mx-auto max-w-7xl">{children}</div>
+            </main>
+          </div>
         </div>
       </div>
     </>
