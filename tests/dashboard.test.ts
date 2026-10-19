@@ -74,23 +74,19 @@ test("bucketGrowth: empty input yields zeroed buckets", () => {
 });
 
 test("buildAttention: missing address shows; possible duplicates never do", () => {
-  const items = buildAttention(
-    { awaiting_address: 3, possible_duplicate: 9, approved: 5 },
-    2,
-  );
+  const items = buildAttention({
+    approved_without_address: 3,
+    possible_duplicate: 9,
+    approved: 5,
+  });
   assert.deepEqual(
     items.map((i) => i.label),
-    ["Aguardando endereço", "Análises que falharam"],
+    ["Aprovadas sem endereço"],
   );
   assert.ok(!items.some((i) => /duplicad/i.test(i.label)));
   assert.equal(items[0].count, 3);
-  assert.equal(items[0].href, "/app/creators?status=awaiting_address");
+  assert.equal(items[0].href, "/app/creators?status=approved&no_address=1");
 
   // nothing pending -> empty
-  assert.deepEqual(buildAttention({ possible_duplicate: 4 }, 0), []);
-  // only failed analyses
-  assert.deepEqual(
-    buildAttention({}, 1).map((i) => i.label),
-    ["Análises que falharam"],
-  );
+  assert.deepEqual(buildAttention({ possible_duplicate: 4 }), []);
 });

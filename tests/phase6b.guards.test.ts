@@ -32,7 +32,7 @@ const FORBIDDEN: { needle: string; why: string }[] = [
   { needle: "address_snapshot", why: "support must never read shipment address snapshots" },
   { needle: "token_hash", why: "support must never read raw/hashed request tokens" },
   { needle: "SUPABASE_SERVICE_ROLE_KEY", why: "support must never use the service role key" },
-  { needle: "process.env.ANTHROPIC_MODEL", why: "§8 — support uses ANTHROPIC_SUPPORT_MODEL, not the Creator Score model" },
+  { needle: "process.env.ANTHROPIC_MODEL", why: "§8 — support uses its own ANTHROPIC_SUPPORT_MODEL knob" },
   { needle: "creator_score", why: "support must not read Creator Score data" },
 ];
 

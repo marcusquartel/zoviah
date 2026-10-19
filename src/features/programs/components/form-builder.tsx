@@ -21,7 +21,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { FIELD_TYPE_LABELS, FIELD_TYPES } from "@/lib/form-fields";
+import {
+  FIELD_TYPE_LABELS,
+  FIELD_TYPES,
+  isSupersededByAddress,
+} from "@/lib/form-fields";
 import { FieldEditorDialog } from "@/features/programs/components/field-editor-dialog";
 import {
   addFormField,
@@ -60,6 +64,13 @@ export function FormBuilder({
       <p className="text-xs text-muted-foreground">
         Versão do formulário: <strong>v{formVersion}</strong>. Cada application
         guarda a versão e um snapshot dos campos enviados.
+      </p>
+
+      <p className="rounded-lg border bg-surface px-3 py-2 text-xs text-muted-foreground">
+        Todo formulário público termina com o bloco{" "}
+        <strong>Endereço de entrega</strong> (CPF, CEP, rua, número, bairro,
+        cidade e estado), obrigatório e adicionado automaticamente. Campos de
+        Estado, Cidade ou CEP abaixo ficam ocultos no formulário público.
       </p>
 
       <form
@@ -153,6 +164,11 @@ export function FormBuilder({
                   {field.configuration?.mapping ? (
                     <Badge variant="secondary">
                       → {field.configuration.mapping}
+                    </Badge>
+                  ) : null}
+                  {isSupersededByAddress(field) ? (
+                    <Badge variant="outline" className="text-muted-foreground">
+                      Oculto no formulário público
                     </Badge>
                   ) : null}
                 </div>

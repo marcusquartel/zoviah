@@ -17,11 +17,9 @@ import { SocialsTab } from "@/features/creators/components/drawer/socials";
 import { AnswersTab } from "@/features/creators/components/drawer/answers";
 import { Timeline } from "@/features/creators/components/timeline";
 import { NoteForm } from "@/features/creators/components/note-form";
-import { IntelligenceTab } from "@/features/analysis/components/intelligence-tab";
 import { MetricsTab } from "@/features/evidence/components/metrics-tab";
 import { AddressTab } from "@/features/requests/components/address-tab";
 import { ShipmentsTab } from "@/features/shipments/components/shipments-tab";
-import { ScoreBar } from "@/features/analysis/components/score-bar";
 import {
   loadDrawerData,
   type DrawerData,
@@ -29,7 +27,6 @@ import {
 
 const TABS = [
   { id: "summary", label: "Resumo" },
-  { id: "intelligence", label: "Inteligência" },
   { id: "registration", label: "Cadastro" },
   { id: "socials", label: "Redes" },
   { id: "metrics", label: "Métricas" },
@@ -106,12 +103,6 @@ function ModalBody({
 }) {
   const [tab, setTab] = useState<TabId>("summary");
   const detail = data?.detail ?? null;
-  const analysis = data?.analysis ?? {
-    aiConfigured: false,
-    current: null,
-    history: [],
-  };
-  const hasNewSnapshots = data?.evidence.hasNewSnapshots ?? false;
 
   return (
     <>
@@ -138,35 +129,24 @@ function ModalBody({
       </DialogHeader>
 
       {detail ? (
-        <>
-          <ScoreBar
-            applicationId={detail.application.id}
-            analysisStatus={detail.application.analysis_status}
-            current={analysis.current}
-            aiConfigured={analysis.aiConfigured}
-            hasNewSnapshots={hasNewSnapshots}
-            onRefresh={onRefresh}
-          />
-
-          <nav className="flex shrink-0 gap-1 overflow-x-auto border-b px-2">
-            {TABS.map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => setTab(t.id)}
-                aria-current={tab === t.id ? "page" : undefined}
-                className={cn(
-                  "-mb-px shrink-0 border-b-2 px-3 py-2 text-sm font-medium transition-colors",
-                  tab === t.id
-                    ? "border-primary text-foreground"
-                    : "border-transparent text-muted-foreground hover:text-foreground",
-                )}
-              >
-                {t.label}
-              </button>
-            ))}
-          </nav>
-        </>
+        <nav className="flex shrink-0 gap-1 overflow-x-auto border-b px-2">
+          {TABS.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => setTab(t.id)}
+              aria-current={tab === t.id ? "page" : undefined}
+              className={cn(
+                "-mb-px shrink-0 border-b-2 px-3 py-2 text-sm font-medium transition-colors",
+                tab === t.id
+                  ? "border-primary text-foreground"
+                  : "border-transparent text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {t.label}
+            </button>
+          ))}
+        </nav>
       ) : null}
 
       <div className="min-h-0 flex-1 overflow-y-auto p-4">
@@ -186,13 +166,6 @@ function ModalBody({
             onChanged={onRefresh}
             onOpenAddress={() => setTab("address")}
           />
-        ) : tab === "intelligence" ? (
-          <IntelligenceTab
-            applicationId={detail.application.id}
-            analysisStatus={detail.application.analysis_status}
-            analysis={analysis}
-            onRefresh={onRefresh}
-          />
         ) : tab === "registration" ? (
           <RegistrationTab creator={detail.creator} />
         ) : tab === "socials" ? (
@@ -206,7 +179,6 @@ function ModalBody({
           <AddressTab
             applicationId={detail.application.id}
             creatorId={detail.creator.id}
-            status={detail.application.status}
             onChanged={onRefresh}
           />
         ) : tab === "shipments" ? (

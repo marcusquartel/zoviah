@@ -5,7 +5,15 @@ import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { hashToken } from "@/lib/secure-token";
 import { rateLimit, sweepRateLimits } from "@/lib/rate-limit";
-import { buildFieldSchema, HONEYPOT_FIELD_KEY } from "@/lib/form-fields";
+import {
+  buildFieldSchema,
+  HONEYPOT_FIELD_KEY,
+  isSupersededByAddress,
+} from "@/lib/form-fields";
+import {
+  addressFieldsSchema,
+  toSignupAddressPayload,
+} from "@/lib/validation/address";
 import { buildApplicationPayload } from "@/lib/application-payload";
 import { mapSubmitApplicationError } from "@/lib/submit-application-errors";
 import { getPublicProgram } from "@/features/public/queries";
@@ -15,6 +23,8 @@ export interface SubmitInput {
   orgSlug: string;
   programSlug: string;
   answers: Record<string, unknown>;
+  /** The fixed shipping-address block (CPF included). */
+  address: unknown;
   utm: Partial<
     Record<"source" | "medium" | "campaign" | "content" | "term", string>
   >;
@@ -91,7 +101,10 @@ export async function submitApplication(
     };
   }
 
-  const schema = buildFieldSchema(data.fields, { consent: true });
+  // Same field set the public form renders: Estado / Cidade / CEP builder
+  // fields are superseded by the address block.
+  const fields = data.fields.filter((f) => !isSupersededByAddress(f));
+  const schema = buildFieldSchema(fields, { consent: true });
   const parsed = schema.safeParse(input.answers);
   if (!parsed.success) {
     return {
@@ -101,9 +114,21 @@ export async function submitApplication(
         "Revise os campos destacados e tente novamente.",
     };
   }
+  const address = addressFieldsSchema.safeParse(input.address);
+  if (!address.success) {
+    return {
+      ok: false,
+      error:
+        address.error.issues[0]?.message ??
+        "Revise o endereço e tente novamente.",
+    };
+  }
 
   const { answersClean, creator, socials, fieldSnapshot } =
-    buildApplicationPayload(data.fields, parsed.data);
+    buildApplicationPayload(fields, parsed.data);
+  creator.city = address.data.city;
+  creator.state = address.data.state;
+  creator.postal_code = address.data.postalCode;
 
   const referrer =
     input.referrer?.slice(0, 500) || requestHeaders.get("referer") || null;
@@ -128,6 +153,7 @@ export async function submitApplication(
     } as Json,
     p_referrer: referrer,
     p_source: coarseSource(referrer),
+    p_address: toSignupAddressPayload(address.data) as Json,
   };
 
   const supabase = await createClient();

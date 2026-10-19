@@ -5,6 +5,7 @@ import {
   buildFieldSchema,
   coerceFieldType,
   defaultFormValues,
+  isSupersededByAddress,
   mappingsForFieldType,
   type PublicFieldDef,
 } from "../src/lib/form-fields.ts";
@@ -221,4 +222,22 @@ test("coerceFieldType: a state/city mapping forces the controlled type", () => {
   assert.equal(coerceFieldType("text", "city"), "br_city");
   assert.equal(coerceFieldType("text", "full_name"), "text");
   assert.equal(coerceFieldType("email", undefined), "email");
+});
+
+test("isSupersededByAddress: Estado / Cidade / CEP give way to the address block", () => {
+  assert.equal(isSupersededByAddress({ field_type: "br_state", configuration: null }), true);
+  assert.equal(isSupersededByAddress({ field_type: "br_city", configuration: null }), true);
+  assert.equal(
+    isSupersededByAddress({ field_type: "text", configuration: { mapping: "state" } }),
+    true,
+  );
+  assert.equal(
+    isSupersededByAddress({ field_type: "text", configuration: { mapping: "postal_code" } }),
+    true,
+  );
+  assert.equal(
+    isSupersededByAddress({ field_type: "text", configuration: { mapping: "full_name" } }),
+    false,
+  );
+  assert.equal(isSupersededByAddress({ field_type: "email", configuration: null }), false);
 });

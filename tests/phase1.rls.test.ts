@@ -220,6 +220,16 @@ describe("Phase 1 — programs, forms, public submission", { skip }, () => {
       p_utm: {},
       p_referrer: null,
       p_source: null,
+      p_address: {
+        cpf: "11144477735",
+        postal_code: "30140110",
+        street: "Rua Teste",
+        number: "100",
+        complement: null,
+        neighborhood: "Centro",
+        city: "Belo Horizonte",
+        state: "MG",
+      },
       ...over,
     });
   }

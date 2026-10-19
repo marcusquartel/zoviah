@@ -98,8 +98,8 @@ describe("Phase 5 — shipments", { skip }, () => {
     users[key] = { id: data.user!.id, email, password: pwd(key) };
   }
 
-  /** completed application + a current creator_addresses row. Returns ids. */
-  async function seedCompleted(recipient = "Pâmela Kald"): Promise<{
+  /** approved application + a current creator_addresses row. Returns ids. */
+  async function seedApproved(recipient = "Pâmela Kald"): Promise<{
     applicationId: string;
     creatorId: string;
     addressId: string;
@@ -116,7 +116,7 @@ describe("Phase 5 — shipments", { skip }, () => {
         organization_id: orgA,
         program_id: programA,
         creator_id: creatorId,
-        status: "completed",
+        status: "approved",
         approved_at: new Date().toISOString(),
         form_version: 1,
       })
@@ -140,6 +140,7 @@ describe("Phase 5 — shipments", { skip }, () => {
       .insert({
         organization_id: orgA,
         creator_id: creatorId,
+        source: "secure_request",
         source_request_id: req.data!.id,
         is_current: true,
         ...addrFields(recipient),
@@ -210,8 +211,8 @@ describe("Phase 5 — shipments", { skip }, () => {
     for (const u of Object.values(users)) await admin.auth.admin.deleteUser(u.id);
   });
 
-  test("85) create: snapshot comes from the current address (client cannot forge it); items + event; application stays completed", async () => {
-    const { applicationId, creatorId } = await seedCompleted("Snapshot Test");
+  test("85) create: snapshot comes from the current address (client cannot forge it); items + event; application stays approved", async () => {
+    const { applicationId, creatorId } = await seedApproved("Snapshot Test");
     const res = await ownerA.rpc("create_shipment", {
       p_application_id: applicationId,
       p_items: ITEMS,
@@ -251,7 +252,7 @@ describe("Phase 5 — shipments", { skip }, () => {
       .select("status")
       .eq("id", applicationId)
       .single();
-    assert.equal(app.data!.status, "completed"); // §64
+    assert.equal(app.data!.status, "approved"); // §64
 
     // §106: no PII in the event
     const evText = JSON.stringify(ev.data);
@@ -261,10 +262,35 @@ describe("Phase 5 — shipments", { skip }, () => {
     void creatorId;
   });
 
-  test("86) non-completed application cannot create a shipment", async () => {
+  test("86) non-approved application cannot create a shipment", async () => {
     const creator = await admin
       .from("creators")
       .insert({ organization_id: orgA, full_name: "Not done" })
+      .select("id")
+      .single();
+    const app = await admin
+      .from("applications")
+      .insert({
+        organization_id: orgA,
+        program_id: programA,
+        creator_id: creator.data!.id,
+        status: "awaiting_review",
+        form_version: 1,
+      })
+      .select("id")
+      .single();
+    const res = await ownerA.rpc("create_shipment", {
+      p_application_id: app.data!.id,
+      p_items: ITEMS,
+    });
+    assert.ok(res.error);
+    assert.match(res.error!.message, /APPLICATION_NOT_APPROVED/);
+  });
+
+  test("87) approved application with no current address cannot create a shipment", async () => {
+    const creator = await admin
+      .from("creators")
+      .insert({ organization_id: orgA, full_name: "No addr" })
       .select("id")
       .single();
     const app = await admin
@@ -283,36 +309,11 @@ describe("Phase 5 — shipments", { skip }, () => {
       p_items: ITEMS,
     });
     assert.ok(res.error);
-    assert.match(res.error!.message, /APPLICATION_NOT_COMPLETED/);
-  });
-
-  test("87) completed application with no current address cannot create a shipment", async () => {
-    const creator = await admin
-      .from("creators")
-      .insert({ organization_id: orgA, full_name: "No addr" })
-      .select("id")
-      .single();
-    const app = await admin
-      .from("applications")
-      .insert({
-        organization_id: orgA,
-        program_id: programA,
-        creator_id: creator.data!.id,
-        status: "completed",
-        form_version: 1,
-      })
-      .select("id")
-      .single();
-    const res = await ownerA.rpc("create_shipment", {
-      p_application_id: app.data!.id,
-      p_items: ITEMS,
-    });
-    assert.ok(res.error);
     assert.match(res.error!.message, /NO_CURRENT_ADDRESS/);
   });
 
   test("21) create rejects empty / oversized items and out-of-range quantity", async () => {
-    const { applicationId } = await seedCompleted("Bad items");
+    const { applicationId } = await seedApproved("Bad items");
     for (const bad of [
       [],
       [{ item_name: "", quantity: 1 }],
@@ -330,7 +331,7 @@ describe("Phase 5 — shipments", { skip }, () => {
   });
 
   test("88) cross-tenant: org B cannot create / read / transition / refresh org A's shipment", async () => {
-    const { applicationId, creatorId } = await seedCompleted("Tenant A");
+    const { applicationId, creatorId } = await seedApproved("Tenant A");
     const created = await ownerA.rpc("create_shipment", {
       p_application_id: applicationId,
       p_items: ITEMS,
@@ -367,7 +368,7 @@ describe("Phase 5 — shipments", { skip }, () => {
   });
 
   test("89) analyst of the org can create + transition", async () => {
-    const { applicationId } = await seedCompleted("Analyst can");
+    const { applicationId } = await seedApproved("Analyst can");
     const c = await analystA.rpc("create_shipment", {
       p_application_id: applicationId,
       p_items: ITEMS,
@@ -381,7 +382,7 @@ describe("Phase 5 — shipments", { skip }, () => {
   });
 
   test("90/91) transitions + timestamps: draft→preparing→shipped→delivered, corrections, cancel/restore", async () => {
-    const { applicationId } = await seedCompleted("Flow");
+    const { applicationId } = await seedApproved("Flow");
     const c = await ownerA.rpc("create_shipment", {
       p_application_id: applicationId,
       p_items: ITEMS,
@@ -426,7 +427,7 @@ describe("Phase 5 — shipments", { skip }, () => {
   });
 
   test("21) cannot move to preparing/shipped with zero items", async () => {
-    const { applicationId } = await seedCompleted("Zero items");
+    const { applicationId } = await seedApproved("Zero items");
     const c = await ownerA.rpc("create_shipment", {
       p_application_id: applicationId,
       p_items: [{ item_name: "temp", quantity: 1 }],
@@ -444,7 +445,7 @@ describe("Phase 5 — shipments", { skip }, () => {
   });
 
   test("92) address immutability + refresh: snapshot A, creator moves to B, refresh in draft copies B, locked after shipped", async () => {
-    const { applicationId, creatorId, addressId } = await seedCompleted("Addr A");
+    const { applicationId, creatorId, addressId } = await seedApproved("Addr A");
     const c = await ownerA.rpc("create_shipment", {
       p_application_id: applicationId,
       p_items: ITEMS,
@@ -474,6 +475,7 @@ describe("Phase 5 — shipments", { skip }, () => {
       .insert({
         organization_id: orgA,
         creator_id: creatorId,
+        source: "secure_request",
         source_request_id: reqB.data!.id,
         is_current: true,
         ...addrFields("Addr B"),
@@ -502,7 +504,7 @@ describe("Phase 5 — shipments", { skip }, () => {
   });
 
   test("93) items immutable after shipped", async () => {
-    const { applicationId } = await seedCompleted("Items lock");
+    const { applicationId } = await seedApproved("Items lock");
     const c = await ownerA.rpc("create_shipment", {
       p_application_id: applicationId,
       p_items: ITEMS,
@@ -519,7 +521,7 @@ describe("Phase 5 — shipments", { skip }, () => {
   });
 
   test("94) two shipments for the same application — independent histories", async () => {
-    const { applicationId } = await seedCompleted("Two ships");
+    const { applicationId } = await seedApproved("Two ships");
     const a = await ownerA.rpc("create_shipment", { p_application_id: applicationId, p_items: ITEMS });
     const b = await ownerA.rpc("create_shipment", { p_application_id: applicationId, p_items: ITEMS });
     assert.ifError(a.error);
@@ -536,7 +538,7 @@ describe("Phase 5 — shipments", { skip }, () => {
   });
 
   test("95) tracking: http(s) saved; javascript: URL rejected", async () => {
-    const { applicationId } = await seedCompleted("Tracking");
+    const { applicationId } = await seedApproved("Tracking");
     const c = await ownerA.rpc("create_shipment", { p_application_id: applicationId, p_items: ITEMS });
     const sid = c.data.shipment_id;
 
@@ -564,7 +566,7 @@ describe("Phase 5 — shipments", { skip }, () => {
   });
 
   test("96) list view is tenant-scoped; never exposes address_snapshot / internal_notes", async () => {
-    const { applicationId } = await seedCompleted("List RLS");
+    const { applicationId } = await seedApproved("List RLS");
     await ownerA.rpc("create_shipment", {
       p_application_id: applicationId,
       p_items: ITEMS,

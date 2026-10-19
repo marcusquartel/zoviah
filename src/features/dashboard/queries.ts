@@ -38,7 +38,8 @@ export interface DashboardOverview {
   newCreators: number;
   newCreatorsPrev: number;
   approved: number;
-  completeRegistration: number;
+  /** Approved applications whose creator has no current address. */
+  approvedWithoutAddress: number;
   activeShipments: number;
 
   funnel: { status: ApplicationStatus; label: string; count: number }[];
@@ -62,8 +63,6 @@ const FUNNEL: { status: ApplicationStatus; label: string; key: string }[] = [
   { status: "awaiting_review", label: "Avaliação", key: "awaiting_review" },
   { status: "information_requested", label: "Info", key: "information_requested" },
   { status: "approved", label: "Aprovada", key: "approved" },
-  { status: "awaiting_address", label: "Endereço", key: "awaiting_address" },
-  { status: "completed", label: "Completo", key: "completed" },
 ];
 
 export async function getDashboardOverview(
@@ -84,7 +83,6 @@ export async function getDashboardOverview(
     newPrev,
     counts,
     activeShip,
-    failedAnalyses,
     creatorRows,
     appRows,
     latest,
@@ -110,11 +108,6 @@ export async function getDashboardOverview(
       .select("id", { count: "exact", head: true })
       .eq("organization_id", orgId)
       .in("status", ["draft", "preparing", "shipped"]),
-    supabase
-      .from("application_list_items")
-      .select("id", { count: "exact", head: true })
-      .eq("organization_id", orgId)
-      .eq("analysis_status", "failed"),
     supabase
       .from("creators")
       .select("city, state, created_at")
@@ -158,7 +151,7 @@ export async function getDashboardOverview(
     count: cr[f.key] ?? 0,
   }));
 
-  const attention = buildAttention(cr, failedAnalyses.count ?? 0);
+  const attention = buildAttention(cr);
 
   return {
     periodDays,
@@ -167,7 +160,7 @@ export async function getDashboardOverview(
     newCreators,
     newCreatorsPrev,
     approved: cr.approved ?? 0,
-    completeRegistration: cr.completed ?? 0,
+    approvedWithoutAddress: cr.approved_without_address ?? 0,
     activeShipments: activeShip.count ?? 0,
     funnel,
     growth,

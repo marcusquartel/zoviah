@@ -126,6 +126,24 @@ export function brLocationKind(
   return null;
 }
 
+/** Form key of the fixed shipping-address block on the public form. */
+export const SIGNUP_ADDRESS_FIELD_KEY = "_address";
+
+/**
+ * Builder fields the public form's fixed address block supersedes (Estado,
+ * Cidade, CEP). They are hidden on the public form so nobody is asked twice;
+ * the address fills creators.city / state / postal_code instead. Manual entry
+ * and spreadsheet import still use them.
+ */
+export function isSupersededByAddress(
+  field: Pick<PublicFieldDef, "field_type" | "configuration">,
+): boolean {
+  return (
+    brLocationKind(field) !== null ||
+    field.configuration?.mapping === "postal_code"
+  );
+}
+
 /**
  * The stored `field_type` for a field, coerced so a state/city mapping always
  * lands on the controlled `br_state` / `br_city` type. Used when creating or

@@ -120,28 +120,8 @@ export function checkProductionEnv(
     }
   }
 
-  // --- Anthropic: Creator Score (optional, degrades) --------------------
-  const anthKey = val(env, "ANTHROPIC_API_KEY");
-  const anthModel = val(env, "ANTHROPIC_MODEL");
-  if (anthKey && anthModel) {
-    add("ANTHROPIC_MODEL", "ok", false, "Creator Score habilitado");
-  } else if (!anthKey && !anthModel) {
-    add(
-      "ANTHROPIC_MODEL",
-      "warn",
-      false,
-      "ausente — Creator Score fica indisponível (CRM funciona)",
-    );
-  } else {
-    add(
-      "ANTHROPIC_MODEL",
-      "warn",
-      false,
-      "parcial — defina ANTHROPIC_API_KEY e ANTHROPIC_MODEL juntos",
-    );
-  }
-
   // --- Anthropic: support assistant (optional, degrades to ticket) ------
+  const anthKey = val(env, "ANTHROPIC_API_KEY");
   const supportModel = val(env, "ANTHROPIC_SUPPORT_MODEL");
   if (anthKey && supportModel) {
     add("ANTHROPIC_SUPPORT_MODEL", "ok", false, "assistente de suporte habilitado");

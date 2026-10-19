@@ -17,6 +17,7 @@ import {
   getDashboardOverview,
   type DashboardPeriodDays,
 } from "@/features/dashboard/queries";
+import { APPROVED_WITHOUT_ADDRESS_HREF } from "@/features/dashboard/aggregate";
 
 export const metadata: Metadata = { title: "Visão Geral" };
 
@@ -97,9 +98,9 @@ export default async function OverviewPage({
           href="/app/creators?status=approved"
         />
         <StatCard
-          label="Cadastro completo"
-          value={data.completeRegistration.toLocaleString("pt-BR")}
-          href="/app/creators?status=completed"
+          label="Aprovadas sem endereço"
+          value={data.approvedWithoutAddress.toLocaleString("pt-BR")}
+          href={APPROVED_WITHOUT_ADDRESS_HREF}
         />
         <StatCard
           label="Envios ativos"

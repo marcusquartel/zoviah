@@ -63,9 +63,9 @@ export interface CrmCounts {
   awaiting_review: number;
   information_requested: number;
   approved: number;
-  awaiting_address: number;
-  completed: number;
   archived: number;
+  /** Approved applications whose creator has no current address. */
+  approved_without_address: number;
 }
 
 const EMPTY_COUNTS: CrmCounts = {
@@ -74,9 +74,8 @@ const EMPTY_COUNTS: CrmCounts = {
   awaiting_review: 0,
   information_requested: 0,
   approved: 0,
-  awaiting_address: 0,
-  completed: 0,
   archived: 0,
+  approved_without_address: 0,
 };
 
 export async function getCrmCounts(
@@ -128,10 +127,7 @@ export async function listApplicationItems(
   if (query.state) q = q.ilike("creator_state", `%${query.state}%`);
   if (query.hasInstagram) q = q.not("instagram_handle", "is", null);
   if (query.hasTiktok) q = q.not("tiktok_handle", "is", null);
-  if (query.analysisStatus) q = q.eq("analysis_status", query.analysisStatus);
-  if (query.tier) q = q.eq("current_tier", query.tier);
-  if (query.confidence) q = q.eq("analysis_confidence", query.confidence);
-  if (query.minScore != null) q = q.gte("current_score", query.minScore);
+  if (query.noAddress) q = q.eq("has_address", false);
 
   const term = sanitizeSearch(query.q);
   if (term) {
@@ -165,12 +161,6 @@ export async function listApplicationItems(
       break;
     case "tt_desc":
       q = q.order("tiktok_followers", { ascending: false, nullsFirst: false });
-      break;
-    case "score_desc":
-      q = q.order("current_score", { ascending: false, nullsFirst: false });
-      break;
-    case "score_asc":
-      q = q.order("current_score", { ascending: true, nullsFirst: false });
       break;
     default:
       q = q.order("submitted_at", { ascending: false });
@@ -206,6 +196,8 @@ export interface ApplicationDetail {
   creator: Creator;
   socials: CreatorSocialProfile[];
   otherApplications: OtherApplication[];
+  /** The creator has a current shipping address (signup form or secure link). */
+  hasCurrentAddress: boolean;
 }
 
 export const getApplicationDetail = cache(
@@ -226,22 +218,30 @@ export const getApplicationDetail = cache(
 
     const { programs, creators, ...application } = data;
 
-    const [{ data: socials }, { data: others }] = await Promise.all([
-      supabase
-        .from("creator_social_profiles")
-        .select("*")
-        .eq("organization_id", orgId)
-        .eq("creator_id", creators.id)
-        .order("platform", { ascending: true }),
-      supabase
-        .from("application_list_items")
-        .select("id, program_name, status, submitted_at")
-        .eq("organization_id", orgId)
-        .eq("creator_id", creators.id)
-        .neq("id", applicationId)
-        .order("submitted_at", { ascending: false })
-        .limit(20),
-    ]);
+    const [{ data: socials }, { data: others }, { data: address }] =
+      await Promise.all([
+        supabase
+          .from("creator_social_profiles")
+          .select("*")
+          .eq("organization_id", orgId)
+          .eq("creator_id", creators.id)
+          .order("platform", { ascending: true }),
+        supabase
+          .from("application_list_items")
+          .select("id, program_name, status, submitted_at")
+          .eq("organization_id", orgId)
+          .eq("creator_id", creators.id)
+          .neq("id", applicationId)
+          .order("submitted_at", { ascending: false })
+          .limit(20),
+        supabase
+          .from("creator_addresses")
+          .select("id")
+          .eq("organization_id", orgId)
+          .eq("creator_id", creators.id)
+          .eq("is_current", true)
+          .maybeSingle(),
+      ]);
 
     return {
       application: application as Application,
@@ -249,6 +249,7 @@ export const getApplicationDetail = cache(
       creator: creators,
       socials: socials ?? [],
       otherApplications: (others ?? []) as OtherApplication[],
+      hasCurrentAddress: Boolean(address?.id),
     };
   },
 );

@@ -133,7 +133,6 @@ export async function createMetricSnapshot(
   }
 
   revalidatePath("/app/creators");
-  revalidatePath("/app/ai");
   return { ok: true };
 }
 
@@ -159,6 +158,5 @@ export async function updateMetricSnapshot(
   }
 
   revalidatePath("/app/creators");
-  revalidatePath("/app/ai");
   return { ok: true };
 }

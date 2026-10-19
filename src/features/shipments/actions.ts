@@ -27,8 +27,8 @@ const RPC_ERRORS: Record<string, string> = {
   FORBIDDEN: "Você não tem acesso a este envio.",
   APPLICATION_NOT_FOUND: "Inscrição não encontrada.",
   SHIPMENT_NOT_FOUND: "Envio não encontrado.",
-  APPLICATION_NOT_COMPLETED:
-    "Só é possível criar envio para uma creator com cadastro completo.",
+  APPLICATION_NOT_APPROVED:
+    "Só é possível criar envio para uma creator aprovada.",
   NO_CURRENT_ADDRESS:
     "Esta creator ainda não possui endereço disponível para envio.",
   INVALID_ITEMS: "Confira os itens do envio.",

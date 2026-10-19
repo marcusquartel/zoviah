@@ -161,6 +161,16 @@ describe("Phase 2 — CRM", { skip }, () => {
       p_utm: {},
       p_referrer: null,
       p_source: null,
+      p_address: {
+        cpf: "11144477735",
+        postal_code: "30140110",
+        street: "Rua Teste",
+        number: "100",
+        complement: null,
+        neighborhood: "Centro",
+        city: "Belo Horizonte",
+        state: "MG",
+      },
     });
     assert.ifError(sub.error);
     appId = sub.data.application_id;
@@ -489,6 +499,16 @@ describe("Phase 2 — CRM", { skip }, () => {
       p_utm: {},
       p_referrer: null,
       p_source: null,
+      p_address: {
+        cpf: "11144477735",
+        postal_code: "30140110",
+        street: "Rua Teste",
+        number: "100",
+        complement: null,
+        neighborhood: "Centro",
+        city: "Belo Horizonte",
+        state: "MG",
+      },
     });
     assert.ifError(sub.error);
     const row = await admin

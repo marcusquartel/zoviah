@@ -163,7 +163,8 @@ test("labels: every ticket enum value is labelled", () => {
   for (const k of ["question", "account", "bug", "feature_request", "other"] as const) {
     assert.equal(typeof TICKET_TYPE_LABELS[k], "string");
   }
-  assert.equal(HELP_CATEGORIES.length, 12);
+  assert.equal(HELP_CATEGORIES.length, 11);
+  assert.ok(!(HELP_CATEGORIES as readonly string[]).includes("Creator Score"));
   assert.ok(HELP_CATEGORIES.includes("Primeiros passos"));
   assert.ok(HELP_CATEGORIES.includes("Suporte"));
 });

@@ -52,7 +52,7 @@ const askSchema = z.object({
 
 /**
  * One question → one answer. Retrieves published articles, calls the support
- * model (separate ANTHROPIC_SUPPORT_MODEL — never Creator Score credits, §14),
+ * model (ANTHROPIC_SUPPORT_MODEL),
  * persists the turn. `messageFn` is injected only by tests.
  */
 export async function askAssistant(

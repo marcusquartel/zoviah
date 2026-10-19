@@ -1,8 +1,8 @@
 /**
  * Single source of truth for the product's public brand.
  *
- * "Zoviah" is the brand. "Creator" remains the business domain — creators,
- * Creator Score, creator_analyses etc. are unchanged. This file only carries
+ * "Zoviah" is the brand. "Creator" remains the business domain (creators,
+ * applications etc. keep their names). This file only carries
  * user-facing brand strings; it is not a CMS and not a theming system (a
  * tenant's own logo/name still take priority wherever the experience is
  * tenant-branded).

@@ -51,7 +51,7 @@ export function ShipmentsTab({
   }
 
   const canCreate =
-    applicationStatus === "completed" && data.hasCurrentAddress;
+    applicationStatus === "approved" && data.hasCurrentAddress;
 
   return (
     <div className="space-y-4">
@@ -70,9 +70,9 @@ export function ShipmentsTab({
         ) : null}
       </div>
 
-      {!canCreate && applicationStatus !== "completed" ? (
+      {!canCreate && applicationStatus !== "approved" ? (
         <p className="rounded-md bg-surface px-3 py-2 text-xs text-muted-foreground">
-          Envios ficam disponíveis quando a inscrição está com cadastro completo.
+          Envios ficam disponíveis quando a inscrição está aprovada.
         </p>
       ) : !canCreate ? (
         <p className="rounded-md bg-surface px-3 py-2 text-xs text-muted-foreground">

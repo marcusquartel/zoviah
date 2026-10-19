@@ -227,8 +227,6 @@ export function AdminOrgModal({
               <dd className="tabular-nums">{data.programs_count}</dd>
               <dt className="text-muted-foreground">Inscrições</dt>
               <dd className="tabular-nums">{data.applications_count}</dd>
-              <dt className="text-muted-foreground">Análises IA</dt>
-              <dd className="tabular-nums">{data.analyses_count}</dd>
               <dt className="text-muted-foreground">Envios</dt>
               <dd className="tabular-nums">{data.shipments_count}</dd>
               <dt className="text-muted-foreground">Convites pendentes</dt>

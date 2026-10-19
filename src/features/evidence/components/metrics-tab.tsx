@@ -49,7 +49,7 @@ export function MetricsTab({
   onEvidenceChanged,
 }: {
   applicationId: string;
-  /** Refresh the drawer so the ScoreBar "Novas evidências" badge updates. */
+  /** Refresh the drawer (timeline) after a save. */
   onEvidenceChanged: () => void;
 }) {
   const [data, setData] = useState<ApplicationMetrics | null>(null);
@@ -92,8 +92,8 @@ export function MetricsTab({
   return (
     <div className="space-y-5">
       <p className="text-xs text-muted-foreground">
-        Métricas observadas são <strong>evidência factual</strong>. Não alteram o
-        Creator Score nesta fase — servem para calibrar versões futuras.
+        Métricas observadas são <strong>evidência factual</strong>: registre aqui
+        os números que você conferiu no perfil da creator.
       </p>
       {data.profiles.map((pm) => (
         <ProfileCard

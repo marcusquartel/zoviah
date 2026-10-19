@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     default: PRODUCT.name,
     template: `%s · ${PRODUCT.name}`,
   },
-  description: `${PRODUCT.name} — ${PRODUCT.description}. Gestão de creators, programas, Creator Score e envios.`,
+  description: `${PRODUCT.name} — ${PRODUCT.description}. Gestão de creators, programas e envios.`,
   applicationName: PRODUCT.name,
   openGraph: {
     title: PRODUCT.name,

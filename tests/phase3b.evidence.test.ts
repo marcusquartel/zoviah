@@ -29,8 +29,7 @@ if (configured) {
     auth: { persistSession: false, autoRefreshToken: false },
   });
   const t = await probe.from("social_metric_snapshots").select("id").limit(1);
-  const f = await probe.rpc("evidence_stats");
-  ready = !t.error && !f.error;
+  ready = !t.error;
 }
 
 const skip = !configured
@@ -127,6 +126,16 @@ describe("Phase 3B — Evidence Layer", { skip }, () => {
       p_utm: {},
       p_referrer: null,
       p_source: null,
+      p_address: {
+        cpf: "11144477735",
+        postal_code: "30140110",
+        street: "Rua Teste",
+        number: "100",
+        complement: null,
+        neighborhood: "Centro",
+        city: "Belo Horizonte",
+        state: "MG",
+      },
     });
     assert.ifError(sub.error);
     appId = sub.data.application_id;
@@ -164,7 +173,6 @@ describe("Phase 3B — Evidence Layer", { skip }, () => {
       .from("social_metric_snapshots")
       .delete()
       .in("organization_id", [orgA, orgB]);
-    await admin.from("creator_analyses").delete().in("organization_id", [orgA, orgB]);
     await admin.from("applications").delete().in("organization_id", [orgA, orgB]);
     await admin.from("creator_events").delete().in("organization_id", [orgA, orgB]);
     await admin
@@ -351,68 +359,6 @@ describe("Phase 3B — Evidence Layer", { skip }, () => {
       p_payload: { source: "admin_manual", observed_at: "2026-05-01T00:00:00.000Z" },
     });
     assert.ok(res.error, "an all-null snapshot must not be inserted");
-  });
-
-  test("12) evidence_stats counts snapshots, creators and multi-snapshot profiles", async () => {
-    const res = await ownerA.rpc("evidence_stats");
-    assert.ifError(res.error);
-    assert.ok(Number(res.data.snapshots) >= 5);
-    assert.ok(Number(res.data.creators_with_snapshot) >= 1);
-    assert.ok(Number(res.data.profiles_multi_snapshot) >= 1);
-  });
-
-  test("13) complete_creator_analysis persists used_snapshot_ids", async () => {
-    const snap = await ownerA.rpc("create_metric_snapshot", {
-      p_social_profile_id: profileId,
-      p_payload: {
-        source: "admin_manual",
-        observed_at: "2026-04-01T00:00:00.000Z",
-        followers: 38000,
-      },
-    });
-    assert.ifError(snap.error);
-
-    const started = await ownerA.rpc("start_creator_analysis", {
-      p_application_id: appId,
-      p_provider: "test",
-      p_model: "test-model",
-      p_prompt_version: "creator-analysis-v2",
-      p_scoring_version: "creator-score-v1",
-    });
-    assert.ifError(started.error);
-    const analysisId = started.data.analysis_id;
-
-    const done = await ownerA.rpc("complete_creator_analysis", {
-      p_analysis_id: analysisId,
-      p_result: {
-        model: "test-model",
-        score: 70,
-        tier: "B",
-        confidence: "medium",
-        evidence_coverage: 0.3,
-        subscores: {},
-        summary: "s",
-        strengths: [],
-        attention_points: [],
-        suggested_tags: [],
-        input_snapshot: {},
-        raw_result: { criteria: {} },
-        used_snapshot_ids: [snap.data.snapshot_id],
-        input_tokens: 1,
-        output_tokens: 1,
-        latency_ms: 1,
-      },
-    });
-    assert.ifError(done.error);
-
-    const row = await admin
-      .from("creator_analyses")
-      .select("used_snapshot_ids, scoring_version, prompt_version")
-      .eq("id", analysisId)
-      .single();
-    assert.deepEqual(row.data!.used_snapshot_ids, [snap.data.snapshot_id]);
-    assert.equal(row.data!.scoring_version, "creator-score-v1");
-    assert.equal(row.data!.prompt_version, "creator-analysis-v2");
   });
 
   test("14) anon cannot read the snapshots table at all", async () => {

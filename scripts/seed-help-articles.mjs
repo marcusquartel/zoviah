@@ -5,15 +5,16 @@
  *   node scripts/seed-help-articles.mjs --dry-run # show what would change
  *
  * Idempotent: articles are keyed by `slug` and upserted, so running twice
- * makes no duplicates and only writes rows whose content changed. Uses the
- * service role key (bypasses RLS) — run from a trusted environment, never the
- * browser. Safe against production: it only touches `help_articles` and never
- * deletes.
+ * makes no duplicates and only writes rows whose content changed. Slugs in
+ * RETIRED_HELP_ARTICLE_SLUGS are archived (status 'archived'), so the help
+ * center and the assistant stop citing them. Uses the service role key
+ * (bypasses RLS) — run from a trusted environment, never the browser. Safe
+ * against production: it only touches `help_articles` and never deletes.
  *
  * Content lives in `scripts/help-articles.mjs`.
  */
 import { createClient } from "@supabase/supabase-js";
-import { HELP_ARTICLES } from "./help-articles.mjs";
+import { HELP_ARTICLES, RETIRED_HELP_ARTICLE_SLUGS } from "./help-articles.mjs";
 
 process.loadEnvFile(".env.local");
 
@@ -89,15 +90,33 @@ for (const article of HELP_ARTICLES) {
   }
 }
 
+const toRetire = RETIRED_HELP_ARTICLE_SLUGS.filter(
+  (slug) => bySlug.has(slug) && bySlug.get(slug).status !== "archived",
+);
+
 console.log(
   `${HELP_ARTICLES.length} articles in source — ` +
-    `${created} new, ${updated} changed, ${unchanged} unchanged.`,
+    `${created} new, ${updated} changed, ${unchanged} unchanged, ` +
+    `${toRetire.length} to archive.`,
 );
 
 if (dryRun) {
   for (const r of rowsToWrite) console.log(`  would write: ${r.slug}`);
+  for (const slug of toRetire) console.log(`  would archive: ${slug}`);
   console.log("(dry run — nothing written)");
   process.exit(0);
+}
+
+if (toRetire.length > 0) {
+  const { error: retireErr } = await db
+    .from("help_articles")
+    .update({ status: "archived" })
+    .in("slug", toRetire);
+  if (retireErr) {
+    console.error("Archive failed:", retireErr.message);
+    process.exit(1);
+  }
+  console.log(`Archived ${toRetire.length} retired article(s).`);
 }
 
 if (rowsToWrite.length === 0) {

@@ -9,6 +9,21 @@ import { APPLICATION_STATUS_LABELS } from "@/features/applications/status";
 import { formatDateTime } from "@/features/creators/format";
 import type { ApplicationStatus, CreatorEvent } from "@/types/database";
 
+/** Statuses removed with the address step — still named in older events. */
+const LEGACY_STATUS_LABELS: Record<string, string> = {
+  awaiting_address: "Aguardando endereço",
+  completed: "Cadastro completo",
+};
+
+function statusLabel(status: string | undefined): string {
+  if (!status) return "?";
+  return (
+    APPLICATION_STATUS_LABELS[status as ApplicationStatus] ??
+    LEGACY_STATUS_LABELS[status] ??
+    status
+  );
+}
+
 function describe(event: CreatorEvent): {
   icon: typeof FileText;
   title: string;
@@ -22,10 +37,8 @@ function describe(event: CreatorEvent): {
     case "application_submitted":
       return { icon: UserPlus, title: "Cadastro recebido" };
     case "application_status_changed": {
-      const from = data.from as ApplicationStatus | undefined;
-      const to = data.to as ApplicationStatus | undefined;
-      const fromLabel = from ? APPLICATION_STATUS_LABELS[from] : "?";
-      const toLabel = to ? APPLICATION_STATUS_LABELS[to] : "?";
+      const fromLabel = statusLabel(data.from as string | undefined);
+      const toLabel = statusLabel(data.to as string | undefined);
       return {
         icon: RefreshCw,
         title: `Status alterado: ${fromLabel} → ${toLabel}`,
@@ -57,7 +70,13 @@ function describe(event: CreatorEvent): {
         detail: actor ? `por ${actor}` : undefined,
       };
     case "address_submitted":
-      return { icon: MapPin, title: "Endereço enviado pela creator" };
+      return {
+        icon: MapPin,
+        title:
+          data.source === "signup"
+            ? "Endereço informado na inscrição"
+            : "Endereço enviado pela creator",
+      };
     default:
       return { icon: FileText, title: event.type };
   }

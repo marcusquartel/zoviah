@@ -5,8 +5,8 @@ const ITEMS: { key: keyof CrmCounts; label: string }[] = [
   { key: "new", label: "Novas" },
   { key: "awaiting_review", label: "Aguardando" },
   { key: "approved", label: "Aprovadas" },
-  { key: "awaiting_address", label: "Aguardando endereço" },
-  { key: "completed", label: "Cadastros completos" },
+  { key: "approved_without_address", label: "Aprovadas sem endereço" },
+  { key: "archived", label: "Arquivadas" },
 ];
 
 export function CrmCounters({ counts }: { counts: CrmCounts }) {

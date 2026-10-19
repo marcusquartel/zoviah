@@ -23,7 +23,7 @@ export const HELP_ARTICLES = [
       "- Creators: todas as pessoas que se inscreveram nos seus programas.\n" +
       "- Programas: cada programa tem um formulário público de inscrição.\n" +
       "- Envios: controle de envio de produtos para creators aprovadas.\n" +
-      "- IA: análise de creators com o Creator Score.\n" +
+      "- Equipe: quem tem acesso ao painel.\n" +
       "- Novidades: o que mudou no produto.\n" +
       "- Configurações: aparência, equipe e plano.\n\n" +
       "Comece criando um programa e publicando o formulário.",
@@ -105,7 +105,7 @@ export const HELP_ARTICLES = [
     keywords: ["instagram", "tiktok", "handle", "arroba", "seguidores"],
     content:
       "Ao adicionar um campo de Instagram ou TikTok, a Zoviah normaliza o handle (remove o @, deixa minúsculo) e monta a URL do perfil.\n\n" +
-      "Se você também pedir a contagem de seguidores, ela entra como número declarado — usada como contexto na análise, nunca convertida em nota sozinha.",
+      "Se você também pedir a contagem de seguidores, ela entra como número declarado pela creator e aparece na ficha e na lista.",
   },
   {
     slug: "consentimento-no-formulario",
@@ -118,6 +118,18 @@ export const HELP_ARTICLES = [
       "A inscrição só é registrada com o consentimento marcado.",
   },
 
+  {
+    slug: "endereco-no-formulario-de-inscricao",
+    category: "Formulários",
+    title: "Endereço e CPF no formulário de inscrição",
+    summary: "Todo formulário público já pede o endereço de entrega.",
+    keywords: ["endereço", "cpf", "cep", "formulário", "inscrição", "estado", "cidade"],
+    content:
+      "Todo formulário público termina com o bloco 'Endereço de entrega': CPF, CEP (que preenche cidade e estado sozinho), rua, número, complemento, bairro, cidade e estado. Ele é obrigatório e não precisa ser adicionado no editor.\n\n" +
+      "Se o seu formulário tiver campos de Estado, Cidade ou CEP, eles ficam ocultos no formulário público para a creator não preencher duas vezes — a cidade e o estado vêm do endereço.\n\n" +
+      "Creators adicionadas à mão ou por planilha não passam pelo formulário; para elas, peça o endereço pelo link seguro na aba Endereço.",
+  },
+
   // ---- Creators / CRM ---------------------------------------------
   {
     slug: "onde-vejo-as-inscricoes",
@@ -127,22 +139,21 @@ export const HELP_ARTICLES = [
     keywords: ["inscrições", "lista", "buscar creators", "CRM"],
     content:
       "Abra Creators no menu. Cada linha é uma creator que se inscreveu. Use Buscar creators para filtrar por nome, e-mail ou handle.\n\n" +
-      "Clique em uma creator para ver a ficha completa: respostas do formulário, redes, histórico, análise e endereço.",
+      "Clique em uma creator para ver a ficha completa: respostas do formulário, redes, métricas, endereço, envios e histórico.",
   },
   {
     slug: "status-da-inscricao",
     category: "Creators",
     title: "O que significam os status da inscrição",
-    summary: "Do recebimento ao cadastro completo.",
-    keywords: ["status", "nova", "aprovada", "aguardando endereço", "arquivada"],
+    summary: "Do recebimento à aprovação.",
+    keywords: ["status", "nova", "aprovada", "em avaliação", "arquivada"],
     content:
       "- Nova: acabou de chegar.\n" +
       "- Aguardando avaliação: em análise pela equipe.\n" +
       "- Informações solicitadas: você pediu mais dados.\n" +
-      "- Aprovada: aprovada, pronta para pedir o endereço.\n" +
-      "- Aguardando endereço: link seguro de endereço enviado.\n" +
-      "- Cadastro completo: endereço recebido.\n" +
-      "- Arquivada: fora do processo (os dados permanecem).",
+      "- Aprovada: aprovada. Se já tem endereço (normalmente veio na inscrição), pode receber envios.\n" +
+      "- Arquivada: fora do processo (os dados permanecem).\n\n" +
+      "O endereço não é uma etapa de status: ele chega junto com a inscrição.",
   },
   {
     slug: "mudar-status-da-inscricao",
@@ -155,7 +166,7 @@ export const HELP_ARTICLES = [
     ],
     content:
       "Na ficha da creator, use Mudar status e escolha o novo status. Só aparecem as transições permitidas a partir do status atual.\n\n" +
-      "Aprovar leva direto para Aprovada. As transições ligadas ao endereço acontecem sozinhas no fluxo seguro de endereço.",
+      "Aprovar leva direto para Aprovada. O endereço não muda o status — ele já vem no formulário de inscrição.",
   },
   {
     slug: "respostas-do-formulario",
@@ -182,13 +193,13 @@ export const HELP_ARTICLES = [
     slug: "como-aprovar-uma-creator",
     category: "Aprovação",
     title: "Como aprovar uma creator",
-    summary: "Aprovar e seguir para a coleta de endereço.",
+    summary: "Aprovar e seguir para o envio.",
     keywords: ["aprovar", "aprovação", "aprovada"],
     content:
       "1. Abra a creator.\n" +
       "2. Clique em Aprovar (ou use Mudar status → Aprovada).\n" +
       "3. A inscrição fica Aprovada.\n\n" +
-      "Depois de aprovar, use Solicitar informações / o fluxo de endereço para pedir o endereço de entrega com segurança.",
+      "O endereço de entrega e o CPF já vêm no formulário de inscrição, então depois de aprovar você já pode criar o envio. Se a creator não tiver endereço (inscrições antigas ou adicionadas à mão), peça pela aba Endereço.",
   },
   {
     slug: "solicitar-informacoes",
@@ -204,17 +215,17 @@ export const HELP_ARTICLES = [
   {
     slug: "como-solicitar-o-endereco",
     category: "Endereço",
-    title: "Como solicitar o endereço de uma creator",
-    summary: "Gerar o link seguro de endereço.",
-    keywords: ["endereço", "solicitar endereço", "link seguro", "envio de produto"],
+    title: "Como pedir o endereço de uma creator",
+    summary: "O endereço vem na inscrição; o link seguro é para quem não tem.",
+    keywords: ["endereço", "solicitar endereço", "link seguro", "sem endereço", "envio de produto"],
     content:
-      "A creator precisa estar Aprovada.\n\n" +
-      "1. Na ficha da creator, abra a área de endereço e gere a solicitação.\n" +
+      "Toda inscrição pelo formulário público já traz o endereço de entrega e o CPF — você não precisa pedir.\n\n" +
+      "Para creators sem endereço (inscrições antigas, adicionadas à mão ou importadas por planilha), ou quando o endereço mudou:\n" +
+      "1. Na ficha da creator, abra a aba Endereço e clique em Solicitar endereço (ou Pedir endereço atualizado).\n" +
       "2. A Zoviah cria um link seguro e único.\n" +
       "3. Copie o link e envie para a creator.\n" +
-      "4. Ela preenche o endereço na página, com consentimento.\n" +
-      "5. A inscrição passa para Aguardando endereço e depois Cadastro completo quando ela concluir.\n\n" +
-      "O endereço é preenchido pela creator — a equipe não digita por ela.",
+      "4. Ela preenche endereço e CPF na página, com consentimento.\n\n" +
+      "O status da inscrição não muda com isso. O endereço é preenchido pela creator — a equipe não digita por ela.",
   },
   {
     slug: "como-regenerar-o-link-de-endereco",
@@ -233,16 +244,16 @@ export const HELP_ARTICLES = [
     summary: "Revogar um link pendente.",
     keywords: ["revogar", "cancelar", "solicitação de endereço"],
     content:
-      "Use Revogar na área de endereço para invalidar a solicitação pendente. A inscrição volta para Aprovada, mantendo a data de aprovação. Você pode gerar uma nova solicitação depois.",
+      "Use Revogar solicitação na aba Endereço para invalidar o link pendente. O status da inscrição não muda. Você pode gerar uma nova solicitação depois.",
   },
   {
     slug: "endereco-enviado-pela-creator",
     category: "Endereço",
-    title: "Onde vejo o endereço que a creator enviou",
-    summary: "Endereço na ficha, após a conclusão.",
-    keywords: ["endereço enviado", "cadastro completo", "ver endereço"],
+    title: "Onde vejo o endereço da creator",
+    summary: "Aba Endereço da ficha.",
+    keywords: ["endereço enviado", "ver endereço", "endereço da inscrição"],
     content:
-      "Quando a creator conclui, o endereço aparece na ficha marcado como Endereço enviado pela creator, e a inscrição fica Cadastro completo. A partir daí você pode criar um envio.",
+      "O endereço aparece na aba Endereço da ficha, com a origem: 'Informado na inscrição' ou 'Informado pelo link seguro'. Creator aprovada com endereço já pode receber envio.",
   },
 
   // ---- Envios -------------------------------------------------
@@ -253,7 +264,7 @@ export const HELP_ARTICLES = [
     summary: "Abrir um envio para uma creator com endereço.",
     keywords: ["envio", "criar envio", "novo envio", "product seeding"],
     content:
-      "A creator precisa ter Cadastro completo (endereço recebido).\n\n" +
+      "A creator precisa estar Aprovada e ter endereço (normalmente ele vem na inscrição).\n\n" +
       "1. Abra Envios e clique em Novo envio, ou use Criar envio na ficha da creator.\n" +
       "2. Adicione os itens do envio (nome e quantidade; SKU é opcional).\n" +
       "3. Salve. O envio nasce como rascunho.\n\n" +
@@ -302,66 +313,6 @@ export const HELP_ARTICLES = [
       "Abra o envio e use Mudar status → Cancelado. O envio some da operação ativa mas continua no histórico da creator. Não é possível cancelar um envio já Entregue.",
   },
 
-  // ---- Creator Score --------------------------------------
-  {
-    slug: "o-que-e-o-creator-score",
-    category: "Creator Score",
-    title: "O que é o Creator Score",
-    summary: "Como a nota de 0 a 100 é formada.",
-    keywords: ["creator score", "nota", "score", "avaliação", "tier"],
-    content:
-      "O Creator Score é uma nota de 0 a 100 que combina 8 critérios: 3 avaliados por IA a partir das evidências (qualidade de conteúdo, comunicação, afinidade com a marca) e 5 calculados de forma determinística a partir das métricas.\n\n" +
-      "A IA nunca decide aprovação nem devolve a nota final — ela só avalia evidência. O motor de score junta tudo e classifica em um tier (A a D) com um nível de confiança.",
-  },
-  {
-    slug: "como-avaliar-uma-creator",
-    category: "Creator Score",
-    title: "Como avaliar uma creator com IA",
-    summary: "Rodar a análise na ficha da creator.",
-    keywords: ["analisar creator", "análise ia", "avaliar", "rodar análise"],
-    content:
-      "1. Abra a creator.\n" +
-      "2. Clique em Analisar creator.\n" +
-      "3. Aguarde — o status fica Analisando… e depois Concluída.\n\n" +
-      "Cada análise fica no histórico. Se faltar chave de IA no ambiente, a análise fica indisponível e o restante do CRM segue funcionando.\n\n" +
-      "Uma creator já em análise não pode ser analisada de novo ao mesmo tempo.",
-  },
-  {
-    slug: "o-que-significa-coverage",
-    category: "Creator Score",
-    title: "O que significa Coverage (cobertura)",
-    summary: "Quanta evidência sustentou a análise.",
-    keywords: ["coverage", "cobertura", "evidência", "confiança"],
-    content:
-      "Coverage é o quanto de evidência real existia para avaliar cada critério, de 0% a 100%.\n\n" +
-      "- Cobertura baixa: havia pouca informação (ex.: só um link, sem conteúdo). O critério pode ficar sem nota.\n" +
-      "- Cobertura alta: havia evidência suficiente.\n\n" +
-      "Ausência de dado significa desconhecido, não ruim. Cobertura baixa em vários critérios reduz a confiança geral da análise.",
-  },
-  {
-    slug: "tiers-do-creator-score",
-    category: "Creator Score",
-    title: "O que são os tiers A, B, C e D",
-    summary: "A faixa de prioridade da creator.",
-    keywords: ["tier", "faixa", "prioridade", "A B C D"],
-    content:
-      "O tier resume a nota em uma faixa de prioridade:\n\n" +
-      "- A — Prioridade alta\n" +
-      "- B — Boa\n" +
-      "- C — Média\n" +
-      "- D — Baixa prioridade\n\n" +
-      "O tier é orientação, não uma decisão automática. A aprovação continua sendo humana.",
-  },
-  {
-    slug: "confianca-da-analise",
-    category: "Creator Score",
-    title: "O que é o nível de confiança da análise",
-    summary: "Baixa, Média ou Alta.",
-    keywords: ["confiança", "confidence", "qualidade da análise"],
-    content:
-      "A confiança (Baixa / Média / Alta) indica quão sólida é a base da análise. Ela cai quando a cobertura de evidência é baixa em vários critérios. Uma nota com confiança Baixa deve ser lida com cautela e complementada por avaliação manual.",
-  },
-
   // ---- Métricas / Evidências --------------------------
   {
     slug: "o-que-sao-evidencias",
@@ -370,8 +321,8 @@ export const HELP_ARTICLES = [
     summary: "O material que alimenta a análise.",
     keywords: ["evidência", "conteúdo", "links", "métricas"],
     content:
-      "Evidência é o que a análise usa: respostas do formulário, links de conteúdo, temas abordados e métricas observadas.\n\n" +
-      "Um link sozinho não é conteúdo — se só há URLs, o critério de conteúdo fica sem nota. Métricas (seguidores, views, engajamento) entram como contexto factual, nunca viram nota por si só.",
+      "Na aba Métricas da creator, a equipe registra números observados no perfil (seguidores, views, engajamento) como um retrato num momento.\n\n" +
+      "Esses registros são fatos para consulta e comparação ao longo do tempo — não viram nota nem aprovam ninguém.",
   },
   {
     slug: "seguidores-pt-br",
@@ -389,7 +340,7 @@ export const HELP_ARTICLES = [
     summary: "A diferença entre o que a creator informou e o que foi registrado.",
     keywords: ["declarado", "observado", "snapshot", "métricas"],
     content:
-      "Métricas declaradas vêm do formulário (a creator digitou). Métricas observadas são registros que a equipe adiciona à ficha como um retrato num momento (snapshot). A análise usa ambas como contexto, sem transformar número em nota.",
+      "Métricas declaradas vêm do formulário (a creator digitou). Métricas observadas são registros que a equipe adiciona à ficha como um retrato num momento (snapshot). As duas ficam lado a lado para você comparar.",
   },
 
   // ---- Equipe -------------------------------------
@@ -507,8 +458,8 @@ export const HELP_ARTICLES = [
       "Conceitos:\n" +
       "- Programa: uma campanha ou seleção, com um formulário público de inscrição.\n" +
       "- Inscrição: uma resposta ao formulário; vira uma creator na sua lista.\n" +
-      "- Creator: a pessoa. Tem status (nova, em avaliação, aprovada…), análise de IA e, quando aprovada, endereço e envios.\n\n" +
-      "Fluxo típico: criar programa → publicar o formulário → receber inscrições → avaliar/aprovar → solicitar endereço → criar o envio.",
+      "- Creator: a pessoa. Tem status (nova, em avaliação, aprovada…), endereço de entrega (informado na inscrição) e envios.\n\n" +
+      "Fluxo típico: criar programa → publicar o formulário → receber inscrições (já com endereço) → avaliar/aprovar → criar o envio.",
   },
   {
     slug: "glossario-de-termos",
@@ -520,9 +471,7 @@ export const HELP_ARTICLES = [
       "- Programa: campanha com formulário público.\n" +
       "- Inscrição / Application: uma resposta ao formulário.\n" +
       "- Creator: a pessoa inscrita.\n" +
-      "- Creator Score: nota de 0 a 100 calculada pelo sistema.\n" +
-      "- Tier: faixa do score (ex.: A, B, C).\n" +
-      "- Evidência: um dado observado (ex.: seguidores medidos) que sustenta a análise.\n" +
+      "- Métrica observada: um número registrado pela equipe (ex.: seguidores medidos).\n" +
       "- Snapshot de endereço: cópia do endereço no momento em que o envio foi criado.\n" +
       "- Slug: o trecho do endereço público do formulário (zoviah.app/p/slug/...).\n" +
       "- Subdomínio: o endereço da sua empresa (empresa.zoviah.app).",
@@ -546,12 +495,11 @@ export const HELP_ARTICLES = [
     summary: "A sequência completa, do formulário à etiqueta.",
     keywords: ["primeiro envio", "passo a passo", "começar", "fluxo completo"],
     content:
-      "1. Crie um programa e monte o formulário (inclua nome, e-mail, WhatsApp, Estado e Cidade).\n" +
+      "1. Crie um programa e monte o formulário (inclua nome, e-mail e WhatsApp). O bloco de endereço de entrega com CPF entra sozinho em todo formulário.\n" +
       "2. Publique o programa e divulgue o link.\n" +
       "3. Ao receber inscrições, avalie na aba Resumo da creator e clique em Aprovar.\n" +
-      "4. Na aba Endereço, clique em Solicitar endereço e envie o link seguro para a creator.\n" +
-      "5. Quando ela preencher (com CPF, exigido pelos Correios), crie o envio na aba Endereço/Envios.\n" +
-      "6. Prepare, adicione o rastreio e marque como enviado.",
+      "4. Na aba Envios, crie o envio — o endereço (com CPF, exigido pelos Correios) já veio na inscrição.\n" +
+      "5. Prepare, adicione o rastreio e marque como enviado.",
   },
 
   // ---- Programas ------------------------------------------------------
@@ -706,8 +654,7 @@ export const HELP_ARTICLES = [
     summary: "A mensagem de sucesso.",
     keywords: ["depois de enviar", "confirmação", "mensagem de sucesso", "obrigado"],
     content:
-      "Ela vê a 'Mensagem de sucesso' configurada no programa (aba Geral). Se você não definir uma, aparece um texto padrão de confirmação.\n\n" +
-      "Nenhuma inscrição dispara IA automaticamente — a análise só acontece quando alguém do time clica em Analisar.",
+      "Ela vê a 'Mensagem de sucesso' configurada no programa (aba Geral). Se você não definir uma, aparece um texto padrão de confirmação.",
   },
   {
     slug: "seguidores-declarados-no-formulario",
@@ -717,7 +664,7 @@ export const HELP_ARTICLES = [
     keywords: ["seguidores", "declarados", "instagram", "tiktok", "número", "campo"],
     content:
       "Crie um campo do tipo Número e mapeie para 'Seguidores Instagram' ou 'Seguidores TikTok'. O valor é aceito em formatos comuns (ex.: 12k, 1,2 mi).\n\n" +
-      "Esse número é declarado pela creator — diferente das métricas observadas que a análise coleta.",
+      "Esse número é declarado pela creator — diferente das métricas observadas que a equipe registra na aba Métricas.",
   },
   {
     slug: "limite-de-campos-no-formulario",
@@ -737,20 +684,23 @@ export const HELP_ARTICLES = [
     summary: "Colunas, busca e filtros.",
     keywords: ["lista", "creators", "colunas", "filtro", "busca", "kanban"],
     content:
-      "Creators mostra todas as pessoas inscritas nos seus programas. Você pode buscar por nome e filtrar por status, programa, tier, confiança, score mínimo e situação da análise.\n\n" +
-      "A coluna IA traz o Creator Score quando a creator já foi analisada. Há também uma visão em Kanban por status.",
+      "Creators mostra todas as pessoas inscritas nos seus programas. Você pode buscar por nome e filtrar por status, programa, cidade, estado, redes e 'Sem endereço'.\n\n" +
+      "Há também uma visão em Kanban por status.",
   },
   {
     slug: "abas-da-creator",
     category: "Creators",
     title: "As abas ao abrir uma creator",
-    summary: "Resumo, Inteligência, Endereço, Timeline.",
-    keywords: ["abas", "creator", "resumo", "inteligência", "endereço", "timeline"],
+    summary: "Resumo, Cadastro, Redes, Métricas, Endereço, Envios, Respostas, Histórico.",
+    keywords: ["abas", "creator", "resumo", "métricas", "endereço", "envios", "histórico"],
     content:
-      "- Resumo: dados, respostas do formulário e as ações (Aprovar, Solicitar informações, Arquivar).\n" +
-      "- Inteligência: Creator Score, tier, confiança, evidence coverage e a avaliação qualitativa.\n" +
-      "- Endereço: solicitar/regenerar o link seguro e ver o endereço enviado.\n" +
-      "- Timeline: o histórico de tudo que aconteceu com a creator.",
+      "- Resumo: dados principais e as ações (Aprovar, Solicitar informações, Arquivar).\n" +
+      "- Cadastro e Redes: dados pessoais e perfis sociais.\n" +
+      "- Métricas: números observados registrados pela equipe.\n" +
+      "- Endereço: o endereço atual (com CPF) e, se preciso, o link seguro para pedir um novo.\n" +
+      "- Envios: os envios da creator.\n" +
+      "- Respostas: o que ela respondeu no formulário.\n" +
+      "- Histórico: tudo que aconteceu com a creator.",
   },
   {
     slug: "transicoes-de-status-permitidas",
@@ -759,8 +709,8 @@ export const HELP_ARTICLES = [
     summary: "O que pode e o que exige o fluxo seguro.",
     keywords: ["status", "transição", "mudar", "permitido", "fluxo"],
     content:
-      "Você move manualmente entre nova, em avaliação, informações solicitadas, aprovada e arquivada.\n\n" +
-      "As etapas 'aguardando endereço' e 'completo' NÃO são manuais: elas só acontecem pelo fluxo de Solicitar endereço → a creator preenche. O sistema recusa o atalho manual para essas etapas.",
+      "Você move manualmente entre nova, em avaliação, informações solicitadas, aprovada e arquivada — só aparecem as transições permitidas a partir do status atual.\n\n" +
+      "Não existe etapa de endereço no status: o endereço chega junto com a inscrição.",
   },
   {
     slug: "solicitar-informacoes-o-que-a-creator-recebe",
@@ -789,7 +739,7 @@ export const HELP_ARTICLES = [
     summary: "O histórico de eventos.",
     keywords: ["timeline", "histórico", "eventos", "linha do tempo", "auditoria"],
     content:
-      "A Timeline registra inscrição, mudanças de status, criação/uso de link de endereço, endereço enviado, análises e criação de envios — com data e quem fez.\n\n" +
+      "A Timeline registra inscrição, mudanças de status, criação/uso de link de endereço, endereço informado (na inscrição ou pelo link) e criação de envios — com data e quem fez.\n\n" +
       "Eventos públicos (feitos pela creator, como o envio do endereço) aparecem sem um autor do time.",
   },
   {
@@ -809,7 +759,7 @@ export const HELP_ARTICLES = [
     summary: "Busca por nome e filtros combinados.",
     keywords: ["buscar", "procurar", "encontrar", "nome", "filtro"],
     content:
-      "Use o campo de busca da lista de Creators (por nome). Combine com os filtros de status, programa, tier e score para chegar rápido.\n\n" +
+      "Use o campo de busca da lista de Creators (por nome). Combine com os filtros de status, programa, cidade e estado para chegar rápido.\n\n" +
       "Abrir uma creator pela lista mostra todas as abas dela.",
   },
 
@@ -821,21 +771,21 @@ export const HELP_ARTICLES = [
     summary: "Na aba Resumo, botão Aprovar.",
     keywords: ["aprovar", "aprovação", "resumo", "decisão"],
     content:
-      "Abra a creator, aba Resumo, e clique em Aprovar. A decisão é sempre humana — o Creator Score ajuda, mas não aprova ninguém.\n\n" +
-      "Depois de aprovada, a aba Endereço libera o botão Solicitar endereço.",
+      "Abra a creator, aba Resumo, e clique em Aprovar. A decisão é sempre humana.\n\n" +
+      "Aprovada e com endereço (que vem na inscrição), a creator já pode receber envio pela aba Envios.",
   },
   {
     slug: "o-link-seguro-de-endereco",
     category: "Endereço",
     title: "Como funciona o link seguro de endereço",
-    summary: "Validade de 14 dias, uso único, não reexibível.",
+    summary: "Para quem não tem endereço. Validade de 7 dias, uso único, não reexibível.",
     keywords: ["link seguro", "endereço", "token", "validade", "expira"],
     content:
-      "Ao clicar em Solicitar endereço, a Zoviah gera um link único para a creator preencher o endereço. Ele:\n" +
-      "- vale por 14 dias;\n" +
+      "O endereço normalmente vem na inscrição. O link seguro serve para quem não tem (ou precisa atualizar): na aba Endereço, clique em Solicitar endereço e a Zoviah gera um link único. Ele:\n" +
+      "- vale por 7 dias;\n" +
       "- serve uma vez (depois de enviado, não abre de novo);\n" +
       "- não pode ser reexibido — se você perder, gere um novo.\n\n" +
-      "O link vai por você (WhatsApp, e-mail). A Zoviah não dispara e-mail nessa etapa.",
+      "O link vai por você (WhatsApp, e-mail). A Zoviah não dispara e-mail nessa etapa, e o status da inscrição não muda.",
   },
   {
     slug: "regenerar-ou-revogar-o-link",
@@ -846,17 +796,18 @@ export const HELP_ARTICLES = [
     content:
       "Na aba Endereço da creator:\n" +
       "- Gerar novo link: invalida o anterior e cria outro (use quando o link venceu ou foi para a pessoa errada).\n" +
-      "- Revogar solicitação: derruba o link atual e volta a creator para aprovada, sem endereço pendente.",
+      "- Revogar solicitação: derruba o link atual, sem mudar o status da inscrição.\n\n" +
+      "Arquivar a inscrição também revoga um link pendente.",
   },
   {
     slug: "cpf-do-destinatario",
     category: "Endereço",
-    title: "Por que pedimos o CPF do destinatário",
+    title: "Por que pedimos o CPF",
     summary: "Os Correios exigem CPF para a etiqueta.",
     keywords: ["cpf", "correios", "destinatário", "documento", "envio", "etiqueta"],
     content:
-      "O CPF do destinatário é obrigatório no formulário de endereço porque os Correios exigem esse dado para emitir a etiqueta de envio.\n\n" +
-      "Ele é guardado só com os dígitos, aparece para o time na aba Endereço e no envio, e nunca vai para relatórios, histórico público ou para a IA.",
+      "O CPF é obrigatório no formulário de inscrição (e no link seguro de endereço) porque os Correios exigem esse dado para emitir a etiqueta de envio.\n\n" +
+      "Ele é guardado só com os dígitos, aparece para o time na aba Endereço e no envio, e nunca vai para relatórios ou para o histórico.",
   },
   {
     slug: "creator-diz-que-o-link-expirou",
@@ -891,10 +842,10 @@ export const HELP_ARTICLES = [
     category: "Endereço",
     title: "Onde vejo o endereço que a creator enviou",
     summary: "Aba Endereço da creator.",
-    keywords: ["endereço enviado", "ver endereço", "cadastro completo", "copiar"],
+    keywords: ["endereço enviado", "ver endereço", "endereço da inscrição", "copiar"],
     content:
-      "Depois que a creator preenche, a aba Endereço mostra o endereço atual (com CPF) e um botão Copiar. A inscrição passa para 'completo'.\n\n" +
-      "O histórico de solicitações fica logo abaixo, com quem criou cada link e quando foi concluído.",
+      "A aba Endereço mostra o endereço atual (com CPF), de onde ele veio (inscrição ou link seguro) e um botão Copiar.\n\n" +
+      "Se houve links de endereço, o histórico de solicitações fica logo abaixo, com quem criou cada link e quando foi concluído.",
   },
 
   // ---- Envios ------------------------------------------------------
@@ -905,7 +856,7 @@ export const HELP_ARTICLES = [
     summary: "Precisa de creator aprovada com endereço.",
     keywords: ["criar envio", "novo envio", "shipment", "endereço", "aprovada"],
     content:
-      "Um envio nasce de uma creator que está 'completo' (aprovada e com endereço enviado). Na aba Endereço/Envios, crie o envio: ele copia um snapshot do endereço atual (inclusive o CPF).\n\n" +
+      "Um envio nasce de uma creator Aprovada que tem endereço (normalmente ele vem na inscrição). Na aba Envios, crie o envio: ele copia um snapshot do endereço atual (inclusive o CPF).\n\n" +
       "Depois você adiciona os itens, o rastreio e vai mudando o status.",
   },
   {
@@ -962,56 +913,7 @@ export const HELP_ARTICLES = [
       "Um envio cancelado continua no histórico.",
   },
 
-  // ---- Creator Score / IA ---------------------------------------
-  {
-    slug: "creator-score-como-e-calculado",
-    category: "Creator Score",
-    title: "Como o Creator Score é calculado",
-    summary: "Nota de 0 a 100, determinística, feita no backend.",
-    keywords: ["creator score", "score", "cálculo", "0 a 100", "determinístico"],
-    content:
-      "O score (0–100) é calculado pelo backend de forma determinística a partir de evidências. A IA só produz uma avaliação qualitativa de 3 critérios — nunca a nota geral.\n\n" +
-      "Rodar a análise de novo com as mesmas evidências dá o mesmo número.",
-  },
-  {
-    slug: "criterio-sem-evidencia-e-desconhecido",
-    category: "Creator Score",
-    title: "Critério sem evidência = desconhecido",
-    summary: "Falta de dado não vira nota zero.",
-    keywords: ["evidência", "desconhecido", "null", "sem dado", "zero", "critério"],
-    content:
-      "Quando falta evidência para um critério, ele fica como 'desconhecido', não como 0. Isso evita punir uma creator só porque um dado não foi coletado.\n\n" +
-      "O evidence coverage mostra quanto da avaliação está apoiado em dados observados.",
-  },
-  {
-    slug: "score-nao-aprova-ninguem",
-    category: "Creator Score",
-    title: "O score não aprova ninguém",
-    summary: "Aprovar, arquivar e solicitar informações são decisões suas.",
-    keywords: ["score", "aprovar", "decisão humana", "automático"],
-    content:
-      "O Creator Score, o tier e a confiança são apoio à decisão. Aprovar, arquivar ou pedir informações continua sendo uma ação manual na aba Resumo.",
-  },
-  {
-    slug: "analise-que-falhou-reprocessar",
-    category: "Creator Score",
-    title: "Uma análise falhou — como reprocessar",
-    summary: "Rodar de novo pela aba Inteligência.",
-    keywords: ["análise falhou", "erro", "reprocessar", "tentar de novo", "ia"],
-    content:
-      "Na Visão Geral, 'Análises que falharam' leva à lista filtrada. Abra a creator, aba Inteligência, e clique em Analisar de novo.\n\n" +
-      "Se continuar falhando, verifique se a integração de IA está configurada em /app/ai.",
-  },
-  {
-    slug: "ia-precisa-de-chave",
-    category: "Creator Score",
-    title: "A análise de IA precisa de configuração",
-    summary: "ANTHROPIC_API_KEY e ANTHROPIC_MODEL no servidor.",
-    keywords: ["ia", "configuração", "anthropic", "chave", "api key", "não configurada"],
-    content:
-      "A análise de creators exige ANTHROPIC_API_KEY e ANTHROPIC_MODEL no servidor. Sem elas, o CRM funciona igual e a aba Inteligência mostra 'IA não configurada'.\n\n" +
-      "A tela /app/ai mostra o status da integração, o modelo e as versões de prompt e de scoring.",
-  },
+  // ---- Métricas ---------------------------------------
   {
     slug: "observadas-vs-declaradas",
     category: "Métricas / Evidências",
@@ -1019,17 +921,8 @@ export const HELP_ARTICLES = [
     summary: "O que a creator informou x o que foi medido.",
     keywords: ["observadas", "declaradas", "seguidores", "métricas", "evidência"],
     content:
-      "Declarado: o número que a creator digitou no formulário. Observado: o número que a coleta de evidências mediu.\n\n" +
-      "A análise dá mais peso ao observado. Divergências grandes entre os dois aparecem na aba Inteligência.",
-  },
-  {
-    slug: "o-que-e-evidence-coverage",
-    category: "Métricas / Evidências",
-    title: "O que é evidence coverage",
-    summary: "Quanto da análise está apoiada em dados observados.",
-    keywords: ["evidence coverage", "cobertura", "evidência", "confiança", "dados"],
-    content:
-      "Evidence coverage é a proporção dos critérios que têm evidência observada por trás. Coverage baixo significa que a avaliação depende muito do que foi declarado — leia com mais cautela.",
+      "Declarado: o número que a creator digitou no formulário. Observado: o número que a equipe registrou na aba Métricas.\n\n" +
+      "Quando os dois divergem bastante, a aba Métricas destaca a diferença.",
   },
 
   // ---- Configurações / Conta ----------------------------------
@@ -1102,7 +995,7 @@ export const HELP_ARTICLES = [
     summary: "Agora é um item do menu lateral, antes de Novidades.",
     keywords: ["equipe", "menu", "onde fica", "configurações", "membros"],
     content:
-      "Equipe agora é um item do menu lateral (entre IA e Novidades). Antes ficava dentro de Configurações — o link antigo continua funcionando e leva para o novo lugar.",
+      "Equipe agora é um item do menu lateral (antes de Novidades). Antes ficava dentro de Configurações — o link antigo continua funcionando e leva para o novo lugar.",
   },
   {
     slug: "papeis-owner-admin-analyst",
@@ -1237,7 +1130,7 @@ export const HELP_ARTICLES = [
     summary: "Os blocos do painel operacional.",
     keywords: ["visão geral", "dashboard", "métricas", "painel", "ler"],
     content:
-      "Topo: total de creators, novos no período, aprovadas, cadastro completo e envios ativos.\n" +
+      "Topo: total de creators, novos no período, aprovadas, aprovadas sem endereço e envios ativos.\n" +
       "Depois: crescimento da base, funil de inscrições, pontos de atenção, distribuições (top cidades, estados, programas) e as últimas inscrições.\n\n" +
       "O seletor 7 / 30 / 90 dias muda o período das métricas e do gráfico de crescimento.",
   },
@@ -1246,9 +1139,9 @@ export const HELP_ARTICLES = [
     category: "Primeiros passos",
     title: "O bloco 'Pontos de atenção'",
     summary: "O que ele lista.",
-    keywords: ["pontos de atenção", "atenção", "pendências", "aguardando endereço"],
+    keywords: ["pontos de atenção", "atenção", "pendências", "sem endereço"],
     content:
-      "Mostra o que trava a operação: creators 'Aguardando endereço' e 'Análises que falharam'. Cada item leva para a lista já filtrada.\n\n" +
+      "Mostra o que trava a operação: creators 'Aprovadas sem endereço' (não dá para criar envio). O item leva para a lista já filtrada, onde você pode pedir o endereço pela aba Endereço.\n\n" +
       "Possíveis duplicadas não aparecem aqui — isso é tratado na lista de Creators.",
   },
   {
@@ -1258,7 +1151,7 @@ export const HELP_ARTICLES = [
     summary: "Quantas inscrições há em cada etapa.",
     keywords: ["funil", "etapas", "status", "conversão", "inscrições"],
     content:
-      "O funil conta as inscrições por etapa: nova, avaliação, informações, aprovada, endereço e completo. Serve para ver onde as pessoas estão paradas.",
+      "O funil conta as inscrições por etapa: nova, avaliação, informações e aprovada. Serve para ver onde as pessoas estão paradas.",
   },
   {
     slug: "top-cidades-e-estados",
@@ -1361,8 +1254,8 @@ export const HELP_ARTICLES = [
     summary: "O checkbox de autorização no formulário.",
     keywords: ["lgpd", "consentimento", "dados", "privacidade", "autorização"],
     content:
-      "Todo formulário público pede a autorização da creator para o uso das informações na avaliação e no contato. Sem marcar, a inscrição não é enviada.\n\n" +
-      "Dados sensíveis como CPF ficam restritos ao time e nunca vão para a IA nem para históricos públicos.",
+      "Todo formulário público pede a autorização da creator para o uso das informações na avaliação, no contato e no envio de produtos. Sem marcar, a inscrição não é enviada.\n\n" +
+      "Dados sensíveis como CPF ficam restritos ao time e nunca vão para históricos ou relatórios.",
   },
   {
     slug: "quem-ve-o-cpf",
@@ -1371,7 +1264,7 @@ export const HELP_ARTICLES = [
     summary: "Apenas o time, na aba Endereço e no envio.",
     keywords: ["cpf", "quem vê", "privacidade", "acesso", "restrito"],
     content:
-      "O CPF aparece só para membros da organização, na aba Endereço da creator e no bloco de endereço do envio. Ele não entra em relatórios, na Timeline pública, na lista de creators nem em qualquer conteúdo enviado para a IA.",
+      "O CPF aparece só para membros da organização, na aba Endereço da creator e no bloco de endereço do envio. Ele não entra em relatórios, na Timeline pública, nem na lista de creators.",
   },
 
   // ---- Creators: editar, corrigir, arquivar, excluir ----------
@@ -1389,7 +1282,7 @@ export const HELP_ARTICLES = [
       "- Mudar o status (nova, em avaliação, informações solicitadas, aprovada, arquivada).\n" +
       "- Adicionar notas internas.\n" +
       "- Solicitar informações — coloca a inscrição nesse status para você cobrar a correção pelo seu canal (WhatsApp, e-mail).\n" +
-      "- Quando aprovada, solicitar o endereço.\n\n" +
+      "- Pedir um endereço novo pelo link seguro (aba Endereço).\n\n" +
       "Para corrigir um dado errado do formulário, use Solicitar informações e peça para a creator reenviar, ou registre a informação certa numa nota.",
   },
   {
@@ -1470,4 +1363,23 @@ export const HELP_ARTICLES = [
       "O assistente responde só pela documentação. Se ele não achou, tente reformular com outras palavras (ex.: 'editar' em vez de 'alterar') ou seja mais específico sobre a tela.\n\n" +
       "Se ainda assim não resolver, use 'Falar com suporte' para abrir uma solicitação — o histórico da conversa vai junto.",
   },
+];
+
+/**
+ * Slugs removed from the product (the AI profile analysis / Creator Score).
+ * The seeder archives them so the assistant stops citing them; it never
+ * deletes.
+ */
+export const RETIRED_HELP_ARTICLE_SLUGS = [
+  "o-que-e-o-creator-score",
+  "como-avaliar-uma-creator",
+  "o-que-significa-coverage",
+  "tiers-do-creator-score",
+  "confianca-da-analise",
+  "creator-score-como-e-calculado",
+  "criterio-sem-evidencia-e-desconhecido",
+  "score-nao-aprova-ninguem",
+  "analise-que-falhou-reprocessar",
+  "ia-precisa-de-chave",
+  "o-que-e-evidence-coverage",
 ];

@@ -26,8 +26,10 @@ const RPC_ERRORS: Record<string, string> = {
   NOT_AUTHENTICATED: "Sessão expirada. Entre novamente.",
   FORBIDDEN: "Você não tem acesso a esta inscrição.",
   APPLICATION_NOT_FOUND: "Inscrição não encontrada.",
-  APPLICATION_NOT_APPROVED:
-    "Só é possível solicitar o endereço de uma creator aprovada.",
+  APPLICATION_ARCHIVED:
+    "Esta inscrição está arquivada. Reabra-a para solicitar o endereço.",
+  REQUEST_ALREADY_PENDING:
+    "Já existe uma solicitação pendente — use \"Gerar novo link\".",
   NO_ACTIVE_REQUEST: "Não há solicitação de endereço ativa.",
 };
 
@@ -75,21 +77,21 @@ async function mintLink(
   };
 }
 
-/** approved → generate the first secure address link (→ awaiting_address). */
+/** Generate a secure address link. Never changes the application status. */
 export async function createAddressRequest(
   applicationId: string,
 ): Promise<AddressLinkResult> {
   return mintLink("create_address_request", applicationId);
 }
 
-/** awaiting_address → revoke the old token, issue a new one (stays awaiting_address). */
+/** Revoke the pending token and issue a new one. */
 export async function regenerateAddressRequest(
   applicationId: string,
 ): Promise<AddressLinkResult> {
   return mintLink("regenerate_address_request", applicationId);
 }
 
-/** awaiting_address → revoke the pending request (→ approved, approved_at kept). */
+/** Revoke the pending request. */
 export async function revokeAddressRequest(
   applicationId: string,
 ): Promise<AddressActionResult> {

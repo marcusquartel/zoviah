@@ -77,7 +77,7 @@ async function main() {
     .single();
   const app = await admin
     .from("applications")
-    .insert({ organization_id: orgId, program_id: program.data.id, creator_id: creator.data.id, status: "completed", form_version: 1 })
+    .insert({ organization_id: orgId, program_id: program.data.id, creator_id: creator.data.id, status: "approved", form_version: 1 })
     .select("id")
     .single();
   const req = await admin
@@ -87,7 +87,7 @@ async function main() {
     .single();
   const addr = await admin
     .from("creator_addresses")
-    .insert({ organization_id: orgId, creator_id: creator.data.id, source_request_id: req.data.id, is_current: true, recipient_name: "Perf", postal_code: "30140110", street: "Rua X", number: "1", neighborhood: "Centro", city: "Belo Horizonte", state: "MG", country: "BR" })
+    .insert({ organization_id: orgId, creator_id: creator.data.id, source: "secure_request", source_request_id: req.data.id, is_current: true, recipient_name: "Perf", postal_code: "30140110", street: "Rua X", number: "1", neighborhood: "Centro", city: "Belo Horizonte", state: "MG", country: "BR" })
     .select("id")
     .single();
 

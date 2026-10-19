@@ -14,11 +14,8 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import {
-  CONFIDENCE_VALUES,
   CREATOR_SORTS,
   SORT_LABELS,
-  TIER_VALUES,
-  ANALYSIS_STATUS_VALUES,
   serializeCreatorQuery,
   hasActiveFilters,
   type CreatorQuery,
@@ -28,11 +25,6 @@ import {
   APPLICATION_STATUSES,
   APPLICATION_STATUS_LABELS,
 } from "@/features/applications/status";
-import {
-  ANALYSIS_STATUS_LABELS,
-  CONFIDENCE_LABELS,
-  TIER_LABELS,
-} from "@/features/analysis/labels";
 
 const VIEW_STORAGE_KEY = "creator-hub:creators-view";
 const ALL = "__all__";
@@ -51,22 +43,6 @@ const STATUS_ITEMS: SelectItems = [
     label: APPLICATION_STATUS_LABELS[s],
   })),
 ];
-const ANALYSIS_ITEMS: SelectItems = [
-  { value: ALL, label: "Qualquer análise" },
-  ...ANALYSIS_STATUS_VALUES.map((s) => ({
-    value: s,
-    label: ANALYSIS_STATUS_LABELS[s],
-  })),
-];
-const TIER_ITEMS: SelectItems = [
-  { value: ALL, label: "Qualquer tier" },
-  ...TIER_VALUES.map((t) => ({ value: t, label: TIER_LABELS[t] })),
-];
-const CONFIDENCE_ITEMS: SelectItems = [
-  { value: ALL, label: "Qualquer confiança" },
-  ...CONFIDENCE_VALUES.map((c) => ({ value: c, label: CONFIDENCE_LABELS[c] })),
-];
-
 interface ToolbarProps {
   query: CreatorQuery;
   programs: { id: string; name: string }[];
@@ -238,83 +214,12 @@ export function CreatorsToolbar({ query, programs }: ToolbarProps) {
         >
           Tem TikTok
         </ToggleChip>
-
-        <Select
-          items={ANALYSIS_ITEMS}
-          value={query.analysisStatus ?? ALL}
-          onValueChange={(v) =>
-            apply({
-              analysisStatus:
-                v === ALL ? null : (v as CreatorQuery["analysisStatus"]),
-            })
-          }
+        <ToggleChip
+          active={query.noAddress}
+          onClick={() => apply({ noAddress: !query.noAddress })}
         >
-          <SelectTrigger className="w-40" aria-label="Análise IA">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL}>Qualquer análise</SelectItem>
-            {ANALYSIS_STATUS_VALUES.map((s) => (
-              <SelectItem key={s} value={s}>
-                {ANALYSIS_STATUS_LABELS[s]}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Select
-          items={TIER_ITEMS}
-          value={query.tier ?? ALL}
-          onValueChange={(v) =>
-            apply({ tier: v === ALL ? null : (v as CreatorQuery["tier"]) })
-          }
-        >
-          <SelectTrigger className="w-32" aria-label="Tier">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL}>Qualquer tier</SelectItem>
-            {TIER_VALUES.map((t) => (
-              <SelectItem key={t} value={t}>
-                {TIER_LABELS[t]}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Select
-          items={CONFIDENCE_ITEMS}
-          value={query.confidence ?? ALL}
-          onValueChange={(v) =>
-            apply({
-              confidence:
-                v === ALL ? null : (v as CreatorQuery["confidence"]),
-            })
-          }
-        >
-          <SelectTrigger className="w-36" aria-label="Confidence">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL}>Qualquer confiança</SelectItem>
-            {CONFIDENCE_VALUES.map((c) => (
-              <SelectItem key={c} value={c}>
-                {CONFIDENCE_LABELS[c]}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <DebouncedInput
-          key={`min_score:${query.minScore ?? ""}`}
-          value={query.minScore != null ? String(query.minScore) : ""}
-          onCommit={(v) => {
-            const n = Number.parseInt(v, 10);
-            apply({ minScore: Number.isFinite(n) && n > 0 ? n : null });
-          }}
-          placeholder="Score mín."
-          className="w-24"
-        />
+          Sem endereço
+        </ToggleChip>
 
         {filtersActive ? (
           <Button

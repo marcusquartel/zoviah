@@ -4,10 +4,10 @@ import { BR_UFS } from "../br-locations.ts";
 import { isValidCpf, stripCpf } from "./cpf.ts";
 
 /**
- * Shared shipping-address schema (Phase 4 §82). Used by the public form
- * (client, for UX) and re-checked by the completion server action. The
- * `complete_address_request` RPC normalizes and re-validates once more in SQL —
- * this is never the only gate.
+ * Shared shipping-address schemas. Used by the signup form and the secure-link
+ * form (client, for UX) and re-checked by their server actions. The
+ * `submit_application` / `complete_address_request` RPCs normalize and
+ * re-validate once more in SQL — this is never the only gate.
  *
  * pt-BR normalization: CEP → 8 digits, no mask; UF → 2 uppercase letters.
  */
@@ -18,8 +18,11 @@ const trimmed = (max: number, label: string) =>
     .min(1, { error: `Informe ${label}.` })
     .max(max, { error: `${label} muito longo.` });
 
-export const addressSchema = z.object({
-  recipientName: trimmed(150, "o nome do destinatário"),
+/**
+ * The shipping-address fields themselves (CPF included). The signup form
+ * collects exactly these; the recipient is the creator's own name.
+ */
+export const addressFieldsSchema = z.object({
   cpf: z
     .string()
     .trim()
@@ -47,6 +50,13 @@ export const addressSchema = z.object({
     .refine((v) => (BR_UFS as readonly string[]).includes(v), {
       error: "Selecione o estado.",
     }),
+});
+
+export type AddressFieldsInput = z.infer<typeof addressFieldsSchema>;
+
+/** The secure-link form: the address fields plus recipient and consent. */
+export const addressSchema = addressFieldsSchema.extend({
+  recipientName: trimmed(150, "o nome do destinatário"),
   consent: z.literal(true, {
     error: "É necessário confirmar o consentimento.",
   }),
@@ -67,5 +77,20 @@ export function toAddressPayload(a: AddressInput) {
     city: a.city,
     state: a.state,
     consent: a.consent === true,
+  };
+}
+
+/** The `p_address` object `submit_application` expects (no recipient: SQL
+ * uses the creator's name). */
+export function toSignupAddressPayload(a: AddressFieldsInput) {
+  return {
+    cpf: a.cpf,
+    postal_code: a.postalCode,
+    street: a.street,
+    number: a.number,
+    complement: a.complement || null,
+    neighborhood: a.neighborhood,
+    city: a.city,
+    state: a.state,
   };
 }

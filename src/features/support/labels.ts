@@ -59,7 +59,6 @@ export const HELP_CATEGORIES = [
   "Creators",
   "Programas",
   "Formulários",
-  "Creator Score",
   "Métricas / Evidências",
   "Aprovação",
   "Endereço",

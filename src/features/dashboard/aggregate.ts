@@ -101,28 +101,22 @@ export interface AttentionItem {
   href: string;
 }
 
+/** CRM link for approved applications whose creator has no address yet. */
+export const APPROVED_WITHOUT_ADDRESS_HREF =
+  "/app/creators?status=approved&no_address=1";
+
 /**
  * Operational "needs a look" items for the dashboard. Deliberately excludes
- * possible-duplicate applications — that lives in the CRM, not here. Order is
- * fixed: missing address first (blocks shipping), then failed analyses.
+ * possible-duplicate applications — that lives in the CRM, not here. Today the
+ * only item is approved creators without an address (it blocks shipping).
  */
-export function buildAttention(
-  crm: Record<string, number>,
-  failedAnalyses: number,
-): AttentionItem[] {
+export function buildAttention(crm: Record<string, number>): AttentionItem[] {
   const items: AttentionItem[] = [];
-  if ((crm.awaiting_address ?? 0) > 0) {
+  if ((crm.approved_without_address ?? 0) > 0) {
     items.push({
-      label: "Aguardando endereço",
-      count: crm.awaiting_address,
-      href: "/app/creators?status=awaiting_address",
-    });
-  }
-  if (failedAnalyses > 0) {
-    items.push({
-      label: "Análises que falharam",
-      count: failedAnalyses,
-      href: "/app/creators?analysis=failed",
+      label: "Aprovadas sem endereço",
+      count: crm.approved_without_address,
+      href: APPROVED_WITHOUT_ADDRESS_HREF,
     });
   }
   return items;

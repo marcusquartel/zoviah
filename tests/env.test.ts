@@ -56,20 +56,18 @@ test("env: legal URLs — junk / non-http is an error, missing blocks prod", () 
   assert.equal(missing.productionReady, false);
 });
 
-test("env: Anthropic absence is a non-blocking warning (Score + Support degrade)", () => {
+test("env: Anthropic absence is a non-blocking warning (Support degrades)", () => {
   const r = checkProductionEnv(BASE, { isProduction: true });
-  const score = r.checks.find((c) => c.key === "ANTHROPIC_MODEL");
   const support = r.checks.find((c) => c.key === "ANTHROPIC_SUPPORT_MODEL");
-  assert.equal(score?.severity, "warn");
-  assert.equal(score?.blocking, false);
   assert.equal(support?.severity, "warn");
   assert.equal(support?.blocking, false);
+  // The Creator Score model knob is gone with the AI profile analysis.
+  assert.equal(r.checks.find((c) => c.key === "ANTHROPIC_MODEL"), undefined);
 
   const withAnth = checkProductionEnv(
-    { ...BASE, ANTHROPIC_API_KEY: "sk-ant-x", ANTHROPIC_MODEL: "claude-sonnet-5", ANTHROPIC_SUPPORT_MODEL: "claude-haiku-4-5" },
+    { ...BASE, ANTHROPIC_API_KEY: "sk-ant-x", ANTHROPIC_SUPPORT_MODEL: "claude-haiku-4-5" },
     { isProduction: true },
   );
-  assert.equal(withAnth.checks.find((c) => c.key === "ANTHROPIC_MODEL")?.severity, "ok");
   assert.equal(withAnth.checks.find((c) => c.key === "ANTHROPIC_SUPPORT_MODEL")?.severity, "ok");
 });
 

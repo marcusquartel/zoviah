@@ -62,7 +62,6 @@ export interface AdminOrgDetail {
   creators_count: number;
   programs_count: number;
   applications_count: number;
-  analyses_count: number;
   shipments_count: number;
   pending_invites: number;
 }

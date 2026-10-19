@@ -99,11 +99,10 @@ export type ApplicationStatus =
   | "awaiting_review"
   | "information_requested"
   | "approved"
-  | "awaiting_address"
-  | "completed"
   | "archived";
 
 export type AddressRequestType = "shipping_address";
+export type CreatorAddressSource = "signup" | "secure_request";
 export type AddressRequestStatus =
   | "pending"
   | "completed"
@@ -131,15 +130,6 @@ export interface AddressSnapshot {
   state: string;
   country: string;
 }
-
-export type AnalysisRunStatus = "processing" | "completed" | "failed";
-export type ApplicationAnalysisStatus =
-  | "not_analyzed"
-  | "processing"
-  | "completed"
-  | "failed";
-export type AnalysisTier = "A" | "B" | "C" | "D";
-export type AnalysisConfidence = "low" | "medium" | "high";
 
 export type MetricSource =
   | "declared"
@@ -886,12 +876,6 @@ export interface Database {
           submitted_at: string;
           approved_at: string | null;
           archived_at: string | null;
-          current_analysis_id: string | null;
-          current_score: number | null;
-          current_tier: AnalysisTier | null;
-          analysis_status: ApplicationAnalysisStatus;
-          analysis_confidence: AnalysisConfidence | null;
-          analysis_coverage: number | null;
         } & Timestamps;
         Insert: {
           id?: string;
@@ -971,69 +955,6 @@ export interface Database {
         Relationships: [
           {
             foreignKeyName: "creator_events_creator_id_fkey";
-            columns: ["creator_id"];
-            isOneToOne: false;
-            referencedRelation: "creators";
-            referencedColumns: ["id"];
-          },
-        ];
-      };
-      creator_analyses: {
-        Row: {
-          id: string;
-          organization_id: string;
-          creator_id: string;
-          application_id: string;
-          status: AnalysisRunStatus;
-          provider: string;
-          model: string | null;
-          prompt_version: string;
-          scoring_version: string;
-          score: number | null;
-          tier: AnalysisTier | null;
-          confidence: AnalysisConfidence | null;
-          evidence_coverage: number | null;
-          subscores: Record<string, Json>;
-          summary: string | null;
-          strengths: string[] | null;
-          attention_points: string[] | null;
-          suggested_tags: string[] | null;
-          input_snapshot: Record<string, Json> | null;
-          raw_result: Record<string, Json> | null;
-          input_tokens: number | null;
-          output_tokens: number | null;
-          latency_ms: number | null;
-          error_code: string | null;
-          error_message: string | null;
-          used_snapshot_ids: string[];
-          started_at: string | null;
-          completed_at: string | null;
-          created_at: string;
-        };
-        Insert: {
-          id?: string;
-          organization_id: string;
-          creator_id: string;
-          application_id: string;
-          status?: AnalysisRunStatus;
-          provider: string;
-          model?: string | null;
-          prompt_version: string;
-          scoring_version: string;
-        };
-        Update: {
-          status?: AnalysisRunStatus;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "creator_analyses_application_id_fkey";
-            columns: ["application_id"];
-            isOneToOne: false;
-            referencedRelation: "applications";
-            referencedColumns: ["id"];
-          },
-          {
-            foreignKeyName: "creator_analyses_creator_id_fkey";
             columns: ["creator_id"];
             isOneToOne: false;
             referencedRelation: "creators";
@@ -1146,7 +1067,10 @@ export interface Database {
           country: string;
           /** Recipient CPF, digits only (Correios requires it). */
           cpf: string | null;
-          source_request_id: string;
+          /** Where the address came from: the signup form or a secure link. */
+          source: CreatorAddressSource;
+          /** Set only for addresses collected through a secure link. */
+          source_request_id: string | null;
           is_current: boolean;
           created_at: string;
           updated_at: string;
@@ -1165,7 +1089,8 @@ export interface Database {
           state: string;
           country?: string;
           cpf?: string | null;
-          source_request_id: string;
+          source?: CreatorAddressSource;
+          source_request_id?: string | null;
           is_current?: boolean;
         };
         Update: {
@@ -1301,11 +1226,8 @@ export interface Database {
           tiktok_handle_normalized: string | null;
           tiktok_url: string | null;
           tiktok_followers: number | null;
-          current_score: number | null;
-          current_tier: AnalysisTier | null;
-          analysis_status: ApplicationAnalysisStatus;
-          analysis_confidence: AnalysisConfidence | null;
-          analysis_coverage: number | null;
+          /** The creator has a current shipping address. */
+          has_address: boolean;
         };
         Relationships: [];
       };
@@ -1362,6 +1284,8 @@ export interface Database {
           p_utm: Json;
           p_referrer: string | null;
           p_source: string | null;
+          /** Required for anonymous (public form) callers; manual entry omits it. */
+          p_address?: Json | null;
         };
         Returns: Json;
       };
@@ -1389,42 +1313,12 @@ export interface Database {
         };
         Returns: Json;
       };
-      start_creator_analysis: {
-        Args: {
-          p_application_id: string;
-          p_provider: string;
-          p_model: string;
-          p_prompt_version: string;
-          p_scoring_version: string;
-        };
-        Returns: Json;
-      };
-      complete_creator_analysis: {
-        Args: { p_analysis_id: string; p_result: Json };
-        Returns: Json;
-      };
-      fail_creator_analysis: {
-        Args: {
-          p_analysis_id: string;
-          p_error_code: string;
-          p_error_message: string;
-        };
-        Returns: Json;
-      };
-      analysis_stats: {
-        Args: Record<string, never>;
-        Returns: Json;
-      };
       create_metric_snapshot: {
         Args: { p_social_profile_id: string; p_payload: Json };
         Returns: Json;
       };
       update_metric_snapshot: {
         Args: { p_snapshot_id: string; p_payload: Json };
-        Returns: Json;
-      };
-      evidence_stats: {
-        Args: Record<string, never>;
         Returns: Json;
       };
       create_address_request: {
@@ -1766,8 +1660,6 @@ export type CreatorSocialProfile =
 export type Application = Database["public"]["Tables"]["applications"]["Row"];
 export type CreatorEvent =
   Database["public"]["Tables"]["creator_events"]["Row"];
-export type CreatorAnalysis =
-  Database["public"]["Tables"]["creator_analyses"]["Row"];
 export type SocialMetricSnapshot =
   Database["public"]["Tables"]["social_metric_snapshots"]["Row"];
 export type ApplicationRequest =

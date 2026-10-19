@@ -65,7 +65,7 @@ export function ShipmentsResults({
         <div className="rounded-lg border border-dashed bg-surface p-10 text-center text-sm text-muted-foreground">
           <p className="font-medium text-foreground">Nenhum envio criado.</p>
           <p className="mt-1">
-            Crie um envio a partir de uma creator com cadastro completo (aba
+            Crie um envio a partir de uma creator aprovada com endereço (aba
             Envios no modal da creator).
           </p>
         </div>

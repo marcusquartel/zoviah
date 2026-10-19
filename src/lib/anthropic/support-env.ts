@@ -1,12 +1,7 @@
 /**
- * Support-assistant config — SERVER ONLY. Deliberately SEPARATE from the
- * Creator Score analysis config (§8): the support bot runs on its own model
- * (`ANTHROPIC_SUPPORT_MODEL`) so its cost, latency and quality can be tuned
- * without touching the scoring pipeline. The API key is shared
- * (`ANTHROPIC_API_KEY`) — one Anthropic account — but the model is not.
- *
- * Support usage NEVER draws on Creator Score credits (§14); the two code
- * paths do not share a client or a budget.
+ * Support-assistant config — SERVER ONLY. The support bot runs on its own
+ * model knob (`ANTHROPIC_SUPPORT_MODEL`) so its cost, latency and quality can
+ * be tuned independently; the key is `ANTHROPIC_API_KEY`.
  */
 export const SUPPORT_TIMEOUT_MS = 45_000;
 

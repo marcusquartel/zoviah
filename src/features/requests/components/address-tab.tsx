@@ -24,11 +24,7 @@ import {
 } from "@/features/requests/actions";
 import { SecureLinkDialog } from "@/features/requests/components/link-dialog";
 import type { AddressTabData } from "@/features/requests/queries";
-import type {
-  AddressRequestStatus,
-  ApplicationStatus,
-  CreatorAddress,
-} from "@/types/database";
+import type { AddressRequestStatus, CreatorAddress } from "@/types/database";
 
 const REQUEST_STATUS_LABELS: Record<AddressRequestStatus, string> = {
   pending: "Pendente",
@@ -37,15 +33,19 @@ const REQUEST_STATUS_LABELS: Record<AddressRequestStatus, string> = {
   revoked: "Revogada",
 };
 
+/**
+ * The address normally arrives with the signup form. The secure link is the
+ * fallback for creators who have none (older signups, manual entries, imports)
+ * or who need to update it — available at any status, it never moves the
+ * application.
+ */
 export function AddressTab({
   applicationId,
   creatorId,
-  status,
   onChanged,
 }: {
   applicationId: string;
   creatorId: string;
-  status: ApplicationStatus;
   onChanged: () => void;
 }) {
   const [data, setData] = useState<AddressTabData | null>(null);
@@ -116,35 +116,19 @@ export function AddressTab({
 
   return (
     <div className="space-y-5">
-      {status === "approved" ? (
+      {data.currentAddress ? (
+        <CurrentAddress address={data.currentAddress} />
+      ) : null}
+
+      {pendingRequest ? (
         <Panel>
-          <p className="text-sm text-muted-foreground">
-            Esta creator foi aprovada. O endereço ainda não foi solicitado.
-          </p>
-          <Button
-            className="mt-3"
-            disabled={pending}
-            onClick={() =>
-              handleLink(
-                createAddressRequest(applicationId),
-                "Link seguro criado.",
-              )
-            }
-          >
-            <Link2 className="size-4" /> Solicitar endereço
-          </Button>
-        </Panel>
-      ) : status === "awaiting_address" ? (
-        <Panel>
-          <p className="text-sm font-medium">Aguardando endereço</p>
-          {pendingRequest ? (
-            <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-              <dt className="text-muted-foreground">Solicitação criada</dt>
-              <dd>{formatDate(pendingRequest.created_at)}</dd>
-              <dt className="text-muted-foreground">Expira</dt>
-              <dd>{formatDate(pendingRequest.expires_at)}</dd>
-            </dl>
-          ) : null}
+          <p className="text-sm font-medium">Aguardando a creator preencher</p>
+          <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+            <dt className="text-muted-foreground">Solicitação criada</dt>
+            <dd>{formatDate(pendingRequest.created_at)}</dd>
+            <dt className="text-muted-foreground">Expira</dt>
+            <dd>{formatDate(pendingRequest.expires_at)}</dd>
+          </dl>
           <p className="mt-2 text-xs text-muted-foreground">
             O link não pode ser exibido novamente — gere um novo se necessário.
           </p>
@@ -172,20 +156,28 @@ export function AddressTab({
             </Button>
           </div>
         </Panel>
-      ) : status === "completed" && data.currentAddress ? (
-        <CurrentAddress address={data.currentAddress} />
-      ) : status === "completed" ? (
-        <Panel>
-          <p className="text-sm text-muted-foreground">
-            Cadastro completo, mas o endereço não está disponível.
-          </p>
-        </Panel>
       ) : (
         <Panel>
           <p className="text-sm text-muted-foreground">
-            Esta creator ainda não foi aprovada. Aprove-a para solicitar o
-            endereço.
+            {data.currentAddress
+              ? "Precisa de um endereço atualizado? Envie um link seguro para a creator preencher de novo."
+              : "Esta creator não tem endereço cadastrado. Envie um link seguro para ela preencher endereço e CPF."}
           </p>
+          <Button
+            className="mt-3"
+            variant={data.currentAddress ? "outline" : "default"}
+            size={data.currentAddress ? "sm" : "default"}
+            disabled={pending}
+            onClick={() =>
+              handleLink(
+                createAddressRequest(applicationId),
+                "Link seguro criado.",
+              )
+            }
+          >
+            <Link2 className="size-4" />{" "}
+            {data.currentAddress ? "Pedir endereço atualizado" : "Solicitar endereço"}
+          </Button>
         </Panel>
       )}
 
@@ -266,7 +258,15 @@ function CurrentAddress({ address }: { address: CreatorAddress }) {
   return (
     <div className="rounded-lg border p-4">
       <div className="flex items-start justify-between gap-2">
-        <p className="text-sm font-medium">Cadastro completo</p>
+        <div>
+          <p className="text-sm font-medium">Endereço de entrega</p>
+          <p className="text-xs text-muted-foreground">
+            {address.source === "signup"
+              ? "Informado na inscrição"
+              : "Informado pelo link seguro"}{" "}
+            · {formatDate(address.created_at)}
+          </p>
+        </div>
         <Button variant="ghost" size="sm" onClick={copy}>
           <Copy className="size-4" /> Copiar
         </Button>

@@ -12,15 +12,7 @@ import {
   type CreatorFormProgram,
 } from "@/features/creators/queries";
 import {
-  getAnalysisById,
-  getAnalysisHistory,
-  getLatestCompletedAnalysis,
-  type AnalysisHistoryItem,
-} from "@/features/analysis/queries";
-import { isAnthropicConfigured } from "@/lib/anthropic/env";
-import {
   getApplicationMetrics,
-  getLatestEvidenceAt,
   getSnapshotHistoryPage,
   type ApplicationMetrics,
 } from "@/features/evidence/queries";
@@ -34,11 +26,7 @@ import {
 } from "@/features/shipments/queries";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentOrganization } from "@/features/organizations/queries";
-import type {
-  CreatorAnalysis,
-  CreatorEvent,
-  SocialMetricSnapshot,
-} from "@/types/database";
+import type { CreatorEvent, SocialMetricSnapshot } from "@/types/database";
 
 /** Next page of the CRM list (client "load more"). */
 export async function loadMoreApplications(
@@ -56,18 +44,9 @@ export async function loadCreatorFormFields(
   return getCreatorFormFields(programId);
 }
 
-export interface DrawerAnalysis {
-  aiConfigured: boolean;
-  current: CreatorAnalysis | null;
-  history: AnalysisHistoryItem[];
-}
-
 export interface DrawerData {
   detail: ApplicationDetail | null;
   timeline: CreatorEvent[];
-  analysis: DrawerAnalysis;
-  /** Evidence Layer signal only — never a score input (§43). */
-  evidence: { hasNewSnapshots: boolean };
 }
 
 /** Everything the Creator drawer needs, fetched on open. */
@@ -75,33 +54,9 @@ export async function loadDrawerData(
   applicationId: string,
 ): Promise<DrawerData> {
   const detail = await getApplicationDetail(applicationId);
-  const aiConfigured = isAnthropicConfigured();
-  if (!detail) {
-    return {
-      detail: null,
-      timeline: [],
-      analysis: { aiConfigured, current: null, history: [] },
-      evidence: { hasNewSnapshots: false },
-    };
-  }
-  const [timeline, current, history, latestEvidenceAt] = await Promise.all([
-    getCreatorTimeline(detail.creator.id),
-    getLatestCompletedAnalysis(applicationId),
-    getAnalysisHistory(applicationId),
-    getLatestEvidenceAt(detail.socials.map((s) => s.id)),
-  ]);
-  const hasNewSnapshots = Boolean(
-    latestEvidenceAt &&
-      current &&
-      new Date(latestEvidenceAt).getTime() >
-        new Date(current.created_at).getTime(),
-  );
-  return {
-    detail,
-    timeline,
-    analysis: { aiConfigured, current, history },
-    evidence: { hasNewSnapshots },
-  };
+  if (!detail) return { detail: null, timeline: [] };
+  const timeline = await getCreatorTimeline(detail.creator.id);
+  return { detail, timeline };
 }
 
 /** Métricas tab — loaded on demand, never part of the CRM list (§40, §72). */
@@ -151,13 +106,6 @@ export async function loadSnapshotHistoryPage(
   page: number,
 ): Promise<{ items: SocialMetricSnapshot[]; hasMore: boolean }> {
   return getSnapshotHistoryPage(profileId, Math.max(1, page));
-}
-
-/** A single historical analysis snapshot (for the drawer history view). */
-export async function loadAnalysisSnapshot(
-  analysisId: string,
-): Promise<CreatorAnalysis | null> {
-  return getAnalysisById(analysisId);
 }
 
 /** Refresh just the timeline (after adding a note / changing status). */

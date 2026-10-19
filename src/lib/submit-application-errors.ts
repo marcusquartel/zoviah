@@ -15,6 +15,9 @@ export function mapSubmitApplicationError(
   if (msg.includes("MISSING_NAME")) {
     return "Informe seu nome completo.";
   }
+  if (msg.includes("ADDRESS_REQUIRED") || msg.includes("INVALID_ADDRESS")) {
+    return "Revise o endereço de entrega e o CPF.";
+  }
   if (
     msg.includes("PAYLOAD_TOO_LARGE") ||
     msg.includes("TOO_MANY_FIELDS") ||

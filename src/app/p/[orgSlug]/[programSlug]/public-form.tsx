@@ -1,23 +1,30 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useForm, useWatch, type Path } from "react-hook-form";
+import { useForm, type FieldErrors, type Path } from "react-hook-form";
 import { useSearchParams } from "next/navigation";
 import { CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
-  brLocationKind,
   buildFieldSchema,
   CONSENT_FIELD_KEY,
   HONEYPOT_FIELD_KEY,
+  SIGNUP_ADDRESS_FIELD_KEY,
   defaultFormValues,
+  isSupersededByAddress,
   type PublicFieldDef,
 } from "@/lib/form-fields";
+import { addressFieldsSchema } from "@/lib/validation/address";
 import { submitApplication } from "@/features/public/actions";
 import { DynamicField } from "@/components/dynamic-field";
+import {
+  AddressFields,
+  EMPTY_ADDRESS_VALUES,
+  type AddressFieldValues,
+} from "@/components/address-fields";
 
 const CONSENT_TEXT =
-  "Autorizo o uso das informações fornecidas para avaliação e contato relacionados ao programa.";
+  "Autorizo o uso das informações fornecidas para avaliação, contato e envio de produtos relacionados ao programa.";
 
 type Values = Record<string, unknown>;
 
@@ -32,30 +39,32 @@ export function PublicForm({
   fields: PublicFieldDef[];
   successMessage: string | null;
 }) {
-  const schema = useMemo(() => buildFieldSchema(fields), [fields]);
-  const searchParams = useSearchParams();
-
-  // A city field filters its options by the sibling state field.
-  const stateFieldKey = useMemo(
-    () => fields.find((f) => brLocationKind(f) === "state")?.field_key,
+  // Estado / Cidade / CEP builder fields are covered by the address block.
+  const visibleFields = useMemo(
+    () => fields.filter((f) => !isSupersededByAddress(f)),
     [fields],
   );
+  const schema = useMemo(
+    () => buildFieldSchema(visibleFields),
+    [visibleFields],
+  );
+  const searchParams = useSearchParams();
 
   const {
     register,
     control,
     handleSubmit,
     setError,
+    setValue,
+    getValues,
     clearErrors,
     formState: { errors, isSubmitting },
   } = useForm<Values>({
-    defaultValues: defaultFormValues(fields),
+    defaultValues: {
+      ...defaultFormValues(visibleFields),
+      [SIGNUP_ADDRESS_FIELD_KEY]: EMPTY_ADDRESS_VALUES,
+    },
   });
-
-  const stateValue = useWatch({
-    control,
-    name: (stateFieldKey ?? "__no_state__") as Path<Values>,
-  }) as string | undefined;
 
   const [done, setDone] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -66,10 +75,21 @@ export function PublicForm({
 
     // Client-side validation for UX; the server re-validates as the real gate.
     const parsed = schema.safeParse(raw);
-    if (!parsed.success) {
-      for (const issue of parsed.error.issues) {
+    const address = addressFieldsSchema.safeParse(
+      raw[SIGNUP_ADDRESS_FIELD_KEY],
+    );
+    if (!parsed.success || !address.success) {
+      for (const issue of parsed.error?.issues ?? []) {
         const key = String(issue.path[0] ?? "");
         if (key) setError(key as Path<Values>, { message: issue.message });
+      }
+      for (const issue of address.error?.issues ?? []) {
+        const key = String(issue.path[0] ?? "");
+        if (key) {
+          setError(`${SIGNUP_ADDRESS_FIELD_KEY}.${key}` as Path<Values>, {
+            message: issue.message,
+          });
+        }
       }
       return;
     }
@@ -88,6 +108,7 @@ export function PublicForm({
       orgSlug,
       programSlug,
       answers: parsed.data,
+      address: address.data,
       utm,
       referrer,
     });
@@ -129,18 +150,45 @@ export function PublicForm({
         />
       </div>
 
-      {fields.map((field) => (
+      {visibleFields.map((field) => (
         <DynamicField
           key={field.field_key}
           field={field}
           register={register}
           control={control}
           errors={errors}
-          stateValue={
-            brLocationKind(field) === "city" ? stateValue : undefined
-          }
         />
       ))}
+
+      <div
+        role="group"
+        aria-labelledby="signup-address-title"
+        className="space-y-4 border-t pt-5"
+      >
+        <div>
+          <h2
+            id="signup-address-title"
+            className="font-heading text-base font-semibold"
+          >
+            Endereço de entrega
+          </h2>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            Para onde enviaremos os produtos caso sua inscrição seja aprovada.
+          </p>
+        </div>
+        <AddressFields
+          prefix={`${SIGNUP_ADDRESS_FIELD_KEY}.`}
+          register={register}
+          control={control}
+          setValue={setValue}
+          getValues={getValues}
+          errors={
+            errors[SIGNUP_ADDRESS_FIELD_KEY] as
+              | FieldErrors<AddressFieldValues>
+              | undefined
+          }
+        />
+      </div>
 
       <label className="flex items-start gap-2 text-sm">
         <input

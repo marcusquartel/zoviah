@@ -28,6 +28,13 @@ test("parse: reads and validates known params", () => {
   assert.equal(q.page, 3);
 });
 
+test("no_address round-trips and counts as an active filter", () => {
+  const q = parseCreatorQuery(new URLSearchParams("status=approved&no_address=1"));
+  assert.equal(q.noAddress, true);
+  assert.equal(hasActiveFilters(q), true);
+  assert.equal(serializeCreatorQuery(q), "status=approved&no_address=1");
+});
+
 test("parse: bad values fall back to defaults", () => {
   const q = parseCreatorQuery(
     new URLSearchParams("status=banana&sort=nope&view=weird&page=-4"),

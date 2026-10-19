@@ -1,8 +1,10 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
+  addressFieldsSchema,
   addressSchema,
   toAddressPayload,
+  toSignupAddressPayload,
 } from "../src/lib/validation/address.ts";
 import { getAppBaseUrl, buildSecureLinkUrl } from "../src/lib/app-url.ts";
 
@@ -136,4 +138,46 @@ test("app-url: invalid value throws", () => {
   assert.throws(() => getAppBaseUrl());
   if (prev === undefined) delete process.env.NEXT_PUBLIC_APP_URL;
   else process.env.NEXT_PUBLIC_APP_URL = prev;
+});
+
+function withoutRecipientAndConsent(a: typeof base) {
+  return {
+    cpf: a.cpf,
+    postalCode: a.postalCode,
+    street: a.street,
+    number: a.number,
+    complement: a.complement,
+    neighborhood: a.neighborhood,
+    city: a.city,
+    state: a.state,
+  };
+}
+
+test("signup address: same field rules, no recipient or consent needed", () => {
+  const signup = withoutRecipientAndConsent(base);
+  const r = addressFieldsSchema.parse(signup);
+  assert.equal(r.cpf, "11144477735");
+  assert.equal(r.postalCode, "30140110");
+  assert.equal(r.state, "MG");
+  assert.equal(addressFieldsSchema.safeParse({ ...signup, cpf: "" }).success, false);
+  assert.equal(
+    addressFieldsSchema.safeParse({ ...signup, postalCode: "123" }).success,
+    false,
+  );
+});
+
+test("toSignupAddressPayload: snake_case for p_address, no recipient", () => {
+  const signup = withoutRecipientAndConsent(base);
+  const p = toSignupAddressPayload(addressFieldsSchema.parse(signup));
+  assert.deepEqual(p, {
+    cpf: "11144477735",
+    postal_code: "30140110",
+    street: "Rua dos Aimorés",
+    number: "123",
+    complement: null,
+    neighborhood: "Funcionários",
+    city: "Belo Horizonte",
+    state: "MG",
+  });
+  assert.ok(!("recipient_name" in p));
 });

@@ -35,27 +35,19 @@ export function SummaryTab({
         onDone={onChanged}
       />
 
-      {application.status === "approved" ? (
-        <Button size="sm" onClick={onOpenAddress}>
-          <MapPin className="size-4" /> Solicitar endereço
+      {detail.hasCurrentAddress ? (
+        <button
+          type="button"
+          onClick={onOpenAddress}
+          className="text-sm text-primary hover:underline"
+        >
+          Endereço cadastrado — ver endereço
+        </button>
+      ) : (
+        <Button size="sm" variant="outline" onClick={onOpenAddress}>
+          <MapPin className="size-4" /> Sem endereço — solicitar
         </Button>
-      ) : application.status === "awaiting_address" ? (
-        <button
-          type="button"
-          onClick={onOpenAddress}
-          className="text-sm text-primary hover:underline"
-        >
-          Aguardando endereço — ver solicitação
-        </button>
-      ) : application.status === "completed" ? (
-        <button
-          type="button"
-          onClick={onOpenAddress}
-          className="text-sm text-primary hover:underline"
-        >
-          Cadastro completo — ver endereço
-        </button>
-      ) : null}
+      )}
 
       <dl className="divide-y">
         <FieldRow label="Nome" value={creator.full_name} />
