@@ -30,6 +30,12 @@ const RPC_ERRORS: Record<string, string> = {
   INVALID_INVITE: "Este convite não está mais disponível ou expirou.",
   EMAIL_MISMATCH: "Este convite é para outro e-mail. Entre com a conta correta.",
   ORGANIZATION_SUSPENDED: "Organização suspensa. Fale com o suporte.",
+  CANNOT_CHANGE_OWN_ROLE: "Você não pode alterar o próprio papel.",
+  CANNOT_REMOVE_SELF: "Você não pode remover a si mesmo da equipe.",
+  ONLY_OWNER_CAN_CHANGE_OWNER: "Só um owner pode alterar o papel de outro owner.",
+  ONLY_OWNER_CAN_GRANT_OWNER: "Só um owner pode conceder o papel de owner.",
+  ONLY_OWNER_CAN_REMOVE_OWNER: "Só um owner pode remover outro owner.",
+  ONLY_OWNER_CAN_INVITE_OWNER: "Só um owner pode convidar alguém como owner.",
 };
 
 function mapError(message: string | undefined): string {

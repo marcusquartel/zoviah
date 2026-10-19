@@ -28,6 +28,7 @@ export default async function TeamPage() {
         invites={team.invites}
         currentUserId={user?.id ?? ""}
         canManage={canManage}
+        isOwner={current.role === "owner"}
       />
     </div>
   );

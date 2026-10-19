@@ -49,11 +49,14 @@ export function TeamManager({
   invites,
   currentUserId,
   canManage,
+  isOwner,
 }: {
   members: TeamMember[];
   invites: TeamInvite[];
   currentUserId: string;
   canManage: boolean;
+  /** Only an owner may grant/change/remove another owner (SEC-002) — UX only, the RPCs enforce it either way. */
+  isOwner: boolean;
 }) {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -61,6 +64,12 @@ export function TeamManager({
   const [pending, startTransition] = useTransition();
   const [inviteUrl, setInviteUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+
+  // An admin (not owner) can't grant the owner role — hide it from both the
+  // invite selector and the per-member role selector.
+  const assignableRoleItems = isOwner
+    ? ROLE_ITEMS
+    : ROLE_ITEMS.filter((r) => r.value !== "owner");
 
   const ownerCount = members.filter((m) => m.role === "owner").length;
   const pendingInvites = invites.filter((i) => i.status === "pending");
@@ -109,12 +118,16 @@ export function TeamManager({
             </div>
             <div className="w-32 space-y-1">
               <Label>Papel</Label>
-              <Select items={ROLE_ITEMS} value={role} onValueChange={(v) => v && setRole(v)}>
+              <Select
+                items={assignableRoleItems}
+                value={role}
+                onValueChange={(v) => v && setRole(v)}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {ROLE_ITEMS.map((r) => (
+                  {assignableRoleItems.map((r) => (
                     <SelectItem key={r.value} value={r.value}>
                       {r.label}
                     </SelectItem>
@@ -172,6 +185,11 @@ export function TeamManager({
           <TableBody>
             {members.map((m) => {
               const isLastOwner = m.role === "owner" && ownerCount <= 1;
+              // SEC-002: only an owner may change or remove another owner —
+              // an admin gets read-only text on an owner's row (the RPCs
+              // enforce this regardless; this just avoids offering a control
+              // that would only come back as an error).
+              const canManageThisMember = isOwner || m.role !== "owner";
               return (
                 <TableRow key={m.user_id}>
                   <TableCell className="text-sm">
@@ -181,9 +199,9 @@ export function TeamManager({
                     ) : null}
                   </TableCell>
                   <TableCell>
-                    {canManage && !isLastOwner ? (
+                    {canManage && !isLastOwner && canManageThisMember ? (
                       <Select
-                        items={ROLE_ITEMS}
+                        items={assignableRoleItems}
                         value={m.role}
                         onValueChange={(v) =>
                           v &&
@@ -198,7 +216,7 @@ export function TeamManager({
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {ROLE_ITEMS.map((r) => (
+                          {assignableRoleItems.map((r) => (
                             <SelectItem key={r.value} value={r.value}>
                               {r.label}
                             </SelectItem>
@@ -210,7 +228,7 @@ export function TeamManager({
                     )}
                   </TableCell>
                   <TableCell className="text-right">
-                    {canManage && !isLastOwner && m.user_id !== currentUserId ? (
+                    {canManage && !isLastOwner && canManageThisMember && m.user_id !== currentUserId ? (
                       <Button
                         size="xs"
                         variant="ghost"
