@@ -69,6 +69,12 @@ function describe(event: CreatorEvent): {
         title: "Solicitação de endereço revogada",
         detail: actor ? `por ${actor}` : undefined,
       };
+    case "affiliation_imported":
+      return {
+        icon: FileText,
+        title: `Cupom ${typeof data.code === "string" ? data.code : ""} vinculado`,
+        detail: actor ? `por ${actor}` : undefined,
+      };
     case "address_submitted":
       return {
         icon: MapPin,

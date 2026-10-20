@@ -13,8 +13,15 @@ import {
   ShopifyError,
   type ConnectionSecrets,
 } from "@/lib/shopify/client";
-import { createDiscountCode, registerWebhooks, syncRecent } from "@/lib/shopify/sync";
+import {
+  createDiscountCode,
+  listDiscountCodes,
+  registerWebhooks,
+  syncRecent,
+  type StoreDiscountCode,
+} from "@/lib/shopify/sync";
 import { normalizeAffiliateCode, normalizeShopDomain } from "@/lib/shopify/parse";
+import type { Json } from "@/types/database";
 
 export interface ActionResult {
   ok: boolean;
@@ -33,6 +40,7 @@ const RPC_ERRORS: Record<string, string> = {
   INVALID_DISCOUNT: "O desconto deve estar entre 0% e 100%.",
   CODE_TAKEN: "Este código já é de outra creator.",
   INVALID_PAYLOAD: "Dados inválidos.",
+  INVALID_NAME: "Informe o nome de cada influenciadora (até 150 caracteres).",
 };
 
 function mapError(message: string | undefined, fallback: string): string {
@@ -273,4 +281,95 @@ export async function setCommissionHoldDays(days: number): Promise<ActionResult>
   if (error) return { ok: false, error: mapError(error.message, "Não foi possível salvar.") };
   revalidatePath("/app/commissions");
   return { ok: true, message: "Prazo de aprovação atualizado." };
+}
+
+export interface ImportableCode extends StoreDiscountCode {
+  orders: number;
+  sales: number;
+}
+
+/** Store coupons not yet linked to a creator, with their usage in synced orders. */
+export async function loadImportableCodes(): Promise<{ ok: boolean; error?: string; codes?: ImportableCode[] }> {
+  const current = await getCurrentOrganization();
+  if (!current) return { ok: false, error: "Organização não encontrada." };
+  const orgId = current.organization.id;
+  const client = await loadClient(orgId);
+  if (!client) return { ok: false, error: "Conecte a loja Shopify primeiro." };
+
+  let codes: StoreDiscountCode[];
+  try {
+    codes = await listDiscountCodes(client);
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Não foi possível ler os cupons da loja." };
+  }
+  const supabase = await createClient();
+  const [{ data: linked }, { data: orders }] = await Promise.all([
+    supabase.from("creator_affiliations").select("code").eq("organization_id", orgId),
+    supabase
+      .from("shopify_orders")
+      .select("discount_codes, subtotal, cancelled_at, test")
+      .eq("organization_id", orgId)
+      .limit(20000),
+  ]);
+  const taken = new Set((linked ?? []).map((l) => l.code.toUpperCase()));
+  const usage = new Map<string, { orders: number; sales: number }>();
+  for (const o of orders ?? []) {
+    if (o.test || o.cancelled_at) continue;
+    for (const c of o.discount_codes ?? []) {
+      const k = c.toUpperCase();
+      const u = usage.get(k) ?? { orders: 0, sales: 0 };
+      u.orders += 1;
+      u.sales += Number(o.subtotal);
+      usage.set(k, u);
+    }
+  }
+  return {
+    ok: true,
+    codes: codes
+      .filter((c) => !taken.has(c.code.toUpperCase()))
+      .map((c) => ({ ...c, ...(usage.get(c.code.toUpperCase()) ?? { orders: 0, sales: 0 }) }))
+      .sort((a, b) => b.sales - a.sales || a.code.localeCompare(b.code)),
+  };
+}
+
+const importSchema = z
+  .array(
+    z.object({
+      name: z.string().trim().min(1, { error: RPC_ERRORS.INVALID_NAME }).max(150),
+      code: z.string().trim().min(3).max(40),
+      commissionRate: z.coerce.number().min(0, { error: RPC_ERRORS.INVALID_RATE }).max(100, { error: RPC_ERRORS.INVALID_RATE }),
+      discountPercent: z.number().min(0).max(100).nullable(),
+      shopifyDiscountId: z.string().max(200).nullable(),
+      instagram: z.string().trim().max(60).optional(),
+    }),
+  )
+  .min(1, { error: "Selecione ao menos um cupom." })
+  .max(200, { error: "Importe no máximo 200 por vez." });
+
+export async function importAffiliations(input: z.input<typeof importSchema>): Promise<ActionResult> {
+  const parsed = importSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
+  const current = await getCurrentOrganization();
+  if (!current) return { ok: false, error: "Organização não encontrada." };
+  if (current.role === "analyst") return { ok: false, error: RPC_ERRORS.FORBIDDEN };
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("import_creator_affiliations", {
+    p_org: current.organization.id,
+    p_items: parsed.data.map((i) => ({
+      name: i.name,
+      code: i.code.toUpperCase(),
+      commission_rate: i.commissionRate,
+      discount_percent: i.discountPercent,
+      shopify_discount_id: i.shopifyDiscountId,
+      instagram: i.instagram ?? null,
+    })) as unknown as Json,
+  });
+  if (error) return { ok: false, error: mapError(error.message, "Não foi possível importar.") };
+  const r = (data ?? {}) as { imported?: number; skipped?: number };
+  revalidatePath("/app/commissions");
+  revalidatePath("/app/creators");
+  return {
+    ok: true,
+    message: `${r.imported ?? 0} influenciadora(s) importada(s)${r.skipped ? `, ${r.skipped} já vinculada(s)` : ""}. As vendas anteriores já foram atribuídas.`,
+  };
 }

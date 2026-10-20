@@ -191,3 +191,63 @@ export async function createDiscountCode(
   }
   throw new ShopifyError(lastMessage);
 }
+
+export interface StoreDiscountCode {
+  /** DiscountCodeNode GID — stored as `shopify_discount_id`. */
+  id: string;
+  code: string;
+  title: string;
+  status: string;
+  /** Percentage off (0–100) for percentage discounts, else null. */
+  percent: number | null;
+}
+
+/** Every code discount in the store (all pages, up to `max`). */
+export async function listDiscountCodes(client: ShopifyClient, max = 1000): Promise<StoreDiscountCode[]> {
+  const codesFrag = "title status codes(first: 1) { nodes { code } }";
+  const query = `query Codes($cursor: String) {
+    codeDiscountNodes(first: 100, after: $cursor) {
+      pageInfo { hasNextPage endCursor }
+      nodes {
+        id
+        codeDiscount {
+          __typename
+          ... on DiscountCodeBasic { ${codesFrag} customerGets { value { ... on DiscountPercentage { percentage } } } }
+          ... on DiscountCodeBxgy { ${codesFrag} }
+          ... on DiscountCodeFreeShipping { ${codesFrag} }
+        }
+      }
+    }
+  }`;
+  type Node = {
+    id: string;
+    codeDiscount: {
+      title?: string;
+      status?: string;
+      codes?: { nodes: { code: string }[] };
+      customerGets?: { value?: { percentage?: number | null } | null } | null;
+    } | null;
+  };
+  type R = { codeDiscountNodes: { pageInfo: { hasNextPage: boolean; endCursor: string | null }; nodes: Node[] } };
+  const out: StoreDiscountCode[] = [];
+  let cursor: string | null = null;
+  while (out.length < max) {
+    const data: R = await client.graphql<R>(query, { cursor });
+    for (const n of data.codeDiscountNodes.nodes) {
+      const d = n.codeDiscount;
+      const code = d?.codes?.nodes[0]?.code;
+      if (!d || !code) continue;
+      const pct = d.customerGets?.value?.percentage;
+      out.push({
+        id: n.id,
+        code,
+        title: d.title ?? code,
+        status: d.status ?? "",
+        percent: typeof pct === "number" ? Math.round(pct * 10000) / 100 : null,
+      });
+    }
+    if (!data.codeDiscountNodes.pageInfo.hasNextPage) break;
+    cursor = data.codeDiscountNodes.pageInfo.endCursor;
+  }
+  return out;
+}

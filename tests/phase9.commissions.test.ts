@@ -276,6 +276,46 @@ describe("Phase 9 — Shopify commissions", { skip }, () => {
     assert.equal(Number(after10.amount), 20);
   });
 
+  test("import: analyst refused; owner imports, reuses names, skips linked codes, attributes history", async () => {
+    await ingest([order("60", { discount_codes: ["DAYANE"] })]);
+    const items = [
+      { name: "Dayane Pitta", code: "dayane", commission_rate: 12, discount_percent: 10, shopify_discount_id: "gid://shopify/DiscountCodeNode/1", instagram: "@dayane.p" },
+      { name: "Outra", code: "ANA", commission_rate: 5 },
+    ];
+    const bad = await analystA.rpc("import_creator_affiliations", { p_org: orgA, p_items: items });
+    assert.match(bad.error?.message ?? "", /FORBIDDEN/);
+    const r = await ownerA.rpc("import_creator_affiliations", { p_org: orgA, p_items: items });
+    assert.ifError(r.error);
+    assert.equal(r.data.imported, 1);
+    assert.equal(r.data.skipped, 1, "ANA is already linked");
+
+    const o = (await orderRow("60")).data!;
+    assert.ok(o.creator_id, "history re-attributed");
+    assert.equal(Number((await commissionOf("60")).data!.amount), 24); // 200 × 12%
+
+    const app = await admin
+      .from("applications")
+      .select("status, programs(slug, status)")
+      .eq("creator_id", o.creator_id!)
+      .single();
+    assert.equal(app.data!.status, "approved");
+    const prog = app.data!.programs as unknown as { slug: string; status: string };
+    assert.equal(prog.slug, "influenciadoras-atuais");
+    assert.equal(prog.status, "draft", "no public form for the internal program");
+
+    const ig = await admin.from("creator_social_profiles").select("handle_normalized").eq("creator_id", o.creator_id!);
+    assert.equal(ig.data![0]?.handle_normalized, "dayane.p");
+
+    // Same name again with a new code reuses nobody (creator already affiliated) → new creator.
+    const again = await ownerA.rpc("import_creator_affiliations", {
+      p_org: orgA,
+      p_items: [{ name: "Mariana", code: "MARI2", commission_rate: 1 }],
+    });
+    assert.ifError(again.error);
+    const mari = await admin.from("creators").select("id").eq("organization_id", orgA).ilike("full_name", "mariana");
+    assert.equal(mari.data!.length, 2, "an affiliated creator is never reused");
+  });
+
   test("isolation: org B sees none of A's orders, commissions or affiliations", async () => {
     for (const t of ["shopify_orders", "commissions", "creator_affiliations"]) {
       const r = await ownerB.from(t).select("id").eq("organization_id", orgA);

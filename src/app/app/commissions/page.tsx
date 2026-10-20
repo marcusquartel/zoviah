@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CheckCircle2, Clock, Wallet } from "lucide-react";
+import { CheckCircle2, Clock, Download, Wallet } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Panel } from "@/components/ui/panel";
 import { StatCard } from "@/components/ui/stat-card";
@@ -51,7 +51,17 @@ export default async function CommissionsPage() {
           description="Vendas atribuídas por cupom ou UTM e o que cada creator tem a receber."
         />
         {canManage ? (
-          <AffiliationDialog creators={linkable} shopConnected={shopConnected} />
+          <div className="flex flex-wrap gap-2">
+            {shopConnected ? (
+              <Link
+                href="/app/commissions/import"
+                className="inline-flex h-10 items-center gap-2 rounded-full border-[1.5px] border-input px-4 text-sm font-medium transition-colors hover:bg-accent"
+              >
+                <Download className="size-4" /> Importar cupons da loja
+              </Link>
+            ) : null}
+            <AffiliationDialog creators={linkable} shopConnected={shopConnected} />
+          </div>
         ) : null}
       </div>
 

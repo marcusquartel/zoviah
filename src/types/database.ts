@@ -1383,6 +1383,7 @@ export interface Database {
         };
         Returns: Json;
       };
+      import_creator_affiliations: { Args: { p_org: string; p_items: Json }; Returns: Json };
       mark_commissions_paid: { Args: { p_org: string; p_ids: string[] }; Returns: Json };
       set_commission_hold_days: { Args: { p_org: string; p_days: number }; Returns: Json };
       is_organization_member: {
