@@ -16,6 +16,14 @@ export async function getPortalDashboard(creatorId: string): Promise<PortalDashb
   return data as unknown as PortalDashboard;
 }
 
+/** Staff view of a creator's portal (owner/admin of her organization). */
+export async function getPortalPreview(creatorId: string): Promise<PortalDashboard | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("portal_dashboard_preview", { p_creator_id: creatorId });
+  if (error || !data) return null;
+  return data as unknown as PortalDashboard;
+}
+
 export interface PortalInviteView {
   status: "pending" | "accepted" | "invalid";
   organization_name?: string;

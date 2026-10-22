@@ -1498,6 +1498,7 @@ export interface Database {
       accept_creator_portal_invite: { Args: { p_token_hash: string }; Returns: Json };
       portal_my_creators: { Args: Record<string, never>; Returns: Json };
       portal_dashboard: { Args: { p_creator_id: string }; Returns: Json };
+      portal_dashboard_preview: { Args: { p_creator_id: string }; Returns: Json };
       claim_sale_notifications: {
         Args: { p_org: string; p_ingest_key: string; p_limit?: number };
         Returns: Json;

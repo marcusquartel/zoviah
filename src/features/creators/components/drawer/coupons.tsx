@@ -157,6 +157,14 @@ function PortalAccess({
         </div>
       ) : null}
       <div className="flex flex-wrap justify-end gap-2">
+        <a
+          href={`/app/creators/${creatorId}/portal`}
+          target="_blank"
+          rel="noopener"
+          className="mr-auto inline-flex items-center text-sm text-primary hover:underline"
+        >
+          Ver portal como ela vê
+        </a>
         {portal.active || pendingInvite ? (
           <Button size="sm" variant="ghost" onClick={revoke} disabled={pending}>
             Remover acesso
