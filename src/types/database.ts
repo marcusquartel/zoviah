@@ -245,6 +245,8 @@ export interface Database {
           primary_color: string | null;
           secondary_color: string | null;
           commission_hold_days?: number;
+          sale_notifications_enabled?: boolean;
+          sale_notifications_since?: string | null;
         } & Timestamps;
         Insert: {
           organization_id: string;
@@ -781,6 +783,8 @@ export interface Database {
           archived_at: string | null;
           /** Categoria (creator_tiers). Written only via set_creator_tier. */
           tier_id: string | null;
+          /** E-mail on each sale with her coupon (set_creator_notify_sales). */
+          notify_sales: boolean;
         } & Timestamps;
         Insert: {
           id?: string;
@@ -1450,6 +1454,22 @@ export interface Database {
       };
       mark_commissions_paid: { Args: { p_org: string; p_ids: string[] }; Returns: Json };
       set_commission_hold_days: { Args: { p_org: string; p_days: number }; Returns: Json };
+      set_sale_notifications: { Args: { p_org: string; p_enabled: boolean }; Returns: Json };
+      set_creator_notify_sales: { Args: { p_creator_id: string; p_enabled: boolean }; Returns: Json };
+      claim_sale_notifications: {
+        Args: { p_org: string; p_ingest_key: string; p_limit?: number };
+        Returns: Json;
+      };
+      finish_sale_notification: {
+        Args: {
+          p_org: string;
+          p_ingest_key: string;
+          p_id: string;
+          p_status: "sent" | "failed" | "skipped";
+          p_error?: string | null;
+        };
+        Returns: Json;
+      };
       is_organization_member: {
         Args: { org_id: string };
         Returns: boolean;

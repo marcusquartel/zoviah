@@ -125,6 +125,8 @@ export interface CreatorCommissionSummary {
 
 export interface CommissionOverview {
   holdDays: number;
+  /** "Nova venda" e-mails to creators are on. */
+  saleNotificationsEnabled: boolean;
   totals: { pending: number; approved: number; paid: number; sales: number; orders: number };
   byCreator: CreatorCommissionSummary[];
   payable: CommissionRow[];
@@ -147,7 +149,7 @@ export async function getCommissionOverview(): Promise<CommissionOverview | null
     supabase.from("creator_affiliations").select("*").eq("organization_id", orgId),
     supabase
       .from("organization_settings")
-      .select("commission_hold_days")
+      .select("commission_hold_days, sale_notifications_enabled")
       .eq("organization_id", orgId)
       .maybeSingle(),
     supabase.from("creator_tiers").select("id, name, commission_rate").eq("organization_id", orgId),
@@ -233,6 +235,7 @@ export async function getCommissionOverview(): Promise<CommissionOverview | null
 
   return {
     holdDays: settings?.commission_hold_days ?? 30,
+    saleNotificationsEnabled: settings?.sale_notifications_enabled ?? false,
     totals,
     byCreator: [...summary.values()].sort((a, b) => b.sales - a.sales || a.creator_name.localeCompare(b.creator_name)),
     payable: rows.filter((r) => r.ui_status === "approved"),

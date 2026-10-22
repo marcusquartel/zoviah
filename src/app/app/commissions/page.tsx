@@ -16,6 +16,7 @@ import {
 import { AffiliationDialog } from "@/features/commissions/components/affiliation-dialog";
 import { PayableTable } from "@/features/commissions/components/payable-table";
 import { HoldDaysForm } from "@/features/commissions/components/hold-days-form";
+import { SaleNotificationsToggle } from "@/features/commissions/components/sale-notifications-toggle";
 import { formatDate } from "@/features/creators/format";
 import { formatMoney, formatPercent } from "@/lib/money";
 
@@ -215,6 +216,9 @@ export default async function CommissionsPage() {
             Pedido cancelado ou reembolsado antes do pagamento estorna a comissão. A comissão é
             calculada sobre o valor dos produtos menos descontos, sem frete nem impostos.
           </p>
+        </Panel>
+        <Panel title="Avisos de venda" description="E-mail para a creator quando alguém compra com o cupom dela.">
+          <SaleNotificationsToggle enabled={overview.saleNotificationsEnabled} canEdit={canManage} />
         </Panel>
       </div>
     </div>

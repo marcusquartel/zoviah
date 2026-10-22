@@ -7,7 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { loadCouponsTab, type CouponsTabData } from "@/features/creators/data-actions";
-import { saveCreatorAffiliation, savePersonalCoupon } from "@/features/shopify/actions";
+import {
+  saveCreatorAffiliation,
+  savePersonalCoupon,
+  setCreatorNotifySales,
+} from "@/features/shopify/actions";
 import { setCreatorTier } from "@/features/tiers/actions";
 import { formatPercent } from "@/lib/money";
 import {
@@ -69,7 +73,52 @@ export function CouponsTab({ creatorId }: { creatorId: string }) {
       />
       <AffiliateCoupon creatorId={creatorId} data={data} tierRate={tier?.commission_rate ?? null} />
       <PersonalCoupon creatorId={creatorId} data={data} />
+      <SaleNotices
+        creatorId={creatorId}
+        enabled={data.notifySales}
+        onChanged={(notifySales) => setData({ ...data, notifySales })}
+      />
     </div>
+  );
+}
+
+function SaleNotices({
+  creatorId,
+  enabled,
+  onChanged,
+}: {
+  creatorId: string;
+  enabled: boolean;
+  onChanged: (enabled: boolean) => void;
+}) {
+  const [pending, startTransition] = useTransition();
+
+  function toggle(next: boolean) {
+    startTransition(async () => {
+      const res = await setCreatorNotifySales(creatorId, next);
+      if (res.ok) {
+        onChanged(next);
+        toast.success(next ? "Avisos de venda ligados." : "Avisos de venda desligados.");
+      } else toast.error(res.error ?? "Não foi possível salvar.");
+    });
+  }
+
+  return (
+    <label className="flex items-start gap-2.5 rounded-lg border p-4 text-sm">
+      <input
+        type="checkbox"
+        className="mt-0.5 size-4 accent-[var(--primary)]"
+        checked={enabled}
+        disabled={pending}
+        onChange={(e) => toggle(e.target.checked)}
+      />
+      <span>
+        Avisar por e-mail a cada venda com o cupom de divulgação
+        <span className="mt-0.5 block text-xs text-muted-foreground">
+          Só funciona com os avisos de venda ligados na página Comissões.
+        </span>
+      </span>
+    </label>
   );
 }
 

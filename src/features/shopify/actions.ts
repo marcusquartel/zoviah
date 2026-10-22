@@ -21,6 +21,7 @@ import {
   type StoreDiscountCode,
 } from "@/lib/shopify/sync";
 import { normalizeAffiliateCode, normalizeShopDomain } from "@/lib/shopify/parse";
+import { deliverSaleNotifications } from "@/lib/notifications/deliver";
 import type { Json } from "@/types/database";
 
 export interface ActionResult {
@@ -83,6 +84,9 @@ async function runSync(client: ShopifyClient, days: number, withWebhooks: boolea
       p_error: null,
       p_webhooks_ok: webhooksOk,
     });
+    await deliverSaleNotifications(client).catch((e) =>
+      console.error("[sale notifications] after sync", e instanceof Error ? e.message : e),
+    );
     return r;
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Erro ao sincronizar.";
@@ -323,6 +327,42 @@ export async function setCommissionHoldDays(days: number): Promise<ActionResult>
   if (error) return { ok: false, error: mapError(error.message, "Não foi possível salvar.") };
   revalidatePath("/app/commissions");
   return { ok: true, message: "Prazo de aprovação atualizado." };
+}
+
+/** Per-org switch for the "nova venda" e-mails to creators. */
+export async function setSaleNotifications(enabled: boolean): Promise<ActionResult> {
+  const current = await getCurrentOrganization();
+  if (!current) return { ok: false, error: "Organização não encontrada." };
+  if (current.role === "analyst") return { ok: false, error: RPC_ERRORS.FORBIDDEN };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("set_sale_notifications", {
+    p_org: current.organization.id,
+    p_enabled: enabled,
+  });
+  if (error) return { ok: false, error: mapError(error.message, "Não foi possível salvar.") };
+  revalidatePath("/app/commissions");
+  return {
+    ok: true,
+    message: enabled
+      ? "Avisos ligados: as creators recebem um e-mail a cada nova venda paga."
+      : "Avisos de venda desligados.",
+  };
+}
+
+/** Per-creator opt-out of the "nova venda" e-mails. */
+export async function setCreatorNotifySales(creatorId: string, enabled: boolean): Promise<ActionResult> {
+  if (!z.uuid().safeParse(creatorId).success) return { ok: false, error: RPC_ERRORS.CREATOR_NOT_FOUND };
+  const current = await getCurrentOrganization();
+  if (!current) return { ok: false, error: "Organização não encontrada." };
+  if (current.role === "analyst") return { ok: false, error: RPC_ERRORS.FORBIDDEN };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("set_creator_notify_sales", {
+    p_creator_id: creatorId,
+    p_enabled: enabled,
+  });
+  if (error) return { ok: false, error: mapError(error.message, "Não foi possível salvar.") };
+  revalidatePath("/app/creators");
+  return { ok: true };
 }
 
 export interface ImportableCode extends StoreDiscountCode {

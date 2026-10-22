@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { open } from "@/lib/crypto/secret-box";
 import { ShopifyClient, type ConnectionSecrets } from "@/lib/shopify/client";
 import { syncOrder } from "@/lib/shopify/sync";
+import { deliverSaleNotifications } from "@/lib/notifications/deliver";
 import { normalizeShopDomain, verifyWebhookHmac } from "@/lib/shopify/parse";
 
 export const runtime = "nodejs";
@@ -72,6 +73,14 @@ export async function POST(req: Request) {
             p_ingest_key: client.ingestKey,
             p_error: e instanceof Error ? e.message.slice(0, 300) : "Erro ao processar webhook.",
             p_webhooks_ok: null,
+          });
+        }
+        // Separate from the sync: a mail failure never marks the sync failed.
+        try {
+          await deliverSaleNotifications(client);
+        } catch (e) {
+          console.error("[shopify webhook] sale notifications failed", {
+            message: e instanceof Error ? e.message : String(e),
           });
         }
       });

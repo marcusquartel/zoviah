@@ -126,12 +126,15 @@ export interface CouponsTabData {
   personal: CreatorPersonalCoupon | null;
   tiers: TierWithCount[];
   tierId: string | null;
+  notifySales: boolean;
 }
 
 /** "Cupons" tab — the affiliate (commissioned) and the personal coupon. */
 export async function loadCouponsTab(creatorId: string): Promise<CouponsTabData> {
   const current = await getCurrentOrganization();
-  if (!current) return { affiliation: null, personal: null, tiers: [], tierId: null };
+  if (!current) {
+    return { affiliation: null, personal: null, tiers: [], tierId: null, notifySales: true };
+  }
   const supabase = await createClient();
   const orgId = current.organization.id;
   const [{ data: affiliation }, { data: personal }, tiers, { data: creator }] = await Promise.all([
@@ -150,7 +153,7 @@ export async function loadCouponsTab(creatorId: string): Promise<CouponsTabData>
     getTiers(orgId),
     supabase
       .from("creators")
-      .select("tier_id")
+      .select("tier_id, notify_sales")
       .eq("organization_id", orgId)
       .eq("id", creatorId)
       .maybeSingle(),
@@ -160,5 +163,6 @@ export async function loadCouponsTab(creatorId: string): Promise<CouponsTabData>
     personal: personal ?? null,
     tiers,
     tierId: creator?.tier_id ?? null,
+    notifySales: creator?.notify_sales ?? true,
   };
 }
