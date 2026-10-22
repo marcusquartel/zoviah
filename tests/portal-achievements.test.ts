@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { computeAchievements, nextAchievement } from "../src/lib/portal/achievements.ts";
 
-const base = { monthOrders: 0, monthSales: 0, totalOrders: 0, position: null, streakMonths: 0 };
+const base = { monthOrders: 0, monthSales: 0, totalOrders: 0, position: null, streakMonths: 0, monthContent: 0, totalContent: 0 };
 
 test("nothing unlocked without sales; next goal is the first sale", () => {
   const list = computeAchievements(base);
@@ -31,4 +31,10 @@ test("singular wording", () => {
   const list = computeAchievements({ ...base, monthOrders: 4, totalOrders: 4, streakMonths: 2 });
   assert.equal(list.find((a) => a.id === "five")!.remaining, "faltam 1 venda");
   assert.equal(list.find((a) => a.id === "streak")!.remaining, "faltam 1 mês");
+});
+
+test("content badges", () => {
+  const list = computeAchievements({ ...base, monthContent: 7, totalContent: 12 });
+  assert.equal(list.find((a) => a.id === "content1")!.unlocked, true);
+  assert.equal(list.find((a) => a.id === "content10")!.remaining, "faltam 3 publicações");
 });

@@ -10,6 +10,9 @@ export interface AchievementInput {
   /** Month ranking position (overall); null when she isn't ranked. */
   position: number | null;
   streakMonths: number;
+  /** Approved content this month / ever. */
+  monthContent: number;
+  totalContent: number;
 }
 
 export interface Achievement {
@@ -59,6 +62,8 @@ export function computeAchievements(i: AchievementInput): Achievement[] {
     { id: "podium", emoji: "🏅", title: "Pódio", description: "Top 3 do ranking do mês.", ...top(3) },
     { id: "champion", emoji: "👑", title: "Campeã do mês", description: "1º lugar no ranking do mês.", ...top(1) },
     { id: "streak", emoji: "📅", title: "Constância", description: "Vendas em 3 meses seguidos.", ...count(i.streakMonths, 3, ["mês", "meses"]) },
+    { id: "content1", emoji: "📸", title: "Primeiro conteúdo", description: "Primeira publicação aprovada.", ...count(i.totalContent, 1, ["publicação", "publicações"]) },
+    { id: "content10", emoji: "🎬", title: "Criadora ativa", description: "10 publicações aprovadas no mês.", ...count(i.monthContent, 10, ["publicação", "publicações"]) },
   ];
 }
 

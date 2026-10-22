@@ -26,6 +26,7 @@ import {
 } from "@/features/shipments/queries";
 import { createClient } from "@/lib/supabase/server";
 import { getTiers, type TierWithCount } from "@/features/tiers/queries";
+import { listOrgContent, type StaffContentRow } from "@/features/content/queries";
 import { getCurrentOrganization } from "@/features/organizations/queries";
 import type {
   CreatorAffiliation,
@@ -207,4 +208,11 @@ export async function loadCouponsTab(creatorId: string): Promise<CouponsTabData>
           : null,
     },
   };
+}
+
+/** "Conteúdos" tab — this creator's registered publications. */
+export async function loadCreatorContent(creatorId: string): Promise<StaffContentRow[]> {
+  const current = await getCurrentOrganization();
+  if (!current) return [];
+  return listOrgContent(current.organization.id, { creatorId, limit: 100 });
 }

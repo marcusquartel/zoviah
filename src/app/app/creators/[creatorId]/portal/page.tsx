@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Eye } from "lucide-react";
 import { getPortalPreview } from "@/features/portal/queries";
+import { getPortalContent } from "@/features/content/queries";
 import { PortalDashboardView } from "@/features/portal/components/dashboard";
 
 export const metadata: Metadata = { title: "Portal da creator (visualização)" };
@@ -20,7 +21,7 @@ export default async function CreatorPortalPreviewPage({
 }) {
   const { creatorId } = await params;
   if (!UUID_RE.test(creatorId)) notFound();
-  const data = await getPortalPreview(creatorId);
+  const [data, content] = await Promise.all([getPortalPreview(creatorId), getPortalContent(creatorId)]);
 
   return (
     <div className="space-y-4">
@@ -37,7 +38,13 @@ export default async function CreatorPortalPreviewPage({
       </div>
       {data ? (
         <div className="mx-auto max-w-5xl">
-          <PortalDashboardView data={data} creatorId={creatorId} canEditAvatar />
+          <PortalDashboardView
+            data={data}
+            creatorId={creatorId}
+            canEditAvatar
+            content={content}
+            canSubmitContent={false}
+          />
         </div>
       ) : (
         <p className="py-10 text-center text-sm text-muted-foreground">

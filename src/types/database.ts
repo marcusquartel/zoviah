@@ -111,6 +111,10 @@ export interface ShopifyUtm {
   content?: string | null;
   term?: string | null;
 }
+export type ContentPlatform = "instagram" | "tiktok";
+export type ContentFormat = "post" | "reel" | "story" | "video";
+export type ContentStatus = "pending" | "approved" | "rejected";
+
 export type CreatorAddressSource = "signup" | "secure_request" | "manual";
 export type AddressRequestStatus =
   | "pending"
@@ -1270,6 +1274,29 @@ export interface Database {
         Update: never;
         Relationships: [];
       };
+      creator_content: {
+        Row: {
+          id: string;
+          organization_id: string;
+          creator_id: string;
+          platform: ContentPlatform;
+          format: ContentFormat;
+          url: string | null;
+          screenshot_path: string | null;
+          posted_on: string;
+          note: string | null;
+          status: ContentStatus;
+          source: "creator" | "staff";
+          review_note: string | null;
+          reviewed_by: string | null;
+          reviewed_at: string | null;
+          created_by: string | null;
+          created_at: string;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
       creator_personal_coupons: {
         Row: {
           id: string;
@@ -1501,6 +1528,14 @@ export interface Database {
       portal_my_creators: { Args: Record<string, never>; Returns: Json };
       portal_dashboard: { Args: { p_creator_id: string }; Returns: Json };
       portal_dashboard_preview: { Args: { p_creator_id: string }; Returns: Json };
+      portal_submit_content: { Args: { p_creator_id: string; p: Json }; Returns: Json };
+      portal_content: { Args: { p_creator_id: string }; Returns: Json };
+      staff_add_content: { Args: { p_creator_id: string; p: Json }; Returns: Json };
+      review_creator_content: {
+        Args: { p_id: string; p_status: ContentStatus; p_note?: string | null };
+        Returns: Json;
+      };
+      delete_creator_content: { Args: { p_id: string }; Returns: Json };
       set_creator_avatar: { Args: { p_creator_id: string; p_url: string }; Returns: Json };
       claim_sale_notifications: {
         Args: { p_org: string; p_ingest_key: string; p_limit?: number };
@@ -1956,6 +1991,7 @@ export type ChangelogEntry =
   Database["public"]["Tables"]["changelog_entries"]["Row"];
 export type CreatorAffiliation =
   Database["public"]["Tables"]["creator_affiliations"]["Row"];
+export type CreatorContent = Database["public"]["Tables"]["creator_content"]["Row"];
 export type CreatorTier = Database["public"]["Tables"]["creator_tiers"]["Row"];
 export type CreatorPersonalCoupon =
   Database["public"]["Tables"]["creator_personal_coupons"]["Row"];

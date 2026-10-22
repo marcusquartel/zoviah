@@ -7,6 +7,7 @@ import { SetupNotice } from "@/components/setup-notice";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { getCurrentUser } from "@/features/organizations/queries";
 import { getMyPortalCreators, getPortalDashboard } from "@/features/portal/queries";
+import { getPortalContent } from "@/features/content/queries";
 import { portalLogout } from "@/features/portal/actions";
 import { PortalDashboardView } from "@/features/portal/components/dashboard";
 import { ThemeStyle } from "@/components/theme-style";
@@ -60,7 +61,10 @@ export default async function PortalPage({
     );
   }
 
-  const dashboard = await getPortalDashboard(selected.creator_id);
+  const [dashboard, content] = await Promise.all([
+    getPortalDashboard(selected.creator_id),
+    getPortalContent(selected.creator_id),
+  ]);
   if (!dashboard) {
     return (
       <Shell>
@@ -77,7 +81,13 @@ export default async function PortalPage({
         primaryColor={dashboard.branding.primary_color}
         secondaryColor={dashboard.branding.secondary_color}
       />
-      <PortalDashboardView data={dashboard} creatorId={selected.creator_id} canEditAvatar />
+      <PortalDashboardView
+        data={dashboard}
+        creatorId={selected.creator_id}
+        canEditAvatar
+        content={content}
+        canSubmitContent
+      />
     </Shell>
   );
 }

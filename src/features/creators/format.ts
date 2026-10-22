@@ -23,4 +23,10 @@ const dtLong = new Intl.DateTimeFormat("pt-BR", {
 });
 
 export const formatDate = (iso: string) => dt.format(new Date(iso));
+
+/** A calendar date ("2026-10-21") as "21/10/2026" — no timezone shift. */
+export function formatDay(day: string): string {
+  const [y, m, d] = day.slice(0, 10).split("-");
+  return y && m && d ? `${d}/${m}/${y}` : day;
+}
 export const formatDateTime = (iso: string) => dtLong.format(new Date(iso));

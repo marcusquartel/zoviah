@@ -6,6 +6,8 @@ import { computeAchievements, nextAchievement, type Achievement } from "@/lib/po
 import { CopyCode } from "@/features/portal/components/copy-code";
 import { RankingTabs } from "@/features/portal/components/ranking";
 import { CreatorAvatar } from "@/features/portal/components/avatar-upload";
+import { PortalContentSection } from "@/features/content/components/portal-content";
+import type { PortalContent } from "@/features/content/queries";
 import type { PortalCommissionStatus, PortalDashboard, PortalRankingRow } from "@/features/portal/types";
 import { cn } from "@/lib/utils";
 
@@ -40,10 +42,15 @@ export function PortalDashboardView({
   data,
   creatorId,
   canEditAvatar,
+  content,
+  canSubmitContent,
 }: {
   data: PortalDashboard;
   creatorId: string;
   canEditAvatar: boolean;
+  content: PortalContent | null;
+  /** The creator herself registers content; the staff preview only shows it. */
+  canSubmitContent: boolean;
 }) {
   const primary = data.branding.primary_color || FALLBACK_PRIMARY;
   const secondary = data.branding.secondary_color || primary || FALLBACK_SECONDARY;
@@ -61,6 +68,8 @@ export function PortalDashboardView({
     totalOrders: Number(data.totals.orders),
     position: me && Number(data.month.orders) > 0 ? me.position : null,
     streakMonths: data.streak_months,
+    monthContent: content?.month.approved ?? 0,
+    totalContent: content?.total_approved ?? 0,
   });
   const next = nextAchievement(achievements);
   const unlocked = achievements.filter((a) => a.unlocked).length;
@@ -184,6 +193,11 @@ export function PortalDashboardView({
           </div>
         </Card>
       </section>
+
+      {/* --------------------------------------------------------- content */}
+      {content ? (
+        <PortalContentSection creatorId={creatorId} content={content} accent={primary} canSubmit={canSubmitContent} />
+      ) : null}
 
       {/* ---------------------------------------------------- achievements */}
       <Card>

@@ -13,6 +13,7 @@ import {
   Users,
   UsersRound,
   type LucideIcon,
+  Clapperboard,
 } from "lucide-react";
 
 export interface NavItem {
@@ -27,6 +28,7 @@ export const primaryNav: NavItem[] = [
   { title: "Creators", href: "/app/creators", icon: Users },
   { title: "Programas", href: "/app/programs", icon: FolderKanban },
   { title: "Envios", href: "/app/shipments", icon: Send },
+  { title: "Conteúdos", href: "/app/content", icon: Clapperboard },
   { title: "Comissões", href: "/app/commissions", icon: BadgeDollarSign },
   { title: "Shopify", href: "/app/shopify", icon: ShoppingBag },
   { title: "Equipe", href: "/app/team", icon: UsersRound },
