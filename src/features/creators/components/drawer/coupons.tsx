@@ -8,6 +8,15 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { loadCouponsTab, type CouponsTabData } from "@/features/creators/data-actions";
 import { saveCreatorAffiliation, savePersonalCoupon } from "@/features/shopify/actions";
+import { setCreatorTier } from "@/features/tiers/actions";
+import { formatPercent } from "@/lib/money";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 /** "10" / "10,5" → number; "" → null; garbage → NaN (rejected by the action). */
 function parsePercent(raw: string): number | null {
@@ -19,8 +28,10 @@ const toInput = (n: number | null | undefined) => (n != null ? String(n) : "");
 
 const cleanCode = (v: string) => v.toUpperCase().replace(/\s+/g, "");
 
+const NO_TIER = "none";
+
 /**
- * The creator's two coupons. The affiliate one is commissioned and attributes
+ * Categoria + the creator's two coupons. The affiliate one is commissioned and attributes
  * sales to her (coupon or UTM); the personal one is her own discount and is
  * never attributed. Both link codes that already exist in the store — creating
  * a new coupon in Shopify stays on the Comissões page.
@@ -47,15 +58,94 @@ export function CouponsTab({ creatorId }: { creatorId: string }) {
     );
   }
 
+  const tier = data.tiers.find((t) => t.id === data.tierId) ?? null;
+
   return (
     <div className="space-y-4">
-      <AffiliateCoupon creatorId={creatorId} data={data} />
+      <TierPicker
+        creatorId={creatorId}
+        data={data}
+        onChanged={(tierId) => setData({ ...data, tierId })}
+      />
+      <AffiliateCoupon creatorId={creatorId} data={data} tierRate={tier?.commission_rate ?? null} />
       <PersonalCoupon creatorId={creatorId} data={data} />
     </div>
   );
 }
 
-function AffiliateCoupon({ creatorId, data }: { creatorId: string; data: CouponsTabData }) {
+function TierPicker({
+  creatorId,
+  data,
+  onChanged,
+}: {
+  creatorId: string;
+  data: CouponsTabData;
+  onChanged: (tierId: string | null) => void;
+}) {
+  const [pending, startTransition] = useTransition();
+  const items = [
+    { value: NO_TIER, label: "Sem categoria" },
+    ...data.tiers.map((t) => ({
+      value: t.id,
+      label: `${t.name} — ${formatPercent(t.commission_rate)}`,
+    })),
+  ];
+
+  function change(value: string) {
+    const tierId = value === NO_TIER ? null : value;
+    startTransition(async () => {
+      const res = await setCreatorTier(creatorId, tierId);
+      if (res.ok) {
+        onChanged(tierId);
+        toast.success("Categoria atualizada.");
+      } else toast.error(res.error ?? "Não foi possível alterar a categoria.");
+    });
+  }
+
+  return (
+    <section className="space-y-3 rounded-lg border p-4">
+      <div>
+        <p className="text-sm font-medium">Categoria</p>
+        <p className="text-xs text-muted-foreground">
+          Define a comissão padrão da creator.
+        </p>
+      </div>
+      {data.tiers.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          Nenhuma categoria criada. Crie em Configurações → Categorias.
+        </p>
+      ) : (
+        <Select
+          items={items}
+          value={data.tierId ?? NO_TIER}
+          onValueChange={(v) => change((v as string) ?? NO_TIER)}
+          disabled={pending}
+        >
+          <SelectTrigger className="w-full" aria-label="Categoria">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {items.map((i) => (
+              <SelectItem key={i.value} value={i.value}>
+                {i.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
+    </section>
+  );
+}
+
+function AffiliateCoupon({
+  creatorId,
+  data,
+  tierRate,
+}: {
+  creatorId: string;
+  data: CouponsTabData;
+  tierRate: number | null;
+}) {
   const aff = data.affiliation;
   const [code, setCode] = useState(aff?.code ?? "");
   const [rate, setRate] = useState(toInput(aff?.commission_rate));
@@ -102,12 +192,14 @@ function AffiliateCoupon({ creatorId, data }: { creatorId: string; data: Coupons
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
-          <Label htmlFor="aff-rate">Comissão (%)</Label>
+          <Label htmlFor="aff-rate">Comissão individual (%)</Label>
           <Input
             id="aff-rate"
             inputMode="decimal"
             value={rate}
-            placeholder="A definir"
+            placeholder={
+              tierRate != null ? `Da categoria: ${formatPercent(tierRate)}` : "A definir"
+            }
             onChange={(e) => setRate(e.target.value)}
           />
         </div>
@@ -121,10 +213,16 @@ function AffiliateCoupon({ creatorId, data }: { creatorId: string; data: Coupons
           />
         </div>
       </div>
-      {aff && aff.commission_rate == null ? (
+      {rate.trim() === "" && tierRate != null ? (
+        <p className="text-xs text-muted-foreground">
+          Sem comissão individual: vale a da categoria ({formatPercent(tierRate)}).
+          Preencha só para uma exceção.
+        </p>
+      ) : aff && aff.commission_rate == null && tierRate == null ? (
         <p className="text-xs text-warning-foreground">
           Comissão ainda não definida: as vendas são atribuídas a ela, mas
-          nenhuma comissão é calculada.
+          nenhuma comissão é calculada. Escolha uma categoria ou preencha a
+          comissão individual.
         </p>
       ) : null}
       <div className="flex justify-end">

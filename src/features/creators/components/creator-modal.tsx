@@ -34,7 +34,7 @@ const TABS = [
   { id: "metrics", label: "Métricas" },
   { id: "address", label: "Endereço" },
   { id: "shipments", label: "Envios" },
-  { id: "coupons", label: "Cupons" },
+  { id: "coupons", label: "Comissão" },
   { id: "answers", label: "Respostas" },
   { id: "history", label: "Histórico" },
 ] as const;

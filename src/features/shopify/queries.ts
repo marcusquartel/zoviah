@@ -69,15 +69,24 @@ export async function getOrderStats(orgId: string, days = 60) {
 }
 
 async function creatorNames(orgId: string, ids: string[]): Promise<Map<string, string>> {
+  return new Map([...(await creatorInfo(orgId, ids))].map(([id, c]) => [id, c.name]));
+}
+
+async function creatorInfo(
+  orgId: string,
+  ids: string[],
+): Promise<Map<string, { name: string; tier_id: string | null }>> {
   const unique = [...new Set(ids)];
   if (!unique.length) return new Map();
   const supabase = await createClient();
   const { data } = await supabase
     .from("creators")
-    .select("id, full_name, preferred_name")
+    .select("id, full_name, preferred_name, tier_id")
     .eq("organization_id", orgId)
     .in("id", unique);
-  return new Map((data ?? []).map((c) => [c.id, c.preferred_name || c.full_name]));
+  return new Map(
+    (data ?? []).map((c) => [c.id, { name: c.preferred_name || c.full_name, tier_id: c.tier_id }]),
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -103,6 +112,10 @@ export interface CreatorCommissionSummary {
   creator_id: string;
   creator_name: string;
   affiliation: CreatorAffiliation | null;
+  /** Categoria name, when the creator has one. */
+  tier_name: string | null;
+  /** Individual rate, else the tier's; null = no commission computed. */
+  effective_rate: number | null;
   orders: number;
   sales: number;
   pending: number;
@@ -124,7 +137,7 @@ export async function getCommissionOverview(): Promise<CommissionOverview | null
   const orgId = current.organization.id;
   const supabase = await createClient();
 
-  const [{ data: commissions }, { data: affiliations }, { data: settings }] = await Promise.all([
+  const [{ data: commissions }, { data: affiliations }, { data: settings }, { data: tierRows }] = await Promise.all([
     supabase
       .from("commissions")
       .select("*")
@@ -137,7 +150,9 @@ export async function getCommissionOverview(): Promise<CommissionOverview | null
       .select("commission_hold_days")
       .eq("organization_id", orgId)
       .maybeSingle(),
+    supabase.from("creator_tiers").select("id, name, commission_rate").eq("organization_id", orgId),
   ]);
+  const tiers = new Map((tierRows ?? []).map((t) => [t.id, t]));
 
   const comms = (commissions ?? []) as Commission[];
   const affs = (affiliations ?? []) as CreatorAffiliation[];
@@ -151,7 +166,8 @@ export async function getCommissionOverview(): Promise<CommissionOverview | null
       .in("id", orderIds.slice(i, i + 500));
     for (const o of data ?? []) orders.set(o.id, o);
   }
-  const names = await creatorNames(orgId, [...comms.map((c) => c.creator_id), ...affs.map((a) => a.creator_id)]);
+  const info = await creatorInfo(orgId, [...comms.map((c) => c.creator_id), ...affs.map((a) => a.creator_id)]);
+  const names = new Map([...info].map(([id, c]) => [id, c.name]));
   const affByCreator = new Map(affs.map((a) => [a.creator_id, a]));
 
   const now = Date.now();
@@ -171,10 +187,19 @@ export async function getCommissionOverview(): Promise<CommissionOverview | null
   const ensure = (id: string) => {
     let s = summary.get(id);
     if (!s) {
+      const aff = affByCreator.get(id) ?? null;
+      const tier = tiers.get(info.get(id)?.tier_id ?? "") ?? null;
       s = {
         creator_id: id,
         creator_name: names.get(id) ?? "Creator removida",
-        affiliation: affByCreator.get(id) ?? null,
+        affiliation: aff,
+        tier_name: tier?.name ?? null,
+        effective_rate:
+          aff?.commission_rate != null
+            ? Number(aff.commission_rate)
+            : tier
+              ? Number(tier.commission_rate)
+              : null,
         orders: 0,
         sales: 0,
         pending: 0,

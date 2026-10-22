@@ -779,6 +779,8 @@ export interface Database {
           state: string | null;
           postal_code: string | null;
           archived_at: string | null;
+          /** Categoria (creator_tiers). Written only via set_creator_tier. */
+          tier_id: string | null;
         } & Timestamps;
         Insert: {
           id?: string;
@@ -1221,6 +1223,19 @@ export interface Database {
         Update: never;
         Relationships: [];
       };
+      creator_tiers: {
+        Row: {
+          id: string;
+          organization_id: string;
+          name: string;
+          commission_rate: number;
+          description: string | null;
+          position: number;
+        } & Timestamps;
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
       creator_personal_coupons: {
         Row: {
           id: string;
@@ -1400,6 +1415,22 @@ export interface Database {
       import_creator_affiliations: { Args: { p_org: string; p_items: Json }; Returns: Json };
       update_creator_profile: {
         Args: { p_creator_id: string; p_payload: Json };
+        Returns: Json;
+      };
+      save_creator_tier: {
+        Args: {
+          p_org: string;
+          p_id: string | null;
+          p_name: string;
+          p_commission_rate: number;
+          p_description: string | null;
+          p_position?: number | null;
+        };
+        Returns: Json;
+      };
+      delete_creator_tier: { Args: { p_org: string; p_id: string }; Returns: Json };
+      set_creator_tier: {
+        Args: { p_creator_id: string; p_tier_id: string | null };
         Returns: Json;
       };
       set_creator_personal_coupon: {
@@ -1857,6 +1888,7 @@ export type ChangelogEntry =
   Database["public"]["Tables"]["changelog_entries"]["Row"];
 export type CreatorAffiliation =
   Database["public"]["Tables"]["creator_affiliations"]["Row"];
+export type CreatorTier = Database["public"]["Tables"]["creator_tiers"]["Row"];
 export type CreatorPersonalCoupon =
   Database["public"]["Tables"]["creator_personal_coupons"]["Row"];
 export type ShopifyOrder = Database["public"]["Tables"]["shopify_orders"]["Row"];

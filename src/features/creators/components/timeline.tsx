@@ -100,6 +100,15 @@ function describe(event: CreatorEvent): {
               : "Endereço enviado pela creator",
         detail: actor ? `por ${actor}` : undefined,
       };
+    case "tier_changed":
+      return {
+        icon: RefreshCw,
+        title:
+          typeof data.tier === "string"
+            ? `Categoria alterada para ${data.tier}`
+            : "Categoria removida",
+        detail: actor ? `por ${actor}` : undefined,
+      };
     case "personal_coupon_set":
       return {
         icon: FileText,

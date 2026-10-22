@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 
 const TABS = [
   { href: "/app/settings/appearance", label: "Aparência" },
+  { href: "/app/settings/tiers", label: "Categorias" },
   { href: "/app/settings/plan", label: "Plano" },
 ];
 

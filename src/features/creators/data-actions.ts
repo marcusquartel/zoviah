@@ -25,6 +25,7 @@ import {
   type CreatorShipment,
 } from "@/features/shipments/queries";
 import { createClient } from "@/lib/supabase/server";
+import { getTiers, type TierWithCount } from "@/features/tiers/queries";
 import { getCurrentOrganization } from "@/features/organizations/queries";
 import type {
   CreatorAffiliation,
@@ -123,15 +124,17 @@ export async function reloadTimeline(
 export interface CouponsTabData {
   affiliation: CreatorAffiliation | null;
   personal: CreatorPersonalCoupon | null;
+  tiers: TierWithCount[];
+  tierId: string | null;
 }
 
 /** "Cupons" tab — the affiliate (commissioned) and the personal coupon. */
 export async function loadCouponsTab(creatorId: string): Promise<CouponsTabData> {
   const current = await getCurrentOrganization();
-  if (!current) return { affiliation: null, personal: null };
+  if (!current) return { affiliation: null, personal: null, tiers: [], tierId: null };
   const supabase = await createClient();
   const orgId = current.organization.id;
-  const [{ data: affiliation }, { data: personal }] = await Promise.all([
+  const [{ data: affiliation }, { data: personal }, tiers, { data: creator }] = await Promise.all([
     supabase
       .from("creator_affiliations")
       .select("*")
@@ -144,6 +147,18 @@ export async function loadCouponsTab(creatorId: string): Promise<CouponsTabData>
       .eq("organization_id", orgId)
       .eq("creator_id", creatorId)
       .maybeSingle(),
+    getTiers(orgId),
+    supabase
+      .from("creators")
+      .select("tier_id")
+      .eq("organization_id", orgId)
+      .eq("id", creatorId)
+      .maybeSingle(),
   ]);
-  return { affiliation: affiliation ?? null, personal: personal ?? null };
+  return {
+    affiliation: affiliation ?? null,
+    personal: personal ?? null,
+    tiers,
+    tierId: creator?.tier_id ?? null,
+  };
 }
