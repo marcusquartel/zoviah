@@ -5,7 +5,7 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentOrganization } from "@/features/organizations/queries";
 import { generateSecureToken, hashToken } from "@/lib/secure-token";
-import { buildInviteUrl } from "@/lib/app-url";
+import { buildAuthCallbackUrl, buildInviteUrl } from "@/lib/app-url";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import type { OrganizationRole } from "@/types/database";
 
@@ -230,7 +230,11 @@ export async function signUpFromInvite(input: {
   const { data: signUp, error: signErr } = await supabase.auth.signUp({
     email: prepared.email,
     password,
-    options: { emailRedirectTo: buildInviteUrl(token) },
+    // Through /auth/callback: @supabase/ssr uses PKCE, so the confirmation
+    // link comes back with `?code=` and only that route handler can exchange
+    // it and write the session cookie. Landing on /invite directly left the
+    // user signed out and looping on this form.
+    options: { emailRedirectTo: buildAuthCallbackUrl(`/invite/${token}`) },
   });
   if (signErr) {
     const msg = signErr.message.toLowerCase();
@@ -246,6 +250,16 @@ export async function signUpFromInvite(input: {
     }
     console.error("[auth.signUp]", signErr.status, signErr.message);
     return { ok: false, error: "Não foi possível criar a conta." };
+  }
+
+  // An already-registered address does not error (enumeration protection):
+  // Supabase returns a user with no identities and sends nothing.
+  if (signUp.user && signUp.user.identities?.length === 0) {
+    return {
+      ok: false,
+      accountExists: true,
+      error: "Você já tem uma conta com este e-mail. Faça login para aceitar o convite.",
+    };
   }
 
   // 3a. E-mail confirmation ON -> no session yet. User confirms, comes back

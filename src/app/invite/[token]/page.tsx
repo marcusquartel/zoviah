@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { hashToken } from "@/lib/secure-token";
 import { getCurrentUser } from "@/features/organizations/queries";
 import { getPublicInvite } from "@/features/team/queries";
@@ -13,13 +14,26 @@ export const metadata: Metadata = {
 };
 
 type Params = { token: string };
+type SearchParams = { code?: string; error?: string };
 
 export default async function InvitePage({
   params,
+  searchParams,
 }: {
   params: Promise<Params>;
+  searchParams: Promise<SearchParams>;
 }) {
   const { token } = await params;
+  const { code, error } = await searchParams;
+
+  // Confirmation links sent before the redirect moved to /auth/callback land
+  // here with a PKCE `?code=`. Only the route handler can write the session
+  // cookie, so hand the code over.
+  if (code) {
+    const to = new URLSearchParams({ code, next: `/invite/${token}` });
+    redirect(`/auth/callback?${to.toString()}`);
+  }
+
   const invite = await getPublicInvite(hashToken(token));
 
   return (
@@ -37,7 +51,11 @@ export default async function InvitePage({
             action={<AppLink />}
           />
         ) : (
-          <PendingInvite token={token} invite={invite} />
+          <PendingInvite
+            token={token}
+            invite={invite}
+            confirmFailed={Boolean(error)}
+          />
         )}
       </div>
     </div>
@@ -47,8 +65,10 @@ export default async function InvitePage({
 async function PendingInvite({
   token,
   invite,
+  confirmFailed,
 }: {
   token: string;
+  confirmFailed: boolean;
   invite: {
     organization_name: string;
     role: string;
@@ -74,6 +94,7 @@ async function PendingInvite({
         <InviteSignup
           token={token}
           emailMasked={invite.email_masked}
+          startInLogin={confirmFailed}
           loginHref={`/login?next=${encodeURIComponent(`/invite/${token}`)}`}
         />
       )}

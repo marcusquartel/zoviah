@@ -18,13 +18,22 @@ export function InviteSignup({
   token,
   emailMasked,
   loginHref,
+  startInLogin = false,
 }: {
   token: string;
   emailMasked: string;
   loginHref: string;
+  /**
+   * The e-mail confirmation came back without a session (link opened in
+   * another browser, or expired). The account exists — offer login, not a
+   * second signup.
+   */
+  startInLogin?: boolean;
 }) {
   const router = useRouter();
-  const [mode, setMode] = useState<"signup" | "login">("signup");
+  const [mode, setMode] = useState<"signup" | "login">(
+    startInLogin ? "login" : "signup",
+  );
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [pending, startTransition] = useTransition();
@@ -78,8 +87,8 @@ export function InviteSignup({
         <MailCheck className="mx-auto size-8 text-primary" />
         <p className="text-sm font-medium">Confirme seu e-mail</p>
         <p className="text-sm text-muted-foreground">
-          Enviamos um link de confirmação para {emailMasked}. Depois de
-          confirmar, volte a esta página para entrar na organização.
+          Enviamos um link de confirmação para {emailMasked}. Abra o link
+          neste mesmo navegador para entrar direto na organização.
         </p>
       </div>
     );
@@ -89,7 +98,10 @@ export function InviteSignup({
     return (
       <div className="space-y-3 text-center">
         <p className="text-sm text-muted-foreground">
-          {error ?? "Você já tem uma conta com este e-mail."}
+          {error ??
+            (startInLogin
+              ? "Se você já confirmou seu e-mail, entre com a senha que criou para aceitar o convite."
+              : "Você já tem uma conta com este e-mail.")}
         </p>
         <Link
           href={loginHref}
