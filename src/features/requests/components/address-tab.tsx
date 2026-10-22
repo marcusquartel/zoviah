@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, useTransition } from "react";
-import { Copy, Link2, RefreshCw, X } from "lucide-react";
+import { Copy, Link2, Pencil, RefreshCw, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -23,6 +23,7 @@ import {
   type AddressLinkResult,
 } from "@/features/requests/actions";
 import { SecureLinkDialog } from "@/features/requests/components/link-dialog";
+import { ManualAddressForm } from "@/features/requests/components/manual-address-form";
 import type { AddressTabData } from "@/features/requests/queries";
 import type { AddressRequestStatus, CreatorAddress } from "@/types/database";
 
@@ -55,6 +56,7 @@ export function AddressTab({
     null,
   );
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editing, setEditing] = useState(false);
 
   const reload = useCallback(async () => {
     setData(await loadAddressTab(applicationId, creatorId));
@@ -114,11 +116,38 @@ export function AddressTab({
 
   const pendingRequest = data.requests.find((r) => r.status === "pending") ?? null;
 
+  if (editing) {
+    return (
+      <ManualAddressForm
+        creatorId={creatorId}
+        current={data.currentAddress}
+        onCancel={() => setEditing(false)}
+        onSaved={() => {
+          setEditing(false);
+          void reload();
+          onChanged();
+        }}
+      />
+    );
+  }
+
   return (
     <div className="space-y-5">
       {data.currentAddress ? (
-        <CurrentAddress address={data.currentAddress} />
-      ) : null}
+        <CurrentAddress
+          address={data.currentAddress}
+          onEdit={() => setEditing(true)}
+        />
+      ) : (
+        <Panel>
+          <p className="text-sm text-muted-foreground">
+            Já tem o endereço e o CPF da creator? Preencha você mesmo.
+          </p>
+          <Button className="mt-3" size="sm" onClick={() => setEditing(true)}>
+            <Pencil className="size-4" /> Preencher endereço
+          </Button>
+        </Panel>
+      )}
 
       {pendingRequest ? (
         <Panel>
@@ -235,7 +264,19 @@ function Panel({ children }: { children: React.ReactNode }) {
   return <div className="rounded-lg border bg-surface p-4">{children}</div>;
 }
 
-function CurrentAddress({ address }: { address: CreatorAddress }) {
+const ADDRESS_SOURCE_LABELS: Record<CreatorAddress["source"], string> = {
+  signup: "Informado na inscrição",
+  secure_request: "Informado pelo link seguro",
+  manual: "Preenchido pela equipe",
+};
+
+function CurrentAddress({
+  address,
+  onEdit,
+}: {
+  address: CreatorAddress;
+  onEdit: () => void;
+}) {
   const lines = [
     address.recipient_name,
     address.cpf ? `CPF ${formatCpf(address.cpf)}` : null,
@@ -261,15 +302,18 @@ function CurrentAddress({ address }: { address: CreatorAddress }) {
         <div>
           <p className="text-sm font-medium">Endereço de entrega</p>
           <p className="text-xs text-muted-foreground">
-            {address.source === "signup"
-              ? "Informado na inscrição"
-              : "Informado pelo link seguro"}{" "}
+            {ADDRESS_SOURCE_LABELS[address.source]}{" "}
             · {formatDate(address.created_at)}
           </p>
         </div>
-        <Button variant="ghost" size="sm" onClick={copy}>
-          <Copy className="size-4" /> Copiar
-        </Button>
+        <div className="flex gap-1">
+          <Button variant="ghost" size="sm" onClick={onEdit}>
+            <Pencil className="size-4" /> Editar
+          </Button>
+          <Button variant="ghost" size="sm" onClick={copy}>
+            <Copy className="size-4" /> Copiar
+          </Button>
+        </div>
       </div>
       <address className="mt-2 space-y-0.5 text-sm not-italic">
         {lines.map((l, i) => (

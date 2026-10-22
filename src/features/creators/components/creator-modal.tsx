@@ -15,6 +15,7 @@ import { SummaryTab } from "@/features/creators/components/drawer/summary";
 import { RegistrationTab } from "@/features/creators/components/drawer/registration";
 import { SocialsTab } from "@/features/creators/components/drawer/socials";
 import { AnswersTab } from "@/features/creators/components/drawer/answers";
+import { EditProfileForm } from "@/features/creators/components/drawer/edit-profile";
 import { Timeline } from "@/features/creators/components/timeline";
 import { NoteForm } from "@/features/creators/components/note-form";
 import { MetricsTab } from "@/features/evidence/components/metrics-tab";
@@ -102,7 +103,13 @@ function ModalBody({
   onRefresh: () => void;
 }) {
   const [tab, setTab] = useState<TabId>("summary");
+  // Cadastro + Redes share one edit form, shown in place of the active tab.
+  const [editing, setEditing] = useState(false);
   const detail = data?.detail ?? null;
+
+  function openEdit() {
+    setEditing(true);
+  }
 
   return (
     <>
@@ -134,7 +141,10 @@ function ModalBody({
             <button
               key={t.id}
               type="button"
-              onClick={() => setTab(t.id)}
+              onClick={() => {
+                setTab(t.id);
+                setEditing(false);
+              }}
               aria-current={tab === t.id ? "page" : undefined}
               className={cn(
                 "-mb-px shrink-0 border-b-2 px-3 py-2 text-sm font-medium transition-colors",
@@ -160,6 +170,16 @@ function ModalBody({
           <p className="py-10 text-center text-sm text-muted-foreground">
             Inscrição não encontrada.
           </p>
+        ) : editing && (tab === "registration" || tab === "socials") ? (
+          <EditProfileForm
+            creator={detail.creator}
+            socials={detail.socials}
+            onCancel={() => setEditing(false)}
+            onSaved={() => {
+              setEditing(false);
+              onRefresh();
+            }}
+          />
         ) : tab === "summary" ? (
           <SummaryTab
             detail={detail}
@@ -167,9 +187,9 @@ function ModalBody({
             onOpenAddress={() => setTab("address")}
           />
         ) : tab === "registration" ? (
-          <RegistrationTab creator={detail.creator} />
+          <RegistrationTab creator={detail.creator} onEdit={openEdit} />
         ) : tab === "socials" ? (
-          <SocialsTab socials={detail.socials} />
+          <SocialsTab socials={detail.socials} onEdit={openEdit} />
         ) : tab === "metrics" ? (
           <MetricsTab
             applicationId={detail.application.id}

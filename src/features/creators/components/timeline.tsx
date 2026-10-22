@@ -2,6 +2,7 @@ import {
   FileText,
   MapPin,
   MessageSquare,
+  Pencil,
   RefreshCw,
   UserPlus,
 } from "lucide-react";
@@ -13,6 +14,19 @@ import type { ApplicationStatus, CreatorEvent } from "@/types/database";
 const LEGACY_STATUS_LABELS: Record<string, string> = {
   awaiting_address: "Aguardando endereço",
   completed: "Cadastro completo",
+};
+
+const UPDATED_FIELD_LABELS: Record<string, string> = {
+  full_name: "nome",
+  preferred_name: "nome preferido",
+  email: "e-mail",
+  phone: "WhatsApp",
+  birth_date: "nascimento",
+  city: "cidade",
+  state: "estado",
+  postal_code: "CEP",
+  instagram: "Instagram",
+  tiktok: "TikTok",
 };
 
 function statusLabel(status: string | undefined): string {
@@ -81,8 +95,23 @@ function describe(event: CreatorEvent): {
         title:
           data.source === "signup"
             ? "Endereço informado na inscrição"
-            : "Endereço enviado pela creator",
+            : data.source === "manual"
+              ? "Endereço preenchido pela equipe"
+              : "Endereço enviado pela creator",
+        detail: actor ? `por ${actor}` : undefined,
       };
+    case "creator_updated": {
+      const fields = Array.isArray(data.fields)
+        ? (data.fields as string[]).map((f) => UPDATED_FIELD_LABELS[f] ?? f)
+        : [];
+      return {
+        icon: Pencil,
+        title: "Dados atualizados",
+        detail: [fields.join(", "), actor ? `por ${actor}` : ""]
+          .filter(Boolean)
+          .join(" · "),
+      };
+    }
     default:
       return { icon: FileText, title: event.type };
   }

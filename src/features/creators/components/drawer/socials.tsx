@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, Pencil } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { isPlausibleHandle, socialProfileUrl } from "@/lib/normalize";
 import { formatFollowers } from "@/features/creators/format";
 import type { CreatorSocialProfile } from "@/types/database";
@@ -15,17 +16,35 @@ const PLATFORM_LABELS: Record<string, string> = {
   other: "Outro",
 };
 
-export function SocialsTab({ socials }: { socials: CreatorSocialProfile[] }) {
+export function SocialsTab({
+  socials,
+  onEdit,
+}: {
+  socials: CreatorSocialProfile[];
+  onEdit: () => void;
+}) {
+  const editButton = (
+    <div className="flex justify-end">
+      <Button variant="outline" size="sm" onClick={onEdit}>
+        <Pencil className="size-4" /> {socials.length ? "Editar redes" : "Adicionar redes"}
+      </Button>
+    </div>
+  );
+
   if (socials.length === 0) {
     return (
-      <p className="py-6 text-center text-sm text-muted-foreground">
-        Nenhuma rede informada.
-      </p>
+      <div className="space-y-3">
+        {editButton}
+        <p className="py-6 text-center text-sm text-muted-foreground">
+          Nenhuma rede informada.
+        </p>
+      </div>
     );
   }
 
   return (
     <div className="space-y-3">
+      {editButton}
       {socials.map((s) => {
         // Only trust a canonical URL; never render a raw submitted string.
         const safeUrl =

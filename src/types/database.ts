@@ -111,7 +111,7 @@ export interface ShopifyUtm {
   content?: string | null;
   term?: string | null;
 }
-export type CreatorAddressSource = "signup" | "secure_request";
+export type CreatorAddressSource = "signup" | "secure_request" | "manual";
 export type AddressRequestStatus =
   | "pending"
   | "completed"
@@ -1384,6 +1384,14 @@ export interface Database {
         Returns: Json;
       };
       import_creator_affiliations: { Args: { p_org: string; p_items: Json }; Returns: Json };
+      update_creator_profile: {
+        Args: { p_creator_id: string; p_payload: Json };
+        Returns: Json;
+      };
+      set_creator_address_manual: {
+        Args: { p_creator_id: string; p_payload: Json };
+        Returns: Json;
+      };
       mark_commissions_paid: { Args: { p_org: string; p_ids: string[] }; Returns: Json };
       set_commission_hold_days: { Args: { p_org: string; p_days: number }; Returns: Json };
       is_organization_member: {
