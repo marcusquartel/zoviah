@@ -785,6 +785,8 @@ export interface Database {
           tier_id: string | null;
           /** E-mail on each sale with her coupon (set_creator_notify_sales). */
           notify_sales: boolean;
+          /** Public URL in the creator-avatars bucket (set_creator_avatar). */
+          avatar_url: string | null;
         } & Timestamps;
         Insert: {
           id?: string;
@@ -1499,6 +1501,7 @@ export interface Database {
       portal_my_creators: { Args: Record<string, never>; Returns: Json };
       portal_dashboard: { Args: { p_creator_id: string }; Returns: Json };
       portal_dashboard_preview: { Args: { p_creator_id: string }; Returns: Json };
+      set_creator_avatar: { Args: { p_creator_id: string; p_url: string }; Returns: Json };
       claim_sale_notifications: {
         Args: { p_org: string; p_ingest_key: string; p_limit?: number };
         Returns: Json;

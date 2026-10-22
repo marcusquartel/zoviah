@@ -11,6 +11,8 @@ export interface PortalRankingRow {
   name: string;
   tier: string | null;
   me: boolean;
+  /** Sold at least once this month (no value revealed). */
+  active: boolean;
   /** Only present on the caller's own row. */
   sales: number | null;
   orders: number | null;
@@ -24,8 +26,12 @@ export type PortalCommissionStatus =
   | "reversed";
 
 export interface PortalDashboard {
-  creator: { name: string; full_name: string };
+  creator: { name: string; full_name: string; avatar_url: string | null };
   organization: { name: string };
+  branding: { primary_color: string | null; secondary_color: string | null; logo_url: string | null };
+  /** Consecutive months with at least one paid sale (this or last month back). */
+  streak_months: number;
+  totals: { orders: number; sales: number };
   tier: { name: string; commission_rate: number; description: string | null } | null;
   commission_rate: number | null;
   coupons: {

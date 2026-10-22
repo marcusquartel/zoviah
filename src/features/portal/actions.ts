@@ -173,3 +173,14 @@ export async function portalLogout(): Promise<void> {
   await supabase.auth.signOut();
   redirect("/portal/login");
 }
+
+/** Save (or clear, with null) the creator's photo URL. Creator or org admin. */
+export async function setCreatorAvatar(creatorId: string, url: string | null): Promise<PortalActionResult> {
+  if (!z.uuid().safeParse(creatorId).success) return { ok: false, error: ERRORS.CREATOR_NOT_FOUND };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("set_creator_avatar", { p_creator_id: creatorId, p_url: url ?? "" });
+  if (error) return { ok: false, error: mapError(error.message, "Não foi possível salvar a foto.") };
+  revalidatePath("/portal");
+  revalidatePath("/app/creators");
+  return { ok: true };
+}

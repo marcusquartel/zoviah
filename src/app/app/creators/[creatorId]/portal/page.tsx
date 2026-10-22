@@ -37,7 +37,7 @@ export default async function CreatorPortalPreviewPage({
       </div>
       {data ? (
         <div className="mx-auto max-w-5xl">
-          <PortalDashboardView data={data} />
+          <PortalDashboardView data={data} creatorId={creatorId} canEditAvatar />
         </div>
       ) : (
         <p className="py-10 text-center text-sm text-muted-foreground">

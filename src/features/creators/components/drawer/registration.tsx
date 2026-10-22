@@ -1,4 +1,5 @@
 import { Pencil } from "lucide-react";
+import { CreatorAvatar } from "@/features/portal/components/avatar-upload";
 import { Button } from "@/components/ui/button";
 import { formatDate } from "@/features/creators/format";
 import type { Creator } from "@/types/database";
@@ -29,7 +30,22 @@ export function RegistrationTab({
 
   return (
     <div className="space-y-3">
-      <div className="flex justify-end">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <CreatorAvatar
+            creatorId={creator.id}
+            name={creator.full_name}
+            url={creator.avatar_url}
+            editable
+            gradient="var(--primary)"
+            className="size-14 text-[0.55rem]"
+          />
+          <p className="text-xs text-muted-foreground">
+            Toque na foto para trocar.
+            <br />
+            Ela aparece no portal da creator.
+          </p>
+        </div>
         <Button variant="outline" size="sm" onClick={onEdit}>
           <Pencil className="size-4" /> Editar dados
         </Button>

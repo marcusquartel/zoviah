@@ -9,6 +9,7 @@ import { getCurrentUser } from "@/features/organizations/queries";
 import { getMyPortalCreators, getPortalDashboard } from "@/features/portal/queries";
 import { portalLogout } from "@/features/portal/actions";
 import { PortalDashboardView } from "@/features/portal/components/dashboard";
+import { ThemeStyle } from "@/components/theme-style";
 
 export const metadata: Metadata = { title: "Meu portal" };
 
@@ -72,7 +73,11 @@ export default async function PortalPage({
 
   return (
     <Shell brand={dashboard.organization.name} switchable={creators.length > 1}>
-      <PortalDashboardView data={dashboard} />
+      <ThemeStyle
+        primaryColor={dashboard.branding.primary_color}
+        secondaryColor={dashboard.branding.secondary_color}
+      />
+      <PortalDashboardView data={dashboard} creatorId={selected.creator_id} canEditAvatar />
     </Shell>
   );
 }

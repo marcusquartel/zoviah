@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { initialsOf } from "@/features/creators/format";
 import { SummaryTab } from "@/features/creators/components/drawer/summary";
 import { RegistrationTab } from "@/features/creators/components/drawer/registration";
@@ -119,6 +119,9 @@ function ModalBody({
         {detail ? (
           <div className="flex items-center gap-3 pr-8">
             <Avatar className="size-9">
+              {detail.creator.avatar_url ? (
+                <AvatarImage src={detail.creator.avatar_url} alt={detail.creator.full_name} />
+              ) : null}
               <AvatarFallback>
                 {initialsOf(detail.creator.full_name)}
               </AvatarFallback>

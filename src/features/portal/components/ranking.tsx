@@ -9,10 +9,13 @@ export function RankingTabs({
   all,
   tier,
   tierName,
+  accent,
 }: {
   all: PortalRankingRow[];
   tier: PortalRankingRow[] | null;
   tierName: string | null;
+  /** Brand color for her row / the active tab. */
+  accent: string;
 }) {
   const [tab, setTab] = useState<"all" | "tier">("all");
   const rows = tab === "tier" && tier ? tier : all;
@@ -34,8 +37,9 @@ export function RankingTabs({
               aria-pressed={tab === id}
               className={cn(
                 "rounded-md px-3 py-1",
-                tab === id ? "bg-muted font-medium" : "text-muted-foreground hover:text-foreground",
+                tab === id ? "font-medium text-white" : "text-muted-foreground hover:text-foreground",
               )}
+              style={tab === id ? { background: accent } : undefined}
             >
               {label}
             </button>
@@ -50,20 +54,29 @@ export function RankingTabs({
           {rows.map((r, i) => (
             <li
               key={`${r.position}-${r.name}-${i}`}
-              className={cn("flex items-center gap-3 px-3 py-2 text-sm", r.me && "bg-primary/10")}
+              className={cn("flex items-center gap-3 px-3 py-2 text-sm", r.me && "font-semibold")}
+              style={r.me ? { background: `${accent}22` } : undefined}
             >
-              <span className="w-8 shrink-0 text-right font-semibold tabular-nums">{r.position}º</span>
-              <span className="min-w-0 flex-1 truncate">
-                {r.name}
-                {r.me ? <span className="ml-1 text-xs font-medium text-primary">(você)</span> : null}
+              <span className="w-8 shrink-0 text-right text-base font-semibold tabular-nums">
+                {r.active && r.position <= 3 ? ["🥇", "🥈", "🥉"][r.position - 1] : `${r.position}º`}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate">
+                  {r.name}
+                  {r.me ? (
+                    <span className="ml-1 text-xs font-medium" style={{ color: accent }}>
+                      (você)
+                    </span>
+                  ) : null}
+                </span>
+                {r.me && r.sales != null ? (
+                  <span className="block text-xs font-medium tabular-nums text-muted-foreground">
+                    {formatMoney(r.sales)} · {r.orders} {r.orders === 1 ? "venda" : "vendas"}
+                  </span>
+                ) : null}
               </span>
               {tab === "all" && r.tier ? (
                 <span className="shrink-0 text-xs text-muted-foreground">{r.tier}</span>
-              ) : null}
-              {r.me && r.sales != null ? (
-                <span className="shrink-0 text-xs font-medium tabular-nums">
-                  {formatMoney(r.sales)} · {r.orders} {r.orders === 1 ? "venda" : "vendas"}
-                </span>
               ) : null}
             </li>
           ))}
