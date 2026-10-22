@@ -1211,10 +1211,24 @@ export interface Database {
           organization_id: string;
           creator_id: string;
           code: string;
-          commission_rate: number;
+          /** null = coupon linked, commission not agreed yet (no commission computed). */
+          commission_rate: number | null;
           discount_percent: number | null;
           shopify_discount_id: string | null;
           active: boolean;
+        } & Timestamps;
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
+      creator_personal_coupons: {
+        Row: {
+          id: string;
+          organization_id: string;
+          creator_id: string;
+          code: string;
+          discount_percent: number | null;
+          shopify_discount_id: string | null;
         } & Timestamps;
         Insert: never;
         Update: never;
@@ -1376,7 +1390,7 @@ export interface Database {
           p_org: string;
           p_creator_id: string;
           p_code: string;
-          p_commission_rate: number;
+          p_commission_rate: number | null;
           p_discount_percent: number | null;
           p_shopify_discount_id: string | null;
           p_active?: boolean;
@@ -1386,6 +1400,15 @@ export interface Database {
       import_creator_affiliations: { Args: { p_org: string; p_items: Json }; Returns: Json };
       update_creator_profile: {
         Args: { p_creator_id: string; p_payload: Json };
+        Returns: Json;
+      };
+      set_creator_personal_coupon: {
+        Args: {
+          p_creator_id: string;
+          p_code: string;
+          p_discount_percent: number | null;
+          p_shopify_discount_id?: string | null;
+        };
         Returns: Json;
       };
       set_creator_address_manual: {
@@ -1834,5 +1857,7 @@ export type ChangelogEntry =
   Database["public"]["Tables"]["changelog_entries"]["Row"];
 export type CreatorAffiliation =
   Database["public"]["Tables"]["creator_affiliations"]["Row"];
+export type CreatorPersonalCoupon =
+  Database["public"]["Tables"]["creator_personal_coupons"]["Row"];
 export type ShopifyOrder = Database["public"]["Tables"]["shopify_orders"]["Row"];
 export type Commission = Database["public"]["Tables"]["commissions"]["Row"];

@@ -141,7 +141,11 @@ export default async function CommissionsPage() {
                       )}
                     </td>
                     <td className="px-3 py-3.5 text-right tabular-nums">
-                      {c.affiliation ? formatPercent(c.affiliation.commission_rate) : "—"}
+                      {c.affiliation
+                        ? c.affiliation.commission_rate != null
+                          ? formatPercent(c.affiliation.commission_rate)
+                          : "A definir"
+                        : "—"}
                     </td>
                     <td className="px-3 py-3.5 text-right tabular-nums">{c.orders}</td>
                     <td className="px-3 py-3.5 text-right tabular-nums">{formatMoney(c.sales)}</td>

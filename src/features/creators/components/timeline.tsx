@@ -100,6 +100,15 @@ function describe(event: CreatorEvent): {
               : "Endereço enviado pela creator",
         detail: actor ? `por ${actor}` : undefined,
       };
+    case "personal_coupon_set":
+      return {
+        icon: FileText,
+        title:
+          typeof data.code === "string"
+            ? `Cupom pessoal ${data.code} vinculado`
+            : "Cupom pessoal removido",
+        detail: actor ? `por ${actor}` : undefined,
+      };
     case "creator_updated": {
       const fields = Array.isArray(data.fields)
         ? (data.fields as string[]).map((f) => UPDATED_FIELD_LABELS[f] ?? f)

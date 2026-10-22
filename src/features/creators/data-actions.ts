@@ -26,7 +26,12 @@ import {
 } from "@/features/shipments/queries";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentOrganization } from "@/features/organizations/queries";
-import type { CreatorEvent, SocialMetricSnapshot } from "@/types/database";
+import type {
+  CreatorAffiliation,
+  CreatorEvent,
+  CreatorPersonalCoupon,
+  SocialMetricSnapshot,
+} from "@/types/database";
 
 /** Next page of the CRM list (client "load more"). */
 export async function loadMoreApplications(
@@ -113,4 +118,32 @@ export async function reloadTimeline(
   creatorId: string,
 ): Promise<CreatorEvent[]> {
   return getCreatorTimeline(creatorId);
+}
+
+export interface CouponsTabData {
+  affiliation: CreatorAffiliation | null;
+  personal: CreatorPersonalCoupon | null;
+}
+
+/** "Cupons" tab — the affiliate (commissioned) and the personal coupon. */
+export async function loadCouponsTab(creatorId: string): Promise<CouponsTabData> {
+  const current = await getCurrentOrganization();
+  if (!current) return { affiliation: null, personal: null };
+  const supabase = await createClient();
+  const orgId = current.organization.id;
+  const [{ data: affiliation }, { data: personal }] = await Promise.all([
+    supabase
+      .from("creator_affiliations")
+      .select("*")
+      .eq("organization_id", orgId)
+      .eq("creator_id", creatorId)
+      .maybeSingle(),
+    supabase
+      .from("creator_personal_coupons")
+      .select("*")
+      .eq("organization_id", orgId)
+      .eq("creator_id", creatorId)
+      .maybeSingle(),
+  ]);
+  return { affiliation: affiliation ?? null, personal: personal ?? null };
 }

@@ -39,7 +39,9 @@ export function AffiliationDialog({ creator, creators = [], shopConnected }: Pro
   const nameOf = (id: string | null) =>
     creator?.name ?? creators.find((c) => c.id === id)?.name ?? "";
   const [code, setCode] = useState(aff?.code ?? (creator ? suggestAffiliateCode(creator.name) : ""));
-  const [rate, setRate] = useState(aff ? String(aff.commission_rate) : "10");
+  const [rate, setRate] = useState(
+    aff ? (aff.commission_rate != null ? String(aff.commission_rate) : "") : "10",
+  );
   const [discount, setDiscount] = useState(aff?.discount_percent != null ? String(aff.discount_percent) : "10");
   const [createCoupon, setCreateCoupon] = useState(shopConnected && !aff?.shopify_discount_id);
   const [error, setError] = useState<string | null>(null);
@@ -51,7 +53,7 @@ export function AffiliationDialog({ creator, creators = [], shopConnected }: Pro
       const res = await saveCreatorAffiliation({
         creatorId,
         code,
-        commissionRate: Number(rate.replace(",", ".")),
+        commissionRate: rate.trim() ? Number(rate.replace(",", ".")) : null,
         discountPercent: discount.trim() ? Number(discount.replace(",", ".")) : null,
         createCoupon,
         active: true,
@@ -126,7 +128,13 @@ export function AffiliationDialog({ creator, creators = [], shopConnected }: Pro
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label htmlFor="aff-rate">Comissão (%)</Label>
-                <Input id="aff-rate" inputMode="decimal" value={rate} onChange={(e) => setRate(e.target.value)} />
+                <Input
+                  id="aff-rate"
+                  inputMode="decimal"
+                  value={rate}
+                  placeholder="A definir"
+                  onChange={(e) => setRate(e.target.value)}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="aff-discount">Desconto do cupom (%)</Label>

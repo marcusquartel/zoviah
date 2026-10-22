@@ -41,6 +41,8 @@ const RPC_ERRORS: Record<string, string> = {
   CODE_TAKEN: "Este código já é de outra creator.",
   INVALID_PAYLOAD: "Dados inválidos.",
   INVALID_NAME: "Informe o nome de cada influenciadora (até 150 caracteres).",
+  CODE_IS_PERSONAL: "Este código já é o cupom pessoal de uma creator.",
+  CODE_IS_AFFILIATE: "Este código já é um cupom de divulgação (comissionado).",
 };
 
 function mapError(message: string | undefined, fallback: string): string {
@@ -191,7 +193,12 @@ export async function disconnectShopify(): Promise<ActionResult> {
 const affiliationSchema = z.object({
   creatorId: z.uuid(),
   code: z.string().trim(),
-  commissionRate: z.coerce.number().min(0, { error: RPC_ERRORS.INVALID_RATE }).max(100, { error: RPC_ERRORS.INVALID_RATE }),
+  // null = coupon linked, commission not agreed yet (no commission computed).
+  commissionRate: z
+    .number()
+    .min(0, { error: RPC_ERRORS.INVALID_RATE })
+    .max(100, { error: RPC_ERRORS.INVALID_RATE })
+    .nullable(),
   discountPercent: z.coerce.number().min(0).max(100).nullable(),
   createCoupon: z.boolean(),
   active: z.boolean().default(true),
@@ -250,6 +257,41 @@ export async function saveCreatorAffiliation(
     ok: true,
     message: discountId ? `Cupom ${code} criado na loja e vinculado.` : "Dados de comissão salvos.",
   };
+}
+
+const personalCouponSchema = z.object({
+  creatorId: z.uuid(),
+  code: z.string().trim().max(40),
+  discountPercent: z.number().min(0).max(100).nullable(),
+});
+
+/**
+ * The creator's own discount code. Never attributed, so it earns no
+ * commission. An empty code removes it. Links an existing store coupon by
+ * code; it does not create one in Shopify.
+ */
+export async function savePersonalCoupon(
+  input: z.input<typeof personalCouponSchema>,
+): Promise<ActionResult> {
+  const parsed = personalCouponSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
+  const code = parsed.data.code ? normalizeAffiliateCode(parsed.data.code) : "";
+  if (parsed.data.code && !code) return { ok: false, error: RPC_ERRORS.INVALID_CODE };
+
+  const current = await getCurrentOrganization();
+  if (!current) return { ok: false, error: "Organização não encontrada." };
+  if (current.role === "analyst") return { ok: false, error: RPC_ERRORS.FORBIDDEN };
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("set_creator_personal_coupon", {
+    p_creator_id: parsed.data.creatorId,
+    p_code: code ?? "",
+    p_discount_percent: parsed.data.discountPercent,
+  });
+  if (error) return { ok: false, error: mapError(error.message, "Não foi possível salvar o cupom pessoal.") };
+
+  revalidatePath("/app/creators");
+  return { ok: true, message: code ? "Cupom pessoal salvo." : "Cupom pessoal removido." };
 }
 
 export async function markCommissionsPaid(ids: string[]): Promise<ActionResult> {

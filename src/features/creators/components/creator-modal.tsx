@@ -16,6 +16,7 @@ import { RegistrationTab } from "@/features/creators/components/drawer/registrat
 import { SocialsTab } from "@/features/creators/components/drawer/socials";
 import { AnswersTab } from "@/features/creators/components/drawer/answers";
 import { EditProfileForm } from "@/features/creators/components/drawer/edit-profile";
+import { CouponsTab } from "@/features/creators/components/drawer/coupons";
 import { Timeline } from "@/features/creators/components/timeline";
 import { NoteForm } from "@/features/creators/components/note-form";
 import { MetricsTab } from "@/features/evidence/components/metrics-tab";
@@ -33,6 +34,7 @@ const TABS = [
   { id: "metrics", label: "Métricas" },
   { id: "address", label: "Endereço" },
   { id: "shipments", label: "Envios" },
+  { id: "coupons", label: "Cupons" },
   { id: "answers", label: "Respostas" },
   { id: "history", label: "Histórico" },
 ] as const;
@@ -207,6 +209,8 @@ function ModalBody({
             creatorId={detail.creator.id}
             applicationStatus={detail.application.status}
           />
+        ) : tab === "coupons" ? (
+          <CouponsTab creatorId={detail.creator.id} />
         ) : tab === "answers" ? (
           <AnswersTab application={detail.application} />
         ) : (
