@@ -26,7 +26,9 @@ export async function POST(req: Request) {
   const { data } = await db.rpc("shopify_connection_secrets", { p_shop_domain: shop });
   const secrets = data as unknown as ConnectionSecrets | null;
   if (!secrets?.secret_enc) {
-    // Unknown or disconnected shop: acknowledge so Shopify stops retrying.
+    // Unknown or disconnected shop: acknowledge so Shopify stops retrying —
+    // but leave a trace, a domain mismatch here silently drops every order.
+    console.warn("[shopify webhook] unknown shop", { shop, topic });
     return new Response("ok", { status: 200 });
   }
 

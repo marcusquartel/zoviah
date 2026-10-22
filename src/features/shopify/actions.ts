@@ -17,6 +17,7 @@ import {
   createDiscountCode,
   listDiscountCodes,
   registerWebhooks,
+  rememberShopDomain,
   syncRecent,
   type StoreDiscountCode,
 } from "@/lib/shopify/sync";
@@ -73,6 +74,7 @@ async function loadClient(orgId: string): Promise<ShopifyClient | null> {
 async function runSync(client: ShopifyClient, days: number, withWebhooks: boolean) {
   let webhooksOk: boolean | null = null;
   try {
+    await rememberShopDomain(client);
     if (withWebhooks) {
       const endpoint = webhookEndpoint();
       webhooksOk = endpoint ? await registerWebhooks(client, endpoint) : false;

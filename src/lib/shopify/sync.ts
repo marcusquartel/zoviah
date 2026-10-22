@@ -108,6 +108,21 @@ export async function syncRecent(client: ShopifyClient, days: number) {
 const WEBHOOK_TOPICS = ["ORDERS_CREATE", "ORDERS_UPDATED", "ORDERS_CANCELLED", "APP_UNINSTALLED"] as const;
 
 /** Subscribe the shop's order webhooks to our endpoint. Idempotent. */
+/**
+ * Record the shop's permanent "<id>.myshopify.com" domain. Webhooks identify
+ * the shop by it, which may differ from the alias typed on connect.
+ */
+export async function rememberShopDomain(client: ShopifyClient): Promise<void> {
+  type R = { shop: { myshopifyDomain: string } };
+  const data = await client.graphql<R>("query { shop { myshopifyDomain } }");
+  const { error } = await client.db.rpc("shopify_set_myshopify_domain", {
+    p_org: client.organizationId,
+    p_ingest_key: client.ingestKey,
+    p_domain: data.shop.myshopifyDomain,
+  });
+  if (error) throw new ShopifyError(`Falha ao gravar o domínio da loja: ${error.message}`);
+}
+
 export async function registerWebhooks(client: ShopifyClient, endpoint: string): Promise<boolean> {
   type R = {
     webhookSubscriptionCreate: {

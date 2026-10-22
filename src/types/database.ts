@@ -1456,6 +1456,10 @@ export interface Database {
       set_commission_hold_days: { Args: { p_org: string; p_days: number }; Returns: Json };
       set_sale_notifications: { Args: { p_org: string; p_enabled: boolean }; Returns: Json };
       set_creator_notify_sales: { Args: { p_creator_id: string; p_enabled: boolean }; Returns: Json };
+      shopify_set_myshopify_domain: {
+        Args: { p_org: string; p_ingest_key: string; p_domain: string };
+        Returns: undefined;
+      };
       claim_sale_notifications: {
         Args: { p_org: string; p_ingest_key: string; p_limit?: number };
         Returns: Json;
