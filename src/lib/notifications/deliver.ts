@@ -7,48 +7,10 @@
  */
 import type { ShopifyClient } from "@/lib/shopify/client";
 import { buildSaleEmail, type SaleNotice } from "@/lib/notifications/sale-email";
-
-const DEFAULT_FROM_ADDRESS = "avisos@auth.zoviah.app";
-
-function fromHeader(organizationName: string): string {
-  const address = process.env.SALE_EMAIL_FROM?.trim() || DEFAULT_FROM_ADDRESS;
-  // Display names can't carry quotes / angle brackets unescaped.
-  const name = `${organizationName} via Zoviah`.replace(/["<>]/g, "");
-  return `"${name}" <${address}>`;
-}
-
-async function sendEmail(apiKey: string, notice: SaleNotice): Promise<string | null> {
-  const mail = buildSaleEmail(notice);
-  let res: Response;
-  try {
-    res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-        // Same notice retried → Resend sends it once.
-        "Idempotency-Key": `sale-notice-${notice.id}`,
-      },
-      body: JSON.stringify({
-        from: fromHeader(notice.organization_name),
-        to: [notice.creator_email],
-        subject: mail.subject,
-        html: mail.html,
-        text: mail.text,
-      }),
-      cache: "no-store",
-    });
-  } catch {
-    return "Falha de rede ao falar com o Resend.";
-  }
-  if (res.ok) return null;
-  const body = await res.text().catch(() => "");
-  return `Resend HTTP ${res.status}: ${body.slice(0, 200)}`;
-}
+import { isEmailConfigured, sendEmail } from "@/lib/notifications/resend";
 
 export async function deliverSaleNotifications(client: ShopifyClient): Promise<void> {
-  const apiKey = process.env.RESEND_API_KEY?.trim();
-  if (!apiKey) return;
+  if (!isEmailConfigured()) return;
 
   const auth = { p_org: client.organizationId, p_ingest_key: client.ingestKey };
   const { data, error } = await client.db.rpc("claim_sale_notifications", { ...auth, p_limit: 20 });
@@ -59,7 +21,16 @@ export async function deliverSaleNotifications(client: ShopifyClient): Promise<v
   const notices = (data ?? []) as unknown as SaleNotice[];
 
   for (const notice of notices) {
-    const failure = notice.creator_email ? await sendEmail(apiKey, notice) : "Creator sem e-mail.";
+    let failure: string | null = "Creator sem e-mail.";
+    if (notice.creator_email) {
+      const mail = buildSaleEmail(notice);
+      failure = await sendEmail({
+        brandName: notice.organization_name,
+        to: notice.creator_email,
+        ...mail,
+        idempotencyKey: `sale-notice-${notice.id}`,
+      });
+    }
     if (failure) {
       console.error("[sale notifications] send failed", { id: notice.id, failure });
     }

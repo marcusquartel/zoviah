@@ -1240,6 +1240,34 @@ export interface Database {
         Update: never;
         Relationships: [];
       };
+      creator_portal_users: {
+        Row: {
+          id: string;
+          organization_id: string;
+          creator_id: string;
+          user_id: string;
+          created_at: string;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
+      creator_portal_invites: {
+        Row: {
+          id: string;
+          organization_id: string;
+          creator_id: string;
+          email: string;
+          token_hash: string;
+          status: "pending" | "accepted" | "revoked" | "expired";
+          expires_at: string;
+          accepted_at: string | null;
+          created_by: string | null;
+        } & Timestamps;
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
       creator_personal_coupons: {
         Row: {
           id: string;
@@ -1460,6 +1488,16 @@ export interface Database {
         Args: { p_org: string; p_ingest_key: string; p_domain: string };
         Returns: undefined;
       };
+      create_creator_portal_invite: {
+        Args: { p_creator_id: string; p_token_hash: string };
+        Returns: Json;
+      };
+      revoke_creator_portal_access: { Args: { p_creator_id: string }; Returns: Json };
+      get_creator_portal_invite: { Args: { p_token_hash: string }; Returns: Json };
+      prepare_creator_portal_signup: { Args: { p_token_hash: string }; Returns: Json };
+      accept_creator_portal_invite: { Args: { p_token_hash: string }; Returns: Json };
+      portal_my_creators: { Args: Record<string, never>; Returns: Json };
+      portal_dashboard: { Args: { p_creator_id: string }; Returns: Json };
       claim_sale_notifications: {
         Args: { p_org: string; p_ingest_key: string; p_limit?: number };
         Returns: Json;

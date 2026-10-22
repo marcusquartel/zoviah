@@ -100,6 +100,14 @@ function describe(event: CreatorEvent): {
               : "Endereço enviado pela creator",
         detail: actor ? `por ${actor}` : undefined,
       };
+    case "portal_invited":
+      return {
+        icon: UserPlus,
+        title: "Convidada para o portal",
+        detail: actor ? `por ${actor}` : undefined,
+      };
+    case "portal_joined":
+      return { icon: UserPlus, title: "Ativou o portal da creator" };
     case "tier_changed":
       return {
         icon: RefreshCw,

@@ -13,6 +13,8 @@ import {
   setCreatorNotifySales,
 } from "@/features/shopify/actions";
 import { setCreatorTier } from "@/features/tiers/actions";
+import { inviteCreatorToPortal, revokeCreatorPortal } from "@/features/portal/actions";
+import { formatDate } from "@/features/creators/format";
 import { formatPercent } from "@/lib/money";
 import {
   Select,
@@ -78,7 +80,99 @@ export function CouponsTab({ creatorId }: { creatorId: string }) {
         enabled={data.notifySales}
         onChanged={(notifySales) => setData({ ...data, notifySales })}
       />
+      <PortalAccess
+        creatorId={creatorId}
+        portal={data.portal}
+        onChanged={() => void loadCouponsTab(creatorId).then(setData)}
+      />
     </div>
+  );
+}
+
+function PortalAccess({
+  creatorId,
+  portal,
+  onChanged,
+}: {
+  creatorId: string;
+  portal: CouponsTabData["portal"];
+  onChanged: () => void;
+}) {
+  const [pending, startTransition] = useTransition();
+  const [link, setLink] = useState<string | null>(null);
+  // The loader only returns a still-valid pending invite.
+  const pendingInvite = portal.invite?.status === "pending" ? portal.invite : null;
+
+  function invite() {
+    startTransition(async () => {
+      const res = await inviteCreatorToPortal(creatorId);
+      if (res.ok) {
+        setLink(res.url ?? null);
+        toast.success(res.message ?? "Convite enviado.");
+        onChanged();
+      } else toast.error(res.error ?? "Não foi possível convidar.");
+    });
+  }
+
+  function revoke() {
+    if (!window.confirm("Remover o acesso desta creator ao portal?")) return;
+    startTransition(async () => {
+      const res = await revokeCreatorPortal(creatorId);
+      if (res.ok) {
+        setLink(null);
+        toast.success(res.message ?? "Acesso removido.");
+        onChanged();
+      } else toast.error(res.error ?? "Não foi possível remover.");
+    });
+  }
+
+  async function copy() {
+    if (!link) return;
+    try {
+      await navigator.clipboard.writeText(link);
+      toast.success("Link copiado.");
+    } catch {
+      toast.error("Não foi possível copiar.");
+    }
+  }
+
+  return (
+    <section className="space-y-3 rounded-lg border p-4">
+      <div>
+        <p className="text-sm font-medium">Portal da creator</p>
+        <p className="text-xs text-muted-foreground">
+          {portal.active
+            ? `Ativo desde ${formatDate(portal.since ?? "")}. Ela vê vendas, comissões, cupons e o ranking.`
+            : pendingInvite
+              ? `Convite enviado em ${formatDate(pendingInvite.created_at)}, aguardando ela criar a senha (vale até ${formatDate(pendingInvite.expires_at)}).`
+              : "Sem acesso. Convide para ela acompanhar vendas, comissões e o ranking."}
+        </p>
+      </div>
+      {link ? (
+        <div className="flex items-center gap-2 rounded-md bg-muted/50 p-2">
+          <code className="min-w-0 flex-1 truncate text-xs">{link}</code>
+          <Button size="sm" variant="outline" onClick={copy}>
+            Copiar link
+          </Button>
+        </div>
+      ) : null}
+      <div className="flex flex-wrap justify-end gap-2">
+        {portal.active || pendingInvite ? (
+          <Button size="sm" variant="ghost" onClick={revoke} disabled={pending}>
+            Remover acesso
+          </Button>
+        ) : null}
+        <Button size="sm" variant={portal.active ? "outline" : "default"} onClick={invite} disabled={pending}>
+          {pending
+            ? "Enviando…"
+            : portal.active
+              ? "Reenviar convite"
+              : pendingInvite
+                ? "Reenviar convite"
+                : "Convidar para o portal"}
+        </Button>
+      </div>
+    </section>
   );
 }
 

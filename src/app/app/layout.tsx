@@ -12,6 +12,7 @@ import {
 } from "@/features/organizations/queries";
 import { getIsPlatformAdmin } from "@/features/platform/queries";
 import { SuspendedNotice } from "@/features/platform/components/suspended-notice";
+import { getMyPortalCreators } from "@/features/portal/queries";
 
 // Every /app route is per-user (auth + tenant), never static.
 export const dynamic = "force-dynamic";
@@ -58,6 +59,11 @@ export default async function AppLayout({
           </div>
         </div>
       );
+    }
+    // A creator (portal user, not a team member) who signed in through the
+    // staff login belongs in her portal.
+    if ((await getMyPortalCreators()).length > 0) {
+      redirect("/portal");
     }
     return (
       <div className="mx-auto flex min-h-svh max-w-md flex-col items-center justify-center gap-3 p-6 text-center">

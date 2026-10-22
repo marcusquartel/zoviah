@@ -127,17 +127,36 @@ export interface CouponsTabData {
   tiers: TierWithCount[];
   tierId: string | null;
   notifySales: boolean;
+  portal: {
+    active: boolean;
+    since: string | null;
+    invite: { status: string; created_at: string; expires_at: string } | null;
+  };
 }
 
 /** "Cupons" tab — the affiliate (commissioned) and the personal coupon. */
 export async function loadCouponsTab(creatorId: string): Promise<CouponsTabData> {
   const current = await getCurrentOrganization();
   if (!current) {
-    return { affiliation: null, personal: null, tiers: [], tierId: null, notifySales: true };
+    return {
+      affiliation: null,
+      personal: null,
+      tiers: [],
+      tierId: null,
+      notifySales: true,
+      portal: { active: false, since: null, invite: null },
+    };
   }
   const supabase = await createClient();
   const orgId = current.organization.id;
-  const [{ data: affiliation }, { data: personal }, tiers, { data: creator }] = await Promise.all([
+  const [
+    { data: affiliation },
+    { data: personal },
+    tiers,
+    { data: creator },
+    { data: portalUser },
+    { data: invite },
+  ] = await Promise.all([
     supabase
       .from("creator_affiliations")
       .select("*")
@@ -157,6 +176,20 @@ export async function loadCouponsTab(creatorId: string): Promise<CouponsTabData>
       .eq("organization_id", orgId)
       .eq("id", creatorId)
       .maybeSingle(),
+    supabase
+      .from("creator_portal_users")
+      .select("created_at")
+      .eq("organization_id", orgId)
+      .eq("creator_id", creatorId)
+      .maybeSingle(),
+    supabase
+      .from("creator_portal_invites")
+      .select("status, created_at, expires_at")
+      .eq("organization_id", orgId)
+      .eq("creator_id", creatorId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ]);
   return {
     affiliation: affiliation ?? null,
@@ -164,5 +197,14 @@ export async function loadCouponsTab(creatorId: string): Promise<CouponsTabData>
     tiers,
     tierId: creator?.tier_id ?? null,
     notifySales: creator?.notify_sales ?? true,
+    portal: {
+      active: Boolean(portalUser),
+      since: portalUser?.created_at ?? null,
+      // An expired invite reads as "no invite" (the RPCs expire it lazily).
+      invite:
+        invite && !(invite.status === "pending" && Date.parse(invite.expires_at) <= Date.now())
+          ? invite
+          : null,
+    },
   };
 }

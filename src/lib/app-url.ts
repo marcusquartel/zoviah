@@ -51,6 +51,11 @@ export function buildInviteUrl(rawToken: string): string {
   return `${getAppBaseUrl()}/invite/${rawToken}`;
 }
 
+/** Absolute URL of the creator-portal invite page for a raw token. */
+export function buildPortalInviteUrl(rawToken: string): string {
+  return `${getAppBaseUrl()}/portal/convite/${rawToken}`;
+}
+
 /**
  * Absolute URL Supabase Auth redirects the browser to after it verifies a
  * recovery link. The route handler there exchanges the code for a session and
