@@ -30,6 +30,8 @@ export interface CreatorQuery {
   status: ApplicationStatus | null;
   city: string | null;
   state: string | null;
+  /** creator_tiers id, or "none" for creators without a categoria. */
+  tier: string | null;
   hasInstagram: boolean;
   hasTiktok: boolean;
   noAddress: boolean;
@@ -44,6 +46,7 @@ export const DEFAULT_CREATOR_QUERY: CreatorQuery = {
   status: null,
   city: null,
   state: null,
+  tier: null,
   hasInstagram: false,
   hasTiktok: false,
   noAddress: false,
@@ -93,6 +96,7 @@ export function parseCreatorQuery(sp: ParamInput): CreatorQuery {
     status: oneOf(get(sp, "status"), APPLICATION_STATUSES),
     city: trim("city"),
     state: trim("state"),
+    tier: trim("tier"),
     hasInstagram: get(sp, "has_ig") === "1",
     hasTiktok: get(sp, "has_tt") === "1",
     noAddress: get(sp, "no_address") === "1",
@@ -112,6 +116,7 @@ export function serializeCreatorQuery(q: Partial<CreatorQuery>): string {
   if (merged.status) params.set("status", merged.status);
   if (merged.city) params.set("city", merged.city);
   if (merged.state) params.set("state", merged.state);
+  if (merged.tier) params.set("tier", merged.tier);
   if (merged.hasInstagram) params.set("has_ig", "1");
   if (merged.hasTiktok) params.set("has_tt", "1");
   if (merged.noAddress) params.set("no_address", "1");
@@ -130,6 +135,7 @@ export function hasActiveFilters(q: CreatorQuery): boolean {
       q.status ||
       q.city ||
       q.state ||
+      q.tier ||
       q.hasInstagram ||
       q.hasTiktok ||
       q.noAddress,

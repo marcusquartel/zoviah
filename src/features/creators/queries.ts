@@ -14,6 +14,8 @@ import type {
 
 export const PAGE_SIZE = 50;
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export interface CreatorFormProgram {
   id: string;
   slug: string;
@@ -128,6 +130,8 @@ export async function listApplicationItems(
   if (query.hasInstagram) q = q.not("instagram_handle", "is", null);
   if (query.hasTiktok) q = q.not("tiktok_handle", "is", null);
   if (query.noAddress) q = q.eq("has_address", false);
+  if (query.tier === "none") q = q.is("tier_id", null);
+  else if (query.tier && UUID_RE.test(query.tier)) q = q.eq("tier_id", query.tier);
 
   const term = sanitizeSearch(query.q);
   if (term) {

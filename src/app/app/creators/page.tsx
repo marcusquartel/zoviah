@@ -10,6 +10,8 @@ import { CreatorsToolbar } from "@/features/creators/components/creators-toolbar
 import { AddCreatorButton } from "@/features/creators/components/add-creator-button";
 import { CrmCounters } from "@/features/creators/components/crm-counters";
 import { CreatorsResults } from "@/features/creators/components/creators-results";
+import { getCurrentOrganization } from "@/features/organizations/queries";
+import { getTiers } from "@/features/tiers/queries";
 
 export const metadata: Metadata = { title: "Creators" };
 
@@ -20,13 +22,15 @@ export default async function CreatorsPage({
 }) {
   const query = parseCreatorQuery(await searchParams);
 
-  const [counts, programs, firstPage] = await Promise.all([
+  const current = await getCurrentOrganization();
+  const [counts, programs, firstPage, tiers] = await Promise.all([
     getCrmCounts(query.program),
     listPrograms(),
     listApplicationItems(
       query,
       query.view === "kanban" ? { pageSize: 200 } : {},
     ),
+    current ? getTiers(current.organization.id) : Promise.resolve([]),
   ]);
 
   return (
@@ -42,6 +46,7 @@ export default async function CreatorsPage({
       <CreatorsToolbar
         query={query}
         programs={programs.map((p) => ({ id: p.id, name: p.name }))}
+        tiers={tiers.map((t) => ({ id: t.id, name: t.name }))}
       />
 
       <CrmCounters counts={counts} />

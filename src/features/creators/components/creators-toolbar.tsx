@@ -46,9 +46,12 @@ const STATUS_ITEMS: SelectItems = [
 interface ToolbarProps {
   query: CreatorQuery;
   programs: { id: string; name: string }[];
+  tiers: { id: string; name: string }[];
 }
 
-export function CreatorsToolbar({ query, programs }: ToolbarProps) {
+const NO_TIER = "none";
+
+export function CreatorsToolbar({ query, programs, tiers }: ToolbarProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [term, setTerm] = useState(query.q);
@@ -93,6 +96,12 @@ export function CreatorsToolbar({ query, programs }: ToolbarProps) {
   const programItems: SelectItems = [
     { value: ALL, label: "Todos os programas" },
     ...programs.map((p) => ({ value: p.id, label: p.name })),
+  ];
+
+  const tierItems: SelectItems = [
+    { value: ALL, label: "Todas as categorias" },
+    ...tiers.map((t) => ({ value: t.id, label: t.name })),
+    { value: NO_TIER, label: "Sem categoria" },
   ];
 
   return (
@@ -186,6 +195,25 @@ export function CreatorsToolbar({ query, programs }: ToolbarProps) {
             ))}
           </SelectContent>
         </Select>
+
+        {tiers.length > 0 ? (
+          <Select
+            items={tierItems}
+            value={query.tier ?? ALL}
+            onValueChange={(v) => apply({ tier: v === ALL ? null : (v as string) })}
+          >
+            <SelectTrigger className="w-44" aria-label="Categoria">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {tierItems.map((t) => (
+                <SelectItem key={t.value} value={t.value}>
+                  {t.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : null}
 
         <DebouncedInput
           key={`city:${query.city ?? ""}`}

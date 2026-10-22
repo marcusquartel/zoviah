@@ -8,6 +8,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { TierBadge } from "@/features/creators/components/tier-badge";
 import { nextStatuses, statusActionLabel } from "@/features/applications/status";
 import { formatDate, formatFollowers } from "@/features/creators/format";
 import type { ApplicationListItem, ApplicationStatus } from "@/types/database";
@@ -53,6 +54,9 @@ export function CreatorKanbanCard({
           className="block w-full text-left"
         >
           <p className="font-medium leading-tight">{item.creator_name}</p>
+          {item.tier_name ? (
+            <TierBadge name={item.tier_name} className="mt-1" />
+          ) : null}
           <p className="truncate text-xs text-muted-foreground">
             {item.program_name}
           </p>

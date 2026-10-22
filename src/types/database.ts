@@ -1342,6 +1342,8 @@ export interface Database {
           tiktok_followers: number | null;
           /** The creator has a current shipping address. */
           has_address: boolean;
+          tier_id: string | null;
+          tier_name: string | null;
         };
         Relationships: [];
       };

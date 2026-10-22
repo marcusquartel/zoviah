@@ -1,5 +1,6 @@
 "use client";
 
+import { TierBadge } from "@/features/creators/components/tier-badge";
 import { Camera, Music2 } from "lucide-react";
 import {
   Table,
@@ -55,7 +56,10 @@ export function CreatorTable({
                     </AvatarFallback>
                   </Avatar>
                   <div className="min-w-0">
-                    <p className="truncate font-medium">{it.creator_name}</p>
+                    <p className="flex items-center gap-1.5 truncate font-medium">
+                      <span className="truncate">{it.creator_name}</span>
+                      {it.tier_name ? <TierBadge name={it.tier_name} /> : null}
+                    </p>
                     <p className="truncate text-xs text-muted-foreground">
                       {it.creator_email ?? "—"}
                     </p>
