@@ -183,9 +183,11 @@ function Photo({
 function Hero({ landing, brandName }: { landing: Landing; brandName: string }) {
   const h = landing.hero;
   return (
-    <section className="relative">
-      <div className="mx-auto grid max-w-7xl lg:grid-cols-[1fr_1.05fr]">
-        <div className="relative z-10 flex flex-col justify-between gap-12 px-5 pb-12 pt-8 sm:px-10 lg:min-h-[92svh] lg:pb-10">
+    // Full-bleed: the brand panel runs to the viewport's right edge and the
+    // full hero height; the copy stays aligned with the page container.
+    <section className="relative overflow-hidden lg:min-h-svh">
+      <div className="relative z-10 mx-auto max-w-7xl">
+        <div className="flex flex-col justify-between gap-12 px-5 pb-12 pt-8 sm:px-10 lg:min-h-svh lg:w-[52%] lg:pb-10">
           <Wordmark name={brandName} />
           <div>
             {h.eyebrow ? <Label>{h.eyebrow}</Label> : null}
@@ -207,20 +209,20 @@ function Hero({ landing, brandName }: { landing: Landing; brandName: string }) {
             {landing.brand.signature ? <span>{landing.brand.signature}</span> : null}
           </div>
         </div>
+      </div>
 
-        <div className="relative min-h-[520px] overflow-hidden bg-[var(--lp-a2)] lg:min-h-0">
-          {h.image ? (
-            <Photo
-              src={h.image}
-              className="absolute bottom-[14%] left-[8%] right-0 top-[6%] rounded-l-full"
-              imgClassName="object-[50%_35%]"
-              speed={0.08}
-            />
-          ) : null}
-          <Shape kind="circle" className="bottom-[6%] left-[6%] size-24 sm:size-32" speed={0.22} />
-          <Shape kind="circle-outline" className="bottom-[6%] left-[30%] size-24 sm:size-32" speed={0.12} />
-          <Shape kind="pill-outline" className="-right-10 -top-24 h-64 w-40 border-white/80" speed={-0.15} />
-        </div>
+      <div className="relative h-[540px] overflow-hidden bg-[var(--lp-a2)] sm:h-[640px] lg:absolute lg:inset-y-0 lg:right-0 lg:h-auto lg:w-[46%]">
+        {h.image ? (
+          <Photo
+            src={h.image}
+            className="absolute bottom-[12%] left-[10%] right-0 top-[8%] rounded-l-full"
+            imgClassName="object-[50%_35%]"
+            speed={0.06}
+          />
+        ) : null}
+        <Shape kind="circle" className="bottom-[5%] left-[5%] size-24 sm:size-36" speed={0.1} />
+        <Shape kind="circle-outline" className="bottom-[5%] left-[24%] size-24 sm:size-36" speed={0.05} />
+        <Shape kind="pill-outline" className="-top-24 right-[12%] h-72 w-44 border-white/80" speed={-0.1} />
       </div>
     </section>
   );
