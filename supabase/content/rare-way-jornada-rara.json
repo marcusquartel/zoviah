@@ -3,7 +3,7 @@
     "eyebrow": "Comunidade de Influenciadores Rare Way",
     "title": "Jornada Rara",
     "subtitle": "Para designers de sobrancelhas que querem crescer junto com a Rare Way.",
-    "body": "Uma comunidade de profissionais que aprendem, criam e se destacam com os produtos Rare Way: da linha Glance de henna, brow lamination e cuidados com a pele a cada novo lançamento. Venha ser uma Embaixadora Rare Way.",
+    "body": "Uma comunidade de profissionais que aprendem, criam e se destacam com os produtos Rare Way: da linha Glance de henna, brow lamination e cuidados com a pele a cada novo lançamento. Venha ser uma Embaixadora Glance by Rare Way.",
     "cta": "Quero fazer parte",
     "image": "{{STORAGE}}/hero.jpg"
   },
@@ -27,7 +27,7 @@
         "Aprender com conteúdos exclusivos e encontros mensais com outras profissionais.",
         "Conhecer em primeira mão os lançamentos da Rare Way.",
         "Ganhar com a sua influência: suas seguidoras ganham desconto e você ganha comissão sobre as vendas.",
-        "Ter visibilidade no perfil da Rare Way como Embaixadora.",
+        "Ter visibilidade no perfil da Rare Way como Embaixadora Glance by Rare Way.",
         "Fazer parte de uma rede de profissionais que trocam experiências e crescem juntas.",
         "Receber feedback da equipe sobre os seus conteúdos e resultados."
       ]
@@ -136,7 +136,7 @@
   ],
   "form": {
     "eyebrow": "Inscrição",
-    "title": "Seja uma Embaixadora Rare Way",
+    "title": "Seja uma Embaixadora Glance by Rare Way",
     "intro": "Enviar o formulário não garante a entrada na comunidade: toda inscrição passa por uma análise da nossa equipe, que leva até 15 dias úteis. Se você for aprovada, entra para o time e recebe as boas-vindas.\n\nNo final pedimos seu endereço e CPF para o envio do Kit Onboarding, caso sua inscrição seja aprovada."
   },
   "theme": {
