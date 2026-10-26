@@ -100,7 +100,8 @@
       "sample": {
         "name": "Ana",
         "coupon": "ANASOUZA",
-        "tier": "Rara"
+        "tier": "Rara",
+        "photo": "{{STORAGE}}/ana.jpg"
       }
     },
     {
@@ -114,11 +115,11 @@
         },
         {
           "title": "Análise do perfil",
-          "body": "Nossa equipe conhece o seu trabalho e entra em contato."
+          "body": "Nossa equipe analisa cada inscrição em até 15 dias úteis. O envio do formulário não garante a vaga."
         },
         {
           "title": "Boas-vindas",
-          "body": "Kit Onboarding, seu cupom exclusivo e acesso ao seu portal de embaixadora."
+          "body": "Se aprovada, você entra para o time: Kit Onboarding, cupom exclusivo e acesso ao seu portal de embaixadora."
         },
         {
           "title": "Cresça na jornada",
@@ -136,7 +137,7 @@
   "form": {
     "eyebrow": "Inscrição",
     "title": "Seja uma Embaixadora Rare Way",
-    "intro": "Leva poucos minutos. No final pedimos seu endereço e CPF para o envio do Kit Onboarding, caso sua inscrição seja aprovada."
+    "intro": "Enviar o formulário não garante a entrada na comunidade: toda inscrição passa por uma análise da nossa equipe, que leva até 15 dias úteis. Se você for aprovada, entra para o time e recebe as boas-vindas.\n\nNo final pedimos seu endereço e CPF para o envio do Kit Onboarding, caso sua inscrição seja aprovada."
   },
   "theme": {
     "background": "#f7f5fb",

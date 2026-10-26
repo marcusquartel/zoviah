@@ -13,7 +13,17 @@ const BADGES = [
   { emoji: "👑", title: "Campeã", on: false },
 ];
 
-export function PortalMock({ name, coupon, tier }: { name: string; coupon: string; tier: string }) {
+export function PortalMock({
+  name,
+  coupon,
+  tier,
+  photo,
+}: {
+  name: string;
+  coupon: string;
+  tier: string;
+  photo?: string;
+}) {
   return (
     <div className="relative mx-auto w-full max-w-[560px] pb-20 pt-10" aria-label="Ilustração do portal da embaixadora">
       {/* phone */}
@@ -26,9 +36,14 @@ export function PortalMock({ name, coupon, tier }: { name: string; coupon: strin
             style={{ background: "linear-gradient(rgba(0,0,0,.18),rgba(0,0,0,.18)), linear-gradient(135deg, var(--lp-a2) 0%, var(--lp-a1) 100%)" }}
           >
             <div className="flex items-center gap-3">
-              <div className="flex size-12 items-center justify-center rounded-full bg-white/25 text-base font-semibold ring-2 ring-white/70">
-                {name.slice(0, 1).toUpperCase()}
-              </div>
+              {photo ? (
+                // eslint-disable-next-line @next/next/no-img-element -- remote brand photo
+                <img src={photo} alt="" className="size-12 rounded-full object-cover ring-2 ring-white/70" />
+              ) : (
+                <div className="flex size-12 items-center justify-center rounded-full bg-white/25 text-base font-semibold ring-2 ring-white/70">
+                  {name.slice(0, 1).toUpperCase()}
+                </div>
+              )}
               <div className="min-w-0">
                 <p className="text-[0.6rem] uppercase tracking-wider text-white/85">Rare Way</p>
                 <p className="text-base font-bold leading-tight">Oi, {name}!</p>
@@ -40,11 +55,11 @@ export function PortalMock({ name, coupon, tier }: { name: string; coupon: strin
               <span className="rounded-full bg-white/25 px-2 py-0.5">🔥 3 meses</span>
             </div>
             <p className="mt-3 text-[0.6rem] text-white/85">Vendido no mês</p>
-            <p className="text-2xl font-bold">R$ 2.480,00</p>
+            <p className="text-2xl font-bold">R$ 24.800,00</p>
             <div className="mt-2 rounded-lg bg-white/20 p-2">
               <div className="flex justify-between text-[0.55rem]">
-                <span>Próxima conquista: 🚀 Imparável</span>
-                <span>faltam 2 vendas</span>
+                <span>Próxima conquista: 👑 Campeã do mês</span>
+                <span>falta 1 posição</span>
               </div>
               <div className="mt-1 h-1.5 rounded-full bg-white/30">
                 <div className="h-full w-4/5 rounded-full bg-white" />
@@ -53,8 +68,8 @@ export function PortalMock({ name, coupon, tier }: { name: string; coupon: strin
           </div>
           {/* stats */}
           <div className="grid grid-cols-2 gap-2 px-3 pt-3">
-            <MiniCard label="Vendas no mês" value="8" />
-            <MiniCard label="Sua comissão" value="R$ 248,00" />
+            <MiniCard label="Vendas no mês" value="86" />
+            <MiniCard label="Sua comissão" value="R$ 2.480,00" />
           </div>
           {/* coupon */}
           <div className="mx-3 mt-2 flex items-center justify-between rounded-xl border-2 border-dashed border-[var(--lp-a2)] bg-white px-3 py-2">
@@ -88,14 +103,14 @@ export function PortalMock({ name, coupon, tier }: { name: string; coupon: strin
       </div>
 
       {/* floating: sale notice */}
-      <Parallax speed={0.1} className="absolute bottom-6 left-0 z-20 w-[210px] rotate-[-4deg] rounded-2xl bg-white p-3 shadow-xl sm:-left-4">
+      <Parallax speed={0.1} className="absolute bottom-6 left-0 z-20 w-[190px] rotate-[-4deg] rounded-2xl bg-white p-3 shadow-xl sm:-left-10">
         <p className="text-[0.55rem] font-semibold uppercase tracking-wider text-neutral-500">Novo e-mail · agora</p>
         <p className="mt-1 text-xs font-bold leading-snug">Nova venda com o seu cupom {coupon}! 🎉</p>
         <p className="mt-1 text-[0.65rem] text-neutral-600">Pedido #2041 · R$ 289,90 · sua comissão R$ 28,99</p>
       </Parallax>
 
       {/* floating: podium */}
-      <Parallax speed={-0.08} className="absolute right-0 top-[44%] z-20 w-[180px] rotate-[3deg] rounded-2xl bg-white p-3 shadow-xl sm:-right-4">
+      <Parallax speed={-0.08} className="absolute right-0 top-[52%] z-20 w-[165px] rotate-[3deg] rounded-2xl bg-white p-3 shadow-xl sm:-right-8">
         <p className="text-[0.6rem] font-semibold">Pódio do mês</p>
         <div className="mt-2 grid grid-cols-3 items-end gap-1 text-center">
           <PodiumStep place="2º" medal="🥈" label="Você!" height="h-9" highlight />
@@ -105,7 +120,7 @@ export function PortalMock({ name, coupon, tier }: { name: string; coupon: strin
       </Parallax>
 
       {/* floating: content approved */}
-      <Parallax speed={0.05} className="absolute left-0 top-6 z-20 hidden w-[160px] rotate-[-5deg] rounded-2xl bg-[var(--lp-ink)] p-3 text-white shadow-xl sm:-left-2 sm:block">
+      <Parallax speed={0.05} className="absolute right-0 top-2 z-20 hidden w-[145px] rotate-[5deg] rounded-2xl bg-[var(--lp-ink)] p-3 text-white shadow-xl sm:-right-8 sm:block">
         <p className="text-[0.55rem] uppercase tracking-wider text-white/60">Seus conteúdos</p>
         <p className="mt-1 text-xs font-semibold">Story · Instagram</p>
         <span className="mt-2 inline-block rounded-full bg-[var(--lp-a3)] px-2 py-0.5 text-[0.55rem] font-semibold text-[var(--lp-ink)]">

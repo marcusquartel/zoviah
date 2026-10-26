@@ -47,7 +47,9 @@ export function LandingPage({
         <div className="relative mx-auto max-w-xl">
           {landing.form.eyebrow ? <Label>{landing.form.eyebrow}</Label> : null}
           <Title className="text-4xl sm:text-6xl">{landing.form.title}</Title>
-          {landing.form.intro ? <p className="mt-5 text-base leading-relaxed text-neutral-700">{landing.form.intro}</p> : null}
+          {landing.form.intro ? (
+            <p className="mt-5 whitespace-pre-line text-base leading-relaxed text-neutral-700">{landing.form.intro}</p>
+          ) : null}
           <div className="mt-8 rounded-[2rem] bg-white p-5 shadow-sm ring-1 ring-black/5 sm:p-7">{form}</div>
         </div>
       </section>
@@ -316,7 +318,7 @@ function PortalSection({ s }: { s: Extract<LandingSection, { type: "portal" }> }
           ) : null}
           <p className="mt-6 text-[0.7rem] uppercase tracking-wider text-[var(--lp-a2-deep)]">Imagens ilustrativas</p>
         </div>
-        <PortalMock name={s.sample.name} coupon={s.sample.coupon} tier={s.sample.tier} />
+        <PortalMock name={s.sample.name} coupon={s.sample.coupon} tier={s.sample.tier} photo={s.sample.photo} />
       </div>
     </section>
   );

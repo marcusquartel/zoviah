@@ -63,7 +63,7 @@ const portalSection = z.object({
   bullets: z.array(text(160)).max(8).default([]),
   /** Fictional creator shown in the mock-ups. */
   sample: z
-    .object({ name: text(40), coupon: text(30), tier: text(30) })
+    .object({ name: text(40), coupon: text(30), tier: text(30), photo: image.optional() })
     .default({ name: "Ana", coupon: "ANASOUZA", tier: "Rara" }),
 });
 
