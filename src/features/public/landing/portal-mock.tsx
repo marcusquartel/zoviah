@@ -1,3 +1,5 @@
+import { Parallax } from "@/features/public/landing/parallax";
+
 /**
  * Illustrative mock-ups of the creator portal for landing pages — static
  * markup with fictional data (never real creators). Colors come from the
@@ -86,30 +88,30 @@ export function PortalMock({ name, coupon, tier }: { name: string; coupon: strin
       </div>
 
       {/* floating: sale notice */}
-      <div className="absolute bottom-6 left-0 z-20 w-[210px] rotate-[-4deg] rounded-2xl bg-white p-3 shadow-xl sm:-left-4">
+      <Parallax speed={0.1} className="absolute bottom-6 left-0 z-20 w-[210px] rotate-[-4deg] rounded-2xl bg-white p-3 shadow-xl sm:-left-4">
         <p className="text-[0.55rem] font-semibold uppercase tracking-wider text-neutral-500">Novo e-mail · agora</p>
         <p className="mt-1 text-xs font-bold leading-snug">Nova venda com o seu cupom {coupon}! 🎉</p>
         <p className="mt-1 text-[0.65rem] text-neutral-600">Pedido #2041 · R$ 289,90 · sua comissão R$ 28,99</p>
-      </div>
+      </Parallax>
 
       {/* floating: podium */}
-      <div className="absolute right-0 top-[44%] z-20 w-[180px] rotate-[3deg] rounded-2xl bg-white p-3 shadow-xl sm:-right-4">
+      <Parallax speed={-0.08} className="absolute right-0 top-[44%] z-20 w-[180px] rotate-[3deg] rounded-2xl bg-white p-3 shadow-xl sm:-right-4">
         <p className="text-[0.6rem] font-semibold">Pódio do mês</p>
         <div className="mt-2 grid grid-cols-3 items-end gap-1 text-center">
           <PodiumStep place="2º" medal="🥈" label="Você!" height="h-9" highlight />
           <PodiumStep place="1º" medal="🥇" label="Bia" height="h-12" />
           <PodiumStep place="3º" medal="🥉" label="Carol" height="h-6" />
         </div>
-      </div>
+      </Parallax>
 
       {/* floating: content approved */}
-      <div className="absolute left-0 top-6 z-20 hidden w-[160px] rotate-[-5deg] rounded-2xl bg-[var(--lp-ink)] p-3 text-white shadow-xl sm:-left-2 sm:block">
+      <Parallax speed={0.05} className="absolute left-0 top-6 z-20 hidden w-[160px] rotate-[-5deg] rounded-2xl bg-[var(--lp-ink)] p-3 text-white shadow-xl sm:-left-2 sm:block">
         <p className="text-[0.55rem] uppercase tracking-wider text-white/60">Seus conteúdos</p>
         <p className="mt-1 text-xs font-semibold">Story · Instagram</p>
         <span className="mt-2 inline-block rounded-full bg-[var(--lp-a3)] px-2 py-0.5 text-[0.55rem] font-semibold text-[var(--lp-ink)]">
           Aprovado ✓
         </span>
-      </div>
+      </Parallax>
     </div>
   );
 }

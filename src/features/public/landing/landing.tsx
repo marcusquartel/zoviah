@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import { PortalMock } from "@/features/public/landing/portal-mock";
+import { Parallax } from "@/features/public/landing/parallax";
 import type { Landing, LandingSection } from "@/features/public/landing/schema";
 
 /**
@@ -41,8 +42,8 @@ export function LandingPage({
         <Section key={i} section={s} landing={landing} brandName={brandName} />
       ))}
       <section id="inscricao" className="relative scroll-mt-4 overflow-hidden px-5 py-16 sm:py-24">
-        <Shape kind="circle-outline" className="-left-24 top-10 size-64" />
-        <Shape kind="pill" className="-right-32 bottom-10 h-48 w-96 bg-[var(--lp-a3-light)]" />
+        <Shape kind="circle-outline" className="-left-24 top-10 size-64" speed={0.12} />
+        <Shape kind="pill" className="-right-32 bottom-10 h-48 w-96 bg-[var(--lp-a3-light)]" speed={-0.1} />
         <div className="relative mx-auto max-w-xl">
           {landing.form.eyebrow ? <Label>{landing.form.eyebrow}</Label> : null}
           <Title className="text-4xl sm:text-6xl">{landing.form.title}</Title>
@@ -106,36 +107,71 @@ function Cta({ label, light }: { label: string; light?: boolean }) {
 type ShapeKind = "circle" | "circle-outline" | "pill" | "pill-outline" | "triangle" | "square";
 
 /** Decorative geometric shapes from the brand system (absolutely positioned). */
-function Shape({ kind, className, style }: { kind: ShapeKind; className?: string; style?: React.CSSProperties }) {
-  if (kind === "triangle") {
-    return (
-      <svg aria-hidden viewBox="0 0 100 90" className={cn("pointer-events-none absolute", className)} style={style}>
+function Shape({
+  kind,
+  className,
+  style,
+  speed,
+}: {
+  kind: ShapeKind;
+  className?: string;
+  style?: React.CSSProperties;
+  /** Parallax drift (see Parallax). Omit for a static shape. */
+  speed?: number;
+}) {
+  const inner =
+    kind === "triangle" ? (
+      <svg aria-hidden viewBox="0 0 100 90" className="block size-full">
         <path d="M50 6 Q54 0 58 6 L97 76 Q100 84 92 84 L8 84 Q0 84 3 76 Z" fill="currentColor" />
       </svg>
+    ) : null;
+  const classes = cn(
+    "pointer-events-none absolute",
+    kind === "circle" && "rounded-full bg-[var(--lp-ink)]",
+    kind === "circle-outline" && "rounded-full border-[1.5px] border-[var(--lp-ink)]",
+    kind === "pill" && "rounded-full",
+    kind === "pill-outline" && "rounded-full border-[1.5px] border-[var(--lp-ink)]",
+    kind === "square" && "rounded-[1.25rem]",
+    kind === "triangle" && "aspect-[10/9]",
+    className,
+  );
+  if (speed) {
+    return (
+      <Parallax speed={speed} className={classes} style={style}>
+        {inner}
+      </Parallax>
     );
   }
   return (
-    <span
-      aria-hidden
-      style={style}
-      className={cn(
-        "pointer-events-none absolute",
-        kind === "circle" && "rounded-full bg-[var(--lp-ink)]",
-        kind === "circle-outline" && "rounded-full border-[1.5px] border-[var(--lp-ink)]",
-        kind === "pill" && "rounded-full",
-        kind === "pill-outline" && "rounded-full border-[1.5px] border-[var(--lp-ink)]",
-        kind === "square" && "rounded-[1.25rem]",
-        className,
-      )}
-    />
+    <span aria-hidden style={style} className={classes}>
+      {inner}
+    </span>
   );
 }
 
-function Photo({ src, className, imgClassName }: { src: string; className?: string; imgClassName?: string }) {
+function Photo({
+  src,
+  className,
+  imgClassName,
+  speed,
+}: {
+  src: string;
+  className?: string;
+  imgClassName?: string;
+  /** The image drifts inside its crop (it is oversized to never show edges). */
+  speed?: number;
+}) {
   return (
     <div className={cn("overflow-hidden", className)}>
-      {/* eslint-disable-next-line @next/next/no-img-element -- remote brand photo */}
-      <img src={src} alt="" className={cn("size-full object-cover", imgClassName)} loading="lazy" />
+      {speed ? (
+        <Parallax speed={speed} className="relative -inset-y-[12%] h-[124%]">
+          {/* eslint-disable-next-line @next/next/no-img-element -- remote brand photo */}
+          <img src={src} alt="" className={cn("size-full object-cover", imgClassName)} loading="lazy" />
+        </Parallax>
+      ) : (
+        /* eslint-disable-next-line @next/next/no-img-element -- remote brand photo */
+        <img src={src} alt="" className={cn("size-full object-cover", imgClassName)} loading="lazy" />
+      )}
     </div>
   );
 }
@@ -176,11 +212,12 @@ function Hero({ landing, brandName }: { landing: Landing; brandName: string }) {
               src={h.image}
               className="absolute bottom-[14%] left-[8%] right-0 top-[6%] rounded-l-full"
               imgClassName="object-[50%_35%]"
+              speed={0.08}
             />
           ) : null}
-          <Shape kind="circle" className="bottom-[6%] left-[6%] size-24 sm:size-32" />
-          <Shape kind="circle-outline" className="bottom-[6%] left-[30%] size-24 sm:size-32" />
-          <Shape kind="pill-outline" className="-right-10 -top-24 h-64 w-40 border-white/80" />
+          <Shape kind="circle" className="bottom-[6%] left-[6%] size-24 sm:size-32" speed={0.22} />
+          <Shape kind="circle-outline" className="bottom-[6%] left-[30%] size-24 sm:size-32" speed={0.12} />
+          <Shape kind="pill-outline" className="-right-10 -top-24 h-64 w-40 border-white/80" speed={-0.15} />
         </div>
       </div>
     </section>
@@ -212,10 +249,10 @@ function TextSection({ s }: { s: Extract<LandingSection, { type: "text" }> }) {
       <div className="mx-auto grid max-w-7xl items-center gap-14 lg:grid-cols-2">
         {s.image ? (
           <div className={cn("relative mx-auto aspect-square w-full max-w-[520px]", s.imageSide !== "right" && "lg:order-first")}>
-            <Shape kind="triangle" className="-left-[12%] -top-[8%] w-[85%] text-[var(--lp-a3)]" />
-            <Photo src={s.image} className="absolute inset-[8%] rounded-full bg-[var(--lp-a2)]" />
-            <Shape kind="circle-outline" className="-bottom-2 left-[2%] size-24" />
-            <Shape kind="circle" className="bottom-[18%] right-0 size-16" />
+            <Shape kind="triangle" className="-left-[12%] -top-[8%] w-[85%] text-[var(--lp-a3)]" speed={0.14} />
+            <Photo src={s.image} className="absolute inset-[8%] rounded-full bg-[var(--lp-a2)]" speed={0.06} />
+            <Shape kind="circle-outline" className="-bottom-2 left-[2%] size-24" speed={-0.12} />
+            <Shape kind="circle" className="bottom-[18%] right-0 size-16" speed={0.25} />
           </div>
         ) : null}
         <div>
@@ -234,8 +271,8 @@ function TextSection({ s }: { s: Extract<LandingSection, { type: "text" }> }) {
 function ListSection({ s }: { s: Extract<LandingSection, { type: "list" }> }) {
   return (
     <section className="relative overflow-hidden bg-[var(--lp-ink)] px-5 py-20 text-white sm:px-10 sm:py-28">
-      <Shape kind="pill-outline" className="-right-40 -top-28 h-56 w-[28rem] border-white/40" />
-      <Shape kind="circle" className="-bottom-20 -left-20 size-64 bg-[var(--lp-a2)]" style={{ opacity: 0.35 }} />
+      <Shape kind="pill-outline" className="-right-40 -top-28 h-56 w-[28rem] border-white/40" speed={-0.12} />
+      <Shape kind="circle" className="-bottom-20 -left-20 size-64 bg-[var(--lp-a2)]" style={{ opacity: 0.35 }} speed={0.18} />
       <div className="relative mx-auto grid max-w-7xl gap-12 lg:grid-cols-[1fr_1.2fr]">
         <div>
           {s.eyebrow ? <Label light>{s.eyebrow}</Label> : null}
@@ -260,8 +297,8 @@ function ListSection({ s }: { s: Extract<LandingSection, { type: "list" }> }) {
 function PortalSection({ s }: { s: Extract<LandingSection, { type: "portal" }> }) {
   return (
     <section className="relative overflow-hidden bg-[var(--lp-a2)] px-5 py-20 sm:px-10 sm:py-28">
-      <Shape kind="circle-outline" className="-left-32 -top-24 size-56" />
-      <Shape kind="square" className="-bottom-10 -right-10 hidden size-40 bg-[var(--lp-a1)] lg:block" style={{ opacity: 0.8 }} />
+      <Shape kind="circle-outline" className="-left-32 -top-24 size-56" speed={0.15} />
+      <Shape kind="square" className="-bottom-10 -right-10 hidden size-40 bg-[var(--lp-a1)] lg:block" style={{ opacity: 0.8 }} speed={-0.15} />
       <div className="relative mx-auto grid max-w-7xl items-center gap-14 lg:grid-cols-2">
         <div>
           {s.eyebrow ? <Label>{s.eyebrow}</Label> : null}
@@ -307,7 +344,7 @@ function TiersSection({ s }: { s: Extract<LandingSection, { type: "tiers" }> }) 
               >
                 <div className="relative h-72" style={{ background: TIER_COLORS[i % 3] }}>
                   {t.image ? (
-                    <Photo src={t.image} className="absolute inset-x-8 bottom-0 top-8 rounded-t-full" imgClassName="object-top" />
+                    <Photo src={t.image} className="absolute inset-x-8 bottom-0 top-8 rounded-t-full" imgClassName="object-top" speed={0.05} />
                   ) : null}
                   <span className="absolute left-5 top-5 rounded-full bg-white px-3 py-1 text-[0.7rem] font-medium uppercase tracking-wider text-[var(--lp-ink)]">
                     {String(i + 1).padStart(2, "0")}
@@ -379,7 +416,7 @@ function ClosingSection({
 }) {
   return (
     <section className="relative overflow-hidden bg-[var(--lp-a3)] px-5 py-20 sm:px-10 sm:py-28">
-      <Shape kind="triangle" className="-right-16 -top-10 w-[420px] text-[var(--lp-a3-light)]" />
+      <Shape kind="triangle" className="-right-16 -top-10 w-[420px] text-[var(--lp-a3-light)]" speed={0.16} />
       <div className="relative mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-2">
         <div>
           <Label>{landing.brand.tagline ?? brandName}</Label>
@@ -391,9 +428,9 @@ function ClosingSection({
         </div>
         {s.image ? (
           <div className="relative mx-auto aspect-square w-full max-w-[480px]">
-            <Photo src={s.image} className="absolute inset-0 rounded-full" />
-            <Shape kind="circle" className="-bottom-2 -left-2 size-24" />
-            <Shape kind="circle-outline" className="-bottom-2 left-20 size-24" />
+            <Photo src={s.image} className="absolute inset-0 rounded-full" speed={0.06} />
+            <Shape kind="circle" className="-bottom-2 -left-2 size-24" speed={0.22} />
+            <Shape kind="circle-outline" className="-bottom-2 left-20 size-24" speed={0.12} />
           </div>
         ) : null}
       </div>
