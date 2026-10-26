@@ -344,10 +344,13 @@ function TiersSection({ s }: { s: Extract<LandingSection, { type: "tiers" }> }) 
                 key={t.name}
                 className={cn("overflow-hidden rounded-[2rem]", last ? "bg-[var(--lp-ink)] text-white" : "bg-white")}
               >
-                <div className="relative h-72" style={{ background: TIER_COLORS[i % 3] }}>
+                {/* Same 4:5 arch on every card; photos are pre-cropped to one framing. */}
+                <div className="relative px-[14%] pt-12" style={{ background: TIER_COLORS[i % 3] }}>
                   {t.image ? (
-                    <Photo src={t.image} className="absolute inset-x-8 bottom-0 top-8 rounded-t-full" imgClassName="object-top" speed={0.05} />
-                  ) : null}
+                    <Photo src={t.image} className="aspect-[4/5] w-full rounded-t-full" imgClassName="object-center" />
+                  ) : (
+                    <div className="aspect-[4/5] w-full" />
+                  )}
                   <span className="absolute left-5 top-5 rounded-full bg-white px-3 py-1 text-[0.7rem] font-medium uppercase tracking-wider text-[var(--lp-ink)]">
                     {String(i + 1).padStart(2, "0")}
                   </span>

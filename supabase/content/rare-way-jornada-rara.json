@@ -41,7 +41,7 @@
         {
           "name": "Forte",
           "tagline": "O começo da sua jornada rara.",
-          "image": "{{STORAGE}}/forte.jpg",
+          "image": "{{STORAGE}}/forte-card.jpg",
           "benefits": [
             "Reunião online mensal com networking e conteúdo",
             "Desconto exclusivo nas suas compras no site",
@@ -59,7 +59,7 @@
         {
           "name": "Poderosa",
           "tagline": "Mais voz, mais palco.",
-          "image": "{{STORAGE}}/poderosa.jpg",
+          "image": "{{STORAGE}}/poderosa-card.jpg",
           "benefits": [
             "Todos os benefícios da Forte",
             "Desconto maior nas suas compras",
@@ -74,7 +74,7 @@
         {
           "name": "Rara",
           "tagline": "O topo da jornada.",
-          "image": "{{STORAGE}}/rara.jpg",
+          "image": "{{STORAGE}}/rara-card.jpg",
           "benefits": [
             "Todos os benefícios da Poderosa",
             "O maior desconto e a maior comissão do programa",
