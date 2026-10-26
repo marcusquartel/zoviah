@@ -1,0 +1,156 @@
+{
+  "hero": {
+    "eyebrow": "Comunidade de Influenciadores Rare Way",
+    "title": "Jornada Rara",
+    "subtitle": "Para designers de sobrancelhas que querem crescer junto com a Rare Way.",
+    "body": "Uma comunidade de profissionais que aprendem, criam e se destacam com os produtos Rare Way: da linha Glance de henna, brow lamination e cuidados com a pele a cada novo lançamento. Venha ser uma Embaixadora Rare Way.",
+    "cta": "Quero fazer parte",
+    "image": "{{STORAGE}}/hero.jpg"
+  },
+  "sections": [
+    {
+      "type": "text",
+      "eyebrow": "O jeito raro de ser",
+      "title": "Qual o propósito da comunidade?",
+      "body": "Reunir designers de sobrancelhas em torno de um propósito comum: conhecimento, conexões, pertencimento e desenvolvimento profissional.\n\nMais do que consumidoras, buscamos profissionais que se identifiquem com os valores da Rare Way, vistam a camisa da marca e levem os nossos produtos cada vez mais longe no design de sobrancelhas.",
+      "quote": "Uma comunidade de marca não nasce de um slogan inspirador; ela é construída a partir de propósito, coerência e da capacidade de gerar significado para as pessoas.",
+      "image": "{{STORAGE}}/proposito.jpg",
+      "imageSide": "left"
+    },
+    {
+      "type": "list",
+      "dark": true,
+      "eyebrow": "Por que participar",
+      "title": "O que você vai viver",
+      "intro": "A Rare Way quer ser parceira no crescimento da sua carreira.",
+      "items": [
+        "Aprender com conteúdos exclusivos e encontros mensais com outras profissionais.",
+        "Conhecer em primeira mão os lançamentos da Rare Way.",
+        "Ganhar com a sua influência: suas seguidoras ganham desconto e você ganha comissão sobre as vendas.",
+        "Ter visibilidade no perfil da Rare Way como Embaixadora.",
+        "Fazer parte de uma rede de profissionais que trocam experiências e crescem juntas.",
+        "Receber feedback da equipe sobre os seus conteúdos e resultados."
+      ]
+    },
+    {
+      "type": "tiers",
+      "eyebrow": "A jornada",
+      "title": "Três categorias, uma jornada",
+      "intro": "Toda embaixadora começa como Forte. Com participação, conteúdo e resultados, você sobe de categoria e desbloqueia novos benefícios.",
+      "tiers": [
+        {
+          "name": "Forte",
+          "tagline": "O começo da sua jornada rara.",
+          "image": "{{STORAGE}}/forte.jpg",
+          "benefits": [
+            "Reunião online mensal com networking e conteúdo",
+            "Desconto exclusivo nas suas compras no site",
+            "Recebimento exclusivo dos lançamentos Rare Way",
+            "Kit Onboarding Rare Way",
+            "Cupom de desconto para suas seguidoras e comissão sobre as vendas",
+            "Rare Way Academy com conteúdos e certificado",
+            "Encontro anual da comunidade com convidados especiais",
+            "Destaque no perfil da Rare Way",
+            "Análise e feedback trimestral dos seus conteúdos",
+            "Grupo exclusivo no WhatsApp",
+            "Visita à sede da Rare Way e placa de reconhecimento"
+          ]
+        },
+        {
+          "name": "Poderosa",
+          "tagline": "Mais voz, mais palco.",
+          "image": "{{STORAGE}}/poderosa.jpg",
+          "benefits": [
+            "Todos os benefícios da Forte",
+            "Desconto maior nas suas compras",
+            "Comissão maior sobre as vendas",
+            "Ingresso para evento patrocinado pela Rare Way, com possibilidade de palestrar",
+            "Possibilidade de participar das lives da Rare Way",
+            "Possibilidade de gravar podcast na sede da Rare Way",
+            "Possibilidade de validar novos produtos da Rare Way",
+            "Possibilidade de participar das campanhas da marca"
+          ]
+        },
+        {
+          "name": "Rara",
+          "tagline": "O topo da jornada.",
+          "image": "{{STORAGE}}/rara.jpg",
+          "benefits": [
+            "Todos os benefícios da Poderosa",
+            "O maior desconto e a maior comissão do programa",
+            "Acesso completo à Rare Way Academy",
+            "Possibilidade de gravar um curso online com a Rare Way"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "portal",
+      "eyebrow": "Seu portal de embaixadora",
+      "title": "Tudo na palma da mão",
+      "body": "Ao entrar na comunidade, você ganha um portal exclusivo para acompanhar a sua jornada, do jeito que você gosta: simples, bonito e em tempo real.",
+      "bullets": [
+        "Suas vendas e comissões, atualizadas",
+        "Ranking do mês e pódio das embaixadoras",
+        "Conquistas para desbloquear",
+        "Seus cupons sempre à mão",
+        "Aviso por e-mail a cada venda",
+        "Registro dos seus conteúdos"
+      ],
+      "sample": {
+        "name": "Ana",
+        "coupon": "ANASOUZA",
+        "tier": "Rara"
+      }
+    },
+    {
+      "type": "steps",
+      "eyebrow": "Como funciona",
+      "title": "Do cadastro à comunidade",
+      "steps": [
+        {
+          "title": "Inscreva-se",
+          "body": "Preencha o formulário abaixo com seus dados e suas redes sociais."
+        },
+        {
+          "title": "Análise do perfil",
+          "body": "Nossa equipe conhece o seu trabalho e entra em contato."
+        },
+        {
+          "title": "Boas-vindas",
+          "body": "Kit Onboarding, seu cupom exclusivo e acesso ao seu portal de embaixadora."
+        },
+        {
+          "title": "Cresça na jornada",
+          "body": "Crie conteúdo, participe das ações da comunidade e suba de categoria."
+        }
+      ]
+    },
+    {
+      "type": "closing",
+      "title": "Contamos com você",
+      "body": "Se os produtos Rare Way fazem parte do seu trabalho, a Jornada Rara é o seu lugar.",
+      "image": "{{STORAGE}}/comunidade.jpg"
+    }
+  ],
+  "form": {
+    "eyebrow": "Inscrição",
+    "title": "Seja uma Embaixadora Rare Way",
+    "intro": "Leva poucos minutos. No final pedimos seu endereço e CPF para o envio do Kit Onboarding, caso sua inscrição seja aprovada."
+  },
+  "theme": {
+    "background": "#f7f5fb",
+    "ink": "#0a0a0a",
+    "accent1": "#fd9fb0",
+    "accent2": "#c1acdc",
+    "accent3": "#59dbd6",
+    "accent1Light": "#ffecef",
+    "accent2Light": "#f0eaf6",
+    "accent3Light": "#def8f7",
+    "accent2Deep": "#5a4871"
+  },
+  "brand": {
+    "tagline": "Sua beleza tem poder",
+    "signature": "@rareway /// rareway.com.br"
+  }
+}

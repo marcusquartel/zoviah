@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 import { ThemeStyle } from "@/components/theme-style";
 import { LegalFooter } from "@/components/legal-footer";
 import { BrandLogo } from "@/components/brand-logo";
-import { getPublicProgram } from "@/features/public/queries";
+import { getPublicProgram, getPublicProgramLanding } from "@/features/public/queries";
+import { LandingPage } from "@/features/public/landing/landing";
 import { PublicForm } from "./public-form";
 
 export const dynamic = "force-dynamic";
@@ -16,12 +17,23 @@ export async function generateMetadata({
   params: Promise<Params>;
 }): Promise<Metadata> {
   const { orgSlug, programSlug } = await params;
-  const data = await getPublicProgram(orgSlug, programSlug);
+  const [data, landing] = await Promise.all([
+    getPublicProgram(orgSlug, programSlug),
+    getPublicProgramLanding(orgSlug, programSlug),
+  ]);
   if (!data) return { title: "Inscrição" };
+  const title = landing
+    ? `${landing.hero.title} · ${data.organization.name}`
+    : `${data.program.public_title} · ${data.organization.name}`;
+  const description = landing?.hero.subtitle ?? data.program.public_description ?? undefined;
   return {
-    title: `${data.program.public_title} · ${data.organization.name}`,
-    description: data.program.public_description ?? undefined,
-    robots: { index: false },
+    title,
+    description,
+    // A landing is a campaign page meant to be shared; the bare form is not.
+    robots: { index: Boolean(landing) },
+    openGraph: landing
+      ? { title, description, images: landing.hero.image ? [landing.hero.image] : undefined }
+      : undefined,
   };
 }
 
@@ -36,6 +48,36 @@ export default async function PublicProgramPage({
 
   const { organization, program, fields } = data;
   const isOpen = program.status === "active";
+  const landing = await getPublicProgramLanding(orgSlug, programSlug);
+
+  const formBlock = isOpen ? (
+    <PublicForm
+      orgSlug={orgSlug}
+      programSlug={programSlug}
+      fields={fields}
+      successMessage={program.success_message}
+    />
+  ) : (
+    <div className="py-6 text-center">
+      <h2 className="font-heading text-lg font-semibold">Inscrições encerradas</h2>
+      <p className="mt-2 text-sm text-muted-foreground">
+        As inscrições para este programa não estão abertas no momento.
+      </p>
+    </div>
+  );
+
+  if (landing) {
+    return (
+      <>
+        {/* The landing is black & white: buttons follow it, not the app palette. */}
+        <ThemeStyle primaryColor="#0a0a0a" secondaryColor={organization.secondary_color} />
+        <LandingPage landing={landing} brandName={organization.name} form={formBlock} />
+        <div className="bg-white pb-6">
+          <LegalFooter />
+        </div>
+      </>
+    );
+  }
 
   return (
     <>

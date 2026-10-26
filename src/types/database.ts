@@ -1528,6 +1528,10 @@ export interface Database {
       portal_my_creators: { Args: Record<string, never>; Returns: Json };
       portal_dashboard: { Args: { p_creator_id: string }; Returns: Json };
       portal_dashboard_preview: { Args: { p_creator_id: string }; Returns: Json };
+      get_public_program_landing: {
+        Args: { p_org_slug: string; p_program_slug: string };
+        Returns: Json;
+      };
       portal_submit_content: { Args: { p_creator_id: string; p: Json }; Returns: Json };
       portal_content: { Args: { p_creator_id: string }; Returns: Json };
       staff_add_content: { Args: { p_creator_id: string; p: Json }; Returns: Json };

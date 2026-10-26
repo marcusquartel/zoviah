@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import type { PublicFieldDef } from "@/lib/form-fields";
 import type { ProgramStatus } from "@/types/database";
+import { parseLanding, type Landing } from "@/features/public/landing/schema";
 
 export interface PublicProgramData {
   organization: {
@@ -42,5 +43,19 @@ export const getPublicProgram = cache(
 
     if (error || !data) return null;
     return data as unknown as PublicProgramData;
+  },
+);
+
+/** Optional landing content for the public program page (null = plain form). */
+export const getPublicProgramLanding = cache(
+  async (orgSlug: string, programSlug: string): Promise<Landing | null> => {
+    if (!isSupabaseConfigured()) return null;
+    const supabase = await createClient();
+    const { data, error } = await supabase.rpc("get_public_program_landing", {
+      p_org_slug: orgSlug,
+      p_program_slug: programSlug,
+    });
+    if (error) return null;
+    return parseLanding(data);
   },
 );
