@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
 import { useTexture } from "@react-three/drei";
 import { SRGBColorSpace, type Texture } from "three";
 
@@ -11,19 +11,79 @@ import { SRGBColorSpace, type Texture } from "three";
  */
 const BASE = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/org-branding/rare-way/game/billboards`;
 
-type Ad = { file: string; angle: number; w: number; h: number; trim: string };
+const SITE = "https://www.rarewaycosmeticos.com.br";
+
+type Ad = {
+  file: string;
+  href: string;
+  angle: number;
+  w: number;
+  h: number;
+  trim: string;
+};
 
 // angle: around the map, 0 = toward the camera (+z), degrees.
 const ADS: Ad[] = [
-  { file: "glance-color.jpg", angle: 140, w: 10, h: 3.57, trim: "#c1acdc" },
-  { file: "brow-lamination.jpg", angle: 220, w: 10, h: 3.57, trim: "#fd9fb0" },
-  { file: "brindes.jpg", angle: 268, w: 10, h: 3.57, trim: "#fd9fb0" },
-  { file: "combo-02.jpg", angle: 92, w: 4.6, h: 4.6, trim: "#c1acdc" },
-  { file: "combo-04.jpg", angle: 58, w: 4.2, h: 4.2, trim: "#59dbd6" },
-  { file: "combo-03.jpg", angle: 302, w: 4.2, h: 4.2, trim: "#59dbd6" },
+  {
+    file: "glance-color.jpg",
+    href: "/collections/glance-color",
+    angle: 140,
+    w: 10,
+    h: 3.57,
+    trim: "#c1acdc",
+  },
+  {
+    file: "brow-lamination.jpg",
+    href: "/collections/brow-lamination",
+    angle: 220,
+    w: 10,
+    h: 3.57,
+    trim: "#fd9fb0",
+  },
+  {
+    file: "brindes.jpg",
+    href: "/",
+    angle: 268,
+    w: 10,
+    h: 3.57,
+    trim: "#fd9fb0",
+  },
+  {
+    file: "combo-02.jpg",
+    href: "/products/brow-lamination-lift",
+    angle: 92,
+    w: 4.6,
+    h: 4.6,
+    trim: "#c1acdc",
+  },
+  {
+    file: "combo-04.jpg",
+    href: "/products/henna-8-cores-henna-chocolate",
+    angle: 58,
+    w: 4.2,
+    h: 4.2,
+    trim: "#59dbd6",
+  },
+  {
+    file: "combo-03.jpg",
+    href: "/products/henna-8-cores-demaquilante-glance-care",
+    angle: 302,
+    w: 4.2,
+    h: 4.2,
+    trim: "#59dbd6",
+  },
 ];
 
 const RADIUS = 20.6;
+
+/** Opens the ad's page on the brand site, tagged so the visit shows up in analytics. */
+function openAd(ad: Ad) {
+  const url = new URL(ad.href, SITE);
+  url.searchParams.set("utm_source", "glance-world");
+  url.searchParams.set("utm_medium", "portal");
+  url.searchParams.set("utm_campaign", ad.file.replace(/\.\w+$/, ""));
+  window.open(url.toString(), "_blank", "noopener");
+}
 
 function prepare(tex: Texture | Texture[]) {
   for (const t of Array.isArray(tex) ? tex : [tex]) {
@@ -44,6 +104,7 @@ export function Billboards() {
 
 function Billboard({ ad }: { ad: Ad }) {
   const texture = useTexture(`${BASE}/${ad.file}`, prepare);
+  const [hover, setHover] = useState(false);
 
   const t = (ad.angle * Math.PI) / 180;
   const lift = 2.4; // bottom edge of the panel above the ground
@@ -63,14 +124,34 @@ function Billboard({ ad }: { ad: Ad }) {
         </mesh>
       ))}
       {/* panel, tilted back a little toward the (elevated) camera */}
-      <group position={[0, cy, 0]} rotation={[-0.12, 0, 0]}>
+      <group
+        position={[0, cy, 0]}
+        rotation={[-0.12, 0, 0]}
+        scale={hover ? 1.04 : 1}
+        onClick={(e) => {
+          e.stopPropagation();
+          openAd(ad);
+        }}
+        onPointerOver={(e) => {
+          e.stopPropagation();
+          setHover(true);
+          document.body.style.cursor = "pointer";
+        }}
+        onPointerOut={() => {
+          setHover(false);
+          document.body.style.cursor = "";
+        }}
+      >
         <mesh position={[0, 0, -0.12]} castShadow>
           <boxGeometry args={[ad.w + 0.5, ad.h + 0.5, 0.2]} />
           <meshStandardMaterial color="#0a0a0a" />
         </mesh>
         <mesh position={[0, 0, -0.01]}>
           <boxGeometry args={[ad.w + 0.24, ad.h + 0.24, 0.02]} />
-          <meshStandardMaterial color={ad.trim} />
+          <meshStandardMaterial
+            color={hover ? "#ffffff" : ad.trim}
+            emissive={hover ? ad.trim : "#000000"}
+          />
         </mesh>
         {/* the ad itself — unlit so the banner keeps its real colors */}
         <mesh position={[0, 0, 0.01]}>
