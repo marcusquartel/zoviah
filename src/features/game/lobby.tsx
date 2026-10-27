@@ -5,6 +5,7 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { ContactShadows, Html, Sparkles } from "@react-three/drei";
 import { Vector3, type Group } from "three";
 import { BlockAvatar, type Emote } from "@/features/game/block-avatar";
+import { Billboards } from "@/features/game/billboards";
 import { BrowBrush, CareBottle, HennaBottle, HennaBox, LaminationTube, ProductIsland } from "@/features/game/products";
 import { ITEM_BY_ID, type AvatarConfig } from "@/lib/game/catalog";
 import { createClient } from "@/lib/supabase/client";
@@ -405,6 +406,7 @@ function World() {
       </mesh>
 
       <WorldSign />
+      <Billboards />
 
       <Arch position={[-13, 0, -12]} color="#fd9fb0" rotation={0.8} />
       <Arch position={[13, 0, -12]} color="#59dbd6" rotation={-0.8} />
