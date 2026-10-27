@@ -3,7 +3,7 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { ContactShadows, Html, Sparkles, Stats } from "@react-three/drei";
-import { Vector3, type Group, type Mesh, type MeshBasicMaterial } from "three";
+import { CanvasTexture, SRGBColorSpace, Vector3, type Group, type Mesh, type MeshBasicMaterial } from "three";
 import { BlockAvatar, LowAvatar, type Emote } from "@/features/game/block-avatar";
 import { Billboards } from "@/features/game/billboards";
 import { WORLD_SCALE } from "@/features/game/world";
@@ -516,8 +516,35 @@ function World() {
   );
 }
 
+/** "GLANCE WORLD / BY RARE WAY" painted on a canvas — real geometry, no DOM overlay. */
+function makeSignTexture() {
+  const canvas = document.createElement("canvas");
+  canvas.width = 2048;
+  canvas.height = 424;
+  const c = canvas.getContext("2d");
+  if (c) {
+    const host = document.querySelector("main") ?? document.documentElement;
+    const font = getComputedStyle(host).getPropertyValue("--font-game").trim() || "system-ui";
+    c.textAlign = "center";
+    c.textBaseline = "middle";
+    c.fillStyle = "#ffffff";
+    c.font = `800 210px ${font}, system-ui, sans-serif`;
+    c.letterSpacing = "18px";
+    c.fillText("GLANCE WORLD", 1024, 175);
+    c.fillStyle = "#fd9fb0";
+    c.font = `700 62px ${font}, system-ui, sans-serif`;
+    c.letterSpacing = "26px";
+    c.fillText("BY RARE WAY", 1024, 345);
+  }
+  const tex = new CanvasTexture(canvas);
+  tex.colorSpace = SRGBColorSpace;
+  tex.anisotropy = 8;
+  return tex;
+}
+
 /** Entrance sign: GLANCE WORLD on a black slab between two giant hennas. */
 function WorldSign() {
+  const signTexture = useMemo(() => makeSignTexture(), []);
   return (
     <group position={[0, 0, -18 * K]}>
       <mesh position={[0, 4.4, 0]} castShadow>
@@ -526,12 +553,10 @@ function WorldSign() {
       </mesh>
       <HennaBottle position={[-6.4, 0, 0]} scale={3.6} />
       <HennaBottle position={[6.4, 0, 0]} scale={3.6} />
-      <Html position={[0, 4.4, 0.33]} center transform distanceFactor={9} pointerEvents="none" zIndexRange={Z_LABELS}>
-        <div className="select-none text-center leading-none">
-          <div className="text-[52px] font-black tracking-[0.12em] text-white">GLANCE WORLD</div>
-          <div className="mt-1 text-[13px] font-bold tracking-[0.4em] text-[#fd9fb0]">BY RARE WAY</div>
-        </div>
-      </Html>
+      <mesh position={[0, 4.4, 0.31]}>
+        <planeGeometry args={[10.6, 2.2]} />
+        <meshBasicMaterial map={signTexture} transparent toneMapped={false} />
+      </mesh>
       <Sparkles count={40} scale={[12, 4, 2]} position={[0, 4.4, 0.6]} size={6} speed={0.4} color="#f5c542" />
     </group>
   );
