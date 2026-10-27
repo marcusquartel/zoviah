@@ -333,7 +333,7 @@ export function Lobby({
       </Canvas>
 
       {/* HUD */}
-      <div className="pointer-events-none absolute left-3 top-3 flex flex-col gap-2">
+      <div className="pointer-events-none absolute left-3 top-3 z-20 flex flex-col gap-2">
         <div className="rounded-2xl border-[3px] border-[#0a0a0a] bg-[#0a0a0a] px-3 py-2 text-white shadow-[3px_3px_0_#fd9fb0]">
           <p className="text-sm font-black tracking-wider">GLANCE WORLD</p>
           <p className="text-[0.65rem] font-semibold text-white/70">
@@ -346,7 +346,7 @@ export function Lobby({
       </div>
 
       {feed.length ? (
-        <ul className="pointer-events-none absolute right-3 top-3 flex w-56 flex-col gap-1.5">
+        <ul className="pointer-events-none absolute right-3 top-3 z-20 flex w-56 flex-col gap-1.5">
           {feed.map((f) => (
             <li key={f.id} className="rounded-xl border-2 border-[#0a0a0a] bg-white/95 px-2.5 py-1.5 text-[0.7rem] font-bold shadow-[2px_2px_0_#0a0a0a]">
               {f.text}
@@ -357,7 +357,7 @@ export function Lobby({
 
       <Joystick onInput={setInput} />
 
-      <div className="absolute bottom-4 right-3 flex flex-col items-end gap-2">
+      <div className="absolute bottom-4 right-3 z-20 flex flex-col items-end gap-2">
         {phrasesOpen ? (
           <div className="grid w-60 grid-cols-1 gap-1 rounded-2xl border-[3px] border-[#0a0a0a] bg-white p-2 shadow-[3px_3px_0_#0a0a0a]">
             {PHRASES.map((ph) => (
@@ -933,7 +933,7 @@ function Joystick({ onInput }: { onInput: (v: Input) => void }) {
   return (
     <div
       ref={base}
-      className="absolute bottom-4 left-4 size-28 touch-none rounded-full border-4 border-[#0a0a0a] bg-white/70 shadow-[3px_3px_0_#0a0a0a]"
+      className="absolute bottom-4 left-4 z-20 size-28 touch-none rounded-full border-4 border-[#0a0a0a] bg-white/70 shadow-[3px_3px_0_#0a0a0a]"
       onPointerDown={(e) => {
         active.current = true;
         (e.target as HTMLElement).setPointerCapture(e.pointerId);
@@ -963,7 +963,7 @@ function PlayerCard({
 }) {
   const title = ITEM_BY_ID.get(player.config.title);
   return (
-    <div className="absolute left-1/2 top-16 w-64 -translate-x-1/2 rounded-2xl border-4 border-[#0a0a0a] bg-white p-3 shadow-[4px_4px_0_#0a0a0a]">
+    <div className="absolute left-1/2 top-16 z-20 w-64 -translate-x-1/2 rounded-2xl border-4 border-[#0a0a0a] bg-white p-3 shadow-[4px_4px_0_#0a0a0a]">
       <div className="flex items-start justify-between gap-2">
         <div>
           <p className="text-base font-extrabold leading-tight">{player.name}</p>
