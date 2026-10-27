@@ -115,9 +115,9 @@ export function GameHub({
             orgId: live.orgId,
             meId: live.creatorId,
             onInteract: (to, kind) => sendInteraction(live.creatorId, to, kind),
-            onCollect: () => {
-              setHennas((h) => h + 1);
-              void collectHennas(live.creatorId, 1);
+            onCollect: (points) => {
+              setHennas((h) => h + points);
+              void collectHennas(live.creatorId, points);
             },
           }
         : undefined,
