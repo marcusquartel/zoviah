@@ -5,7 +5,7 @@ import { Fredoka } from "next/font/google";
 import { ArrowLeft } from "lucide-react";
 import { SetupNotice } from "@/components/setup-notice";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
-import { getCurrentUser } from "@/features/organizations/queries";
+import { getCurrentOrganization, getCurrentUser } from "@/features/organizations/queries";
 import { getMyPortalCreators } from "@/features/portal/queries";
 import { getGame } from "@/features/game/queries";
 import { GameHub } from "@/features/game/game-hub";
@@ -15,12 +15,12 @@ export const metadata: Metadata = { title: "Glance World" };
 
 const fredoka = Fredoka({ subsets: ["latin"], weight: ["400", "600", "700"], variable: "--font-game" });
 
-export default async function GlanceWorldPage({ searchParams }: { searchParams: Promise<{ c?: string }> }) {
+export default async function GlanceWorldPage({ searchParams }: { searchParams: Promise<{ c?: string; bots?: string }> }) {
   if (!isSupabaseConfigured()) return <SetupNotice />;
   const user = await getCurrentUser();
   if (!user) redirect("/portal/login?next=/portal/jogo");
 
-  const { c } = await searchParams;
+  const { c, bots } = await searchParams;
   const creators = await getMyPortalCreators();
   const selected = creators.find((x) => x.creator_id === c) ?? (creators.length === 1 ? creators[0] : null);
   if (!selected) redirect("/portal");
@@ -29,6 +29,10 @@ export default async function GlanceWorldPage({ searchParams }: { searchParams: 
   if (!game) redirect("/portal");
 
   const me = game.players.find((p) => p.me);
+  // Load test for the team: ?bots=500 fills the plaza with local-only bots.
+  const requestedBots = Math.min(Math.max(Number.parseInt(bots ?? "", 10) || 0, 0), 1000);
+  const botCount =
+    requestedBots > 0 && (await getCurrentOrganization())?.organization.id === game.organization_id ? requestedBots : 0;
   const back = creators.length > 1 ? `/portal?c=${selected.creator_id}` : "/portal";
 
   return (
@@ -44,6 +48,7 @@ export default async function GlanceWorldPage({ searchParams }: { searchParams: 
           players={toLobbyPlayers(game)}
           seen={game.seen}
           live={{ creatorId: selected.creator_id, orgId: game.organization_id }}
+          botCount={botCount}
         />
       </div>
     </main>

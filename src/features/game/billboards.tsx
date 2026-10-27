@@ -3,6 +3,7 @@
 import { Suspense, useState } from "react";
 import { useTexture } from "@react-three/drei";
 import { SRGBColorSpace, type Texture } from "three";
+import { WORLD_SCALE } from "@/features/game/world";
 
 /**
  * Rare Way ads around Glance World: banners from the brand's site, on
@@ -74,7 +75,7 @@ const ADS: Ad[] = [
   },
 ];
 
-const RADIUS = 20.6;
+const RADIUS = 20.6 * WORLD_SCALE;
 
 /** Opens the ad's page on the brand site, tagged so the visit shows up in analytics. */
 function openAd(ad: Ad) {

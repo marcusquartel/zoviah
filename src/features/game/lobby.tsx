@@ -1,11 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { ContactShadows, Html, Sparkles } from "@react-three/drei";
+import { ContactShadows, Html, Sparkles, Stats } from "@react-three/drei";
 import { Vector3, type Group } from "three";
-import { BlockAvatar, type Emote } from "@/features/game/block-avatar";
+import { BlockAvatar, LowAvatar, type Emote } from "@/features/game/block-avatar";
 import { Billboards } from "@/features/game/billboards";
+import { WORLD_SCALE } from "@/features/game/world";
 import { BrowBrush, CareBottle, HennaBottle, HennaBox, LaminationTube, ProductIsland } from "@/features/game/products";
 import { ITEM_BY_ID, type AvatarConfig } from "@/lib/game/catalog";
 import { createClient } from "@/lib/supabase/client";
@@ -64,7 +65,8 @@ const EMOTES: { id: Exclude<Emote, null>; emoji: string; label: string }[] = [
 ];
 const EMOTE_EMOJI: Record<Exclude<Emote, null>, string> = { wave: "👋", dance: "💃", clap: "👏", heart: "💜" };
 
-const WORLD_RADIUS = 19;
+const K = WORLD_SCALE;
+const WORLD_RADIUS = 19 * K;
 // Stable references: drei <Html> rebuilds its DOM root when these change.
 const Z_LABELS: [number, number] = [5, 0];
 const Z_TAGS: [number, number] = [10, 0];
@@ -73,9 +75,12 @@ const PODIUM = [
   { place: 2, x: -2.3, h: 1.0, color: "#c1acdc" },
   { place: 3, x: 2.3, h: 0.7, color: "#fd9fb0" },
 ];
-const COLLECTIBLES: [number, number][] = [
-  [-6, 7], [5, 7], [-12, -2], [12, 1], [-3, -9], [4, -8], [-15, 6], [14, -4], [0, 15], [-7, -14],
-];
+const COLLECTIBLES: [number, number][] = (
+  [
+    [-6, 7], [5, 7], [-12, -2], [12, 1], [-3, -9], [4, -8], [-15, 6], [14, -4], [0, 15], [-7, -14],
+    [-9, 12], [9, 12], [16, 9], [-16, -8], [7, -15], [-1, -16], [15, -11], [-13, 13], [3, 3.5], [-3.5, 3],
+  ] as [number, number][]
+).map(([x, z]) => [x * K, z * K]);
 const RESPAWN_MS = 25_000;
 
 const now = () => performance.now();
@@ -85,10 +90,13 @@ export function Lobby({
   players,
   active = true,
   live,
+  bots = [],
 }: {
   players: LobbyPlayer[];
   active?: boolean;
   live?: LiveConfig;
+  /** Load test: local-only simulated visitors (never sent to the channel). */
+  bots?: LobbyPlayer[];
 }) {
   const input = useRef<Input>({ x: 0, z: 0 });
   const [selected, setSelected] = useState<LobbyPlayer | null>(null);
@@ -100,6 +108,7 @@ export function Lobby({
   const feedId = useRef(0);
   const [online, setOnline] = useState<Set<string>>(() => new Set());
   const remote = useRef<Record<string, Remote>>({});
+  const [lod] = useState(() => new Lod());
   const channelRef = useRef<ReturnType<ReturnType<typeof createClient>["channel"]> | null>(null);
 
   const setInput = useCallback((v: Input) => {
@@ -180,6 +189,19 @@ export function Lobby({
       void supabase.removeChannel(channel);
     };
   }, [live, react, pushFeed, nameOf]);
+
+  // Load test: the simulated crowd emotes and talks (local only).
+  useEffect(() => {
+    if (!active || bots.length === 0) return;
+    const timer = setInterval(() => {
+      for (let n = 0; n < 3; n++) {
+        const b = bots[Math.floor(Math.random() * bots.length)];
+        if (Math.random() < 0.5) react(b.id, { emote: EMOTES[Math.floor(Math.random() * EMOTES.length)].id });
+        else react(b.id, { emote: null, text: PHRASES[Math.floor(Math.random() * PHRASES.length)] });
+      }
+    }, 700);
+    return () => clearInterval(timer);
+  }, [active, bots, react]);
 
   // Demo only: a simulated community that emotes, talks and cheers you.
   useEffect(() => {
@@ -270,7 +292,7 @@ export function Lobby({
       {/* Paused (not unmounted) while hidden: keeps the scene and stops rendering. */}
       <Canvas shadows camera={{ position: [0, 9, 16], fov: 45 }} dpr={[1, 1.75]} frameloop={active ? "always" : "never"}>
         <color attach="background" args={["#def8f7"]} />
-        <fog attach="fog" args={["#def8f7", 30, 60]} />
+        <fog attach="fog" args={["#def8f7", 30 * K, 60 * K]} />
         <ambientLight intensity={0.8} />
         <directionalLight position={[10, 18, 8]} intensity={1.5} castShadow shadow-mapSize={[1024, 1024]} />
         <World />
@@ -285,11 +307,17 @@ export function Lobby({
               remote={remote}
               reaction={reactions[p.id]}
               onSelect={setSelected}
+              lod={lod}
             />
           ) : (
-            <Wanderer key={p.id} player={p} seed={i} reaction={reactions[p.id]} onSelect={setSelected} />
+            <Wanderer key={p.id} player={p} seed={i} reaction={reactions[p.id]} onSelect={setSelected} lod={lod} />
           ),
         )}
+        {bots.map((p, i) => (
+          <Wanderer key={p.id} player={p} seed={i + 1000} reaction={reactions[p.id]} onSelect={setSelected} lod={lod} />
+        ))}
+        <LodManager lod={lod} />
+        {bots.length > 0 ? <Stats /> : null}
         <Collectibles taken={taken} />
         {me ? (
           <Player
@@ -408,43 +436,56 @@ function World() {
       <WorldSign />
       <Billboards />
 
-      <Arch position={[-13, 0, -12]} color="#fd9fb0" rotation={0.8} />
-      <Arch position={[13, 0, -12]} color="#59dbd6" rotation={-0.8} />
-      <mesh position={[-15, 2, -14]} castShadow>
+      <Arch position={[-13 * K, 0, -12 * K]} color="#fd9fb0" rotation={0.8} />
+      <Arch position={[13 * K, 0, -12 * K]} color="#59dbd6" rotation={-0.8} />
+      <mesh position={[-15 * K, 2, -14 * K]} castShadow>
         <sphereGeometry args={[2, 32, 32]} />
         <meshStandardMaterial color="#0a0a0a" />
       </mesh>
-      <mesh position={[18, 1.6, 4]} rotation={[0, 0.4, 0]} castShadow>
+      <mesh position={[18 * K, 1.6, 4 * K]} rotation={[0, 0.4, 0]} castShadow>
         <coneGeometry args={[2.2, 3.4, 3]} />
         <meshStandardMaterial color="#59dbd6" />
       </mesh>
 
       {/* Glance landmarks */}
-      <HennaBottle position={[-18, 0, 7]} scale={3.2} rotation={0.4} />
-      <HennaBottle position={[10, 0, -16]} scale={2.4} rotation={-0.3} />
-      <HennaBottle position={[18, 0, 8]} scale={2.8} />
-      <CareBottle position={[-17, 0, -6]} color="#c1acdc" scale={2.6} />
-      <CareBottle position={[-15, 0, -9.5]} color="#59dbd6" scale={2.1} />
-      <CareBottle position={[16, 0, -9]} color="#fd9fb0" scale={2.4} />
-      <CareBottle position={[18, 0, -2]} color="#f2a65a" scale={1.9} />
-      <BrowBrush position={[-6, 0, -16]} rotation={0.3} scale={1.4} />
-      <BrowBrush position={[16, 0, -14]} rotation={-0.5} scale={1.2} />
-      <LaminationTube position={[-3, 0.3, -16]} rotation={0.8} scale={1.6} />
-      <LaminationTube position={[-17, 0.3, 11]} rotation={-0.4} scale={1.4} />
+      <HennaBottle position={[-18 * K, 0, 7 * K]} scale={3.2} rotation={0.4} />
+      <HennaBottle position={[10 * K, 0, -16 * K]} scale={2.4} rotation={-0.3} />
+      <HennaBottle position={[18 * K, 0, 8 * K]} scale={2.8} />
+      <CareBottle position={[-17 * K, 0, -6 * K]} color="#c1acdc" scale={2.6} />
+      <CareBottle position={[-15 * K, 0, -9.5 * K]} color="#59dbd6" scale={2.1} />
+      <CareBottle position={[16 * K, 0, -9 * K]} color="#fd9fb0" scale={2.4} />
+      <CareBottle position={[18 * K, 0, -2 * K]} color="#f2a65a" scale={1.9} />
+      <BrowBrush position={[-6 * K, 0, -16 * K]} rotation={0.3} scale={1.4} />
+      <BrowBrush position={[16 * K, 0, -14 * K]} rotation={-0.5} scale={1.2} />
+      <LaminationTube position={[-3 * K, 0.3, -16 * K]} rotation={0.8} scale={1.6} />
+      <LaminationTube position={[-17 * K, 0.3, 11 * K]} rotation={-0.4} scale={1.4} />
 
-      <group position={[-17, 0, -1]}>
+      <group position={[-17 * K, 0, -1 * K]}>
         <HennaBox position={[0, 0, 0]} scale={1.5} rotation={0.2} />
         <HennaBox position={[1.6, 0, 0.4]} scale={1.5} rotation={-0.3} />
         <HennaBox position={[0.8, 1.05, 0.2]} scale={1.5} rotation={0.6} />
       </group>
-      <group position={[12, 0, 8]}>
+      <group position={[12 * K, 0, 8 * K]}>
         <HennaBox position={[0, 0, 0]} scale={1.3} rotation={-0.5} />
         <HennaBox position={[0.2, 0.9, 0.1]} scale={1.3} rotation={0.2} />
       </group>
 
-      <ProductIsland position={[-9, 0, 3]} rotation={0.4} />
-      <ProductIsland position={[9, 0, 1]} rotation={-0.6} />
-      <ProductIsland position={[0, 0, -12]} rotation={0} />
+      <ProductIsland position={[-9 * K, 0, 3 * K]} rotation={0.4} />
+      <ProductIsland position={[9 * K, 0, 1 * K]} rotation={-0.6} />
+      <ProductIsland position={[0 * K, 0, -12 * K]} rotation={0} />
+
+      {/* outer ring (bigger map) */}
+      <ProductIsland position={[-20, 0, 22]} rotation={0.9} />
+      <ProductIsland position={[22, 0, 20]} rotation={-0.3} />
+      <ProductIsland position={[-26, 0, -14]} rotation={1.4} />
+      <ProductIsland position={[27, 0, -12]} rotation={-1.1} />
+      <ProductIsland position={[0, 0, 30]} rotation={0.2} />
+      <HennaBottle position={[-30, 0, 4]} scale={3} rotation={0.2} />
+      <HennaBottle position={[31, 0, 2]} scale={3.2} />
+      <CareBottle position={[-8, 0, 33]} color="#fd9fb0" scale={2.4} />
+      <CareBottle position={[9, 0, 33]} color="#59dbd6" scale={2.2} />
+      <Arch position={[-24, 0, 6]} color="#c1acdc" rotation={1.5} />
+      <Arch position={[24, 0, 6]} color="#fd9fb0" rotation={-1.5} />
     </group>
   );
 }
@@ -452,7 +493,7 @@ function World() {
 /** Entrance sign: GLANCE WORLD on a black slab between two giant hennas. */
 function WorldSign() {
   return (
-    <group position={[0, 0, -18]}>
+    <group position={[0, 0, -18 * K]}>
       <mesh position={[0, 4.4, 0]} castShadow>
         <boxGeometry args={[11, 2.4, 0.6]} />
         <meshStandardMaterial color="#0a0a0a" />
@@ -587,24 +628,77 @@ function Podium({
   );
 }
 
+/**
+ * Level of detail for crowds: only the NEAR_BUDGET people closest to the
+ * camera get the full avatar and name tag; everyone else is a 4-box avatar.
+ * A single manager ranks distances a few times per second.
+ */
+const NEAR_BUDGET = 30;
+
+class Lod {
+  private groups = new Map<string, Group>();
+  private near = new Set<string>();
+  private acc = 1;
+  register(id: string, g: Group) {
+    this.groups.set(id, g);
+  }
+  unregister(id: string) {
+    this.groups.delete(id);
+  }
+  isNear(id: string) {
+    return this.near.has(id);
+  }
+  tick(camera: { position: Vector3 }, dt: number) {
+    this.acc += dt;
+    if (this.acc < 0.25) return;
+    this.acc = 0;
+    const ranked: [string, number][] = [];
+    for (const [id, g] of this.groups) ranked.push([id, camera.position.distanceToSquared(g.position)]);
+    ranked.sort((a, b) => a[1] - b[1]);
+    this.near = new Set(ranked.slice(0, NEAR_BUDGET).map(([id]) => id));
+  }
+}
+
+function LodManager({ lod }: { lod: Lod }) {
+  useFrame(({ camera }, dt) => lod.tick(camera, dt));
+  return null;
+}
+
+function useNear(ref: React.RefObject<Group | null>, id: string, lod: Lod) {
+  const [near, setNear] = useState(false);
+  useEffect(() => {
+    if (ref.current) lod.register(id, ref.current);
+    return () => lod.unregister(id);
+  }, [id, lod, ref]);
+  useFrame(() => {
+    const next = lod.isNear(id);
+    if (next !== near) setNear(next);
+  });
+  return near;
+}
+
 /** A simulated creator strolling around the plaza. */
-function Wanderer({
+// Memoized: a reaction re-renders only the avatar it belongs to, not the crowd.
+const Wanderer = memo(function Wanderer({
   player,
   seed,
   reaction,
   onSelect,
+  lod,
 }: {
   player: LobbyPlayer;
   seed: number;
   reaction?: Reaction;
   onSelect: (p: LobbyPlayer) => void;
+  lod: Lod;
 }) {
   const ref = useRef<Group>(null);
+  const near = useNear(ref, player.id, lod);
   const [walking, setWalking] = useState(false);
   const state = useRef({ target: new Vector3(), wait: 1 + (seed % 4) });
   const start = useMemo(() => {
     const a = seed * 1.7 + 0.5;
-    const r = 8 + (seed % 3) * 2.5;
+    const r = 7 + ((seed * 37) % 100) / 100 * (WORLD_RADIUS - 10);
     return [Math.sin(a) * r, 0, Math.cos(a) * r] as [number, number, number];
   }, [seed]);
 
@@ -618,7 +712,7 @@ function Wanderer({
       if (walking) setWalking(false);
       if (s.wait <= 0 && !busy) {
         const a = Math.random() * Math.PI * 2;
-        const r = 7 + Math.random() * 9;
+        const r = 7 + Math.random() * (WORLD_RADIUS - 10);
         s.target.set(Math.sin(a) * r, 0, Math.cos(a) * r);
       }
       return;
@@ -639,20 +733,27 @@ function Wanderer({
 
   return (
     <group ref={ref} position={start} onClick={(e) => (e.stopPropagation(), onSelect(player))}>
-      <BlockAvatar config={player.config} walking={walking} scale={0.75} emote={activeEmote(reaction)} />
-      <NameTag player={player} reaction={reaction} />
+      {near ? (
+        <>
+          <BlockAvatar config={player.config} walking={walking} scale={0.75} emote={activeEmote(reaction)} />
+          <NameTag player={player} reaction={reaction} />
+        </>
+      ) : (
+        <LowAvatar config={player.config} scale={0.75} />
+      )}
     </group>
   );
-}
+});
 
 /** Another creator in live mode: idle in her spot until she moves online. */
-function RemotePlayer({
+const RemotePlayer = memo(function RemotePlayer({
   player,
   seed,
   online,
   remote,
   reaction,
   onSelect,
+  lod,
 }: {
   player: LobbyPlayer;
   seed: number;
@@ -660,12 +761,14 @@ function RemotePlayer({
   remote: React.RefObject<Record<string, Remote>>;
   reaction?: Reaction;
   onSelect: (p: LobbyPlayer) => void;
+  lod: Lod;
 }) {
   const ref = useRef<Group>(null);
+  const near = useNear(ref, player.id, lod);
   const [walking, setWalking] = useState(false);
   const start = useMemo(() => {
     const a = seed * 1.7 + 0.5;
-    const r = 8 + (seed % 3) * 2.5;
+    const r = 7 + ((seed * 37) % 100) / 100 * (WORLD_RADIUS - 10);
     return [Math.sin(a) * r, 0, Math.cos(a) * r] as [number, number, number];
   }, [seed]);
 
@@ -685,11 +788,17 @@ function RemotePlayer({
 
   return (
     <group ref={ref} position={start} onClick={(e) => (e.stopPropagation(), onSelect(player))}>
-      <BlockAvatar config={player.config} walking={walking} scale={0.75} emote={activeEmote(reaction)} />
-      <NameTag player={player} reaction={reaction} online={online} />
+      {near ? (
+        <>
+          <BlockAvatar config={player.config} walking={walking} scale={0.75} emote={activeEmote(reaction)} />
+          <NameTag player={player} reaction={reaction} online={online} />
+        </>
+      ) : (
+        <LowAvatar config={player.config} scale={0.75} />
+      )}
     </group>
   );
-}
+});
 
 function Player({
   me,
@@ -720,7 +829,7 @@ function Player({
     const moving = Math.abs(x) + Math.abs(z) > 0.05;
     if (moving !== walking) setWalking(moving);
     if (moving) {
-      const speed = 6 * Math.min(dt, 0.05);
+      const speed = 8 * Math.min(dt, 0.05);
       const nx = g.position.x + x * speed;
       const nz = g.position.z + z * speed;
       const inside = Math.hypot(nx, nz) < WORLD_RADIUS;

@@ -3,7 +3,7 @@
 import { useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Sparkles } from "@react-three/drei";
-import type { Group, Mesh } from "three";
+import { BoxGeometry, MeshStandardMaterial, type Group, type Mesh } from "three";
 import { ITEM_BY_ID, type AvatarConfig } from "@/lib/game/catalog";
 
 /**
@@ -385,4 +385,31 @@ function Effect({ id }: { id: string }) {
     );
   }
   return null;
+}
+
+// ---------------------------------------------------------------------------
+// Far-away version: 4 meshes sharing geometry and materials, no animation
+// rig and no shadows — what a crowd of hundreds can afford.
+// ---------------------------------------------------------------------------
+const UNIT_BOX = new BoxGeometry(1, 1, 1);
+const MATERIALS = new Map<string, MeshStandardMaterial>();
+function material(c: string) {
+  let m = MATERIALS.get(c);
+  if (!m) {
+    m = new MeshStandardMaterial({ color: c, roughness: 0.8 });
+    MATERIALS.set(c, m);
+  }
+  return m;
+}
+
+export function LowAvatar({ config, scale = 1 }: { config: AvatarConfig; scale?: number }) {
+  const skin = color(config.skin, "#c98e66");
+  return (
+    <group scale={scale}>
+      <mesh geometry={UNIT_BOX} material={material(color(config.bottom, "#1b1b1f"))} position={[0, 0.6, 0]} scale={[0.98, 1.2, 0.5]} />
+      <mesh geometry={UNIT_BOX} material={material(color(config.top, "#f7f5fb"))} position={[0, 1.72, 0]} scale={[1.8, 1.05, 0.55]} />
+      <mesh geometry={UNIT_BOX} material={material(skin)} position={[0, 2.78, 0]} scale={[0.95, 0.95, 0.9]} />
+      <mesh geometry={UNIT_BOX} material={material(color(config.hairColor, "#5a3420"))} position={[0, 3.2, -0.05]} scale={[1.02, 0.3, 1.0]} />
+    </group>
+  );
 }

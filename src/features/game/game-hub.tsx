@@ -13,6 +13,7 @@ import {
   type GameStats,
 } from "@/lib/game/catalog";
 import type { LiveConfig, LobbyPlayer } from "@/features/game/lobby";
+import { makeBots } from "@/features/game/bots";
 import { cn } from "@/lib/utils";
 
 // WebGL only in the browser.
@@ -45,6 +46,7 @@ export function GameHub({
   seen,
   readOnly = false,
   demoUnlock,
+  botCount = 0,
 }: {
   name: string;
   stats: GameStats;
@@ -57,7 +59,10 @@ export function GameHub({
   readOnly?: boolean;
   /** Prototype only: show the unlock pop-up for this achievement. */
   demoUnlock?: string;
+  /** Staff load test (?bots=N): simulated visitors, local to this screen. */
+  botCount?: number;
 }) {
+  const bots = useMemo(() => makeBots(botCount), [botCount]);
   const [tab, setTab] = useState<(typeof TABS)[number]["id"]>("lobby");
   const [hennas, setHennas] = useState(stats.hennasCollected);
   const liveStats = useMemo(() => ({ ...stats, hennasCollected: hennas }), [stats, hennas]);
@@ -144,7 +149,7 @@ export function GameHub({
         aria-hidden={tab !== "lobby"}
         className={tab === "lobby" ? undefined : "pointer-events-none absolute inset-x-0 top-0 -z-10 opacity-0"}
       >
-        <Lobby players={lobbyPlayers} active={tab === "lobby"} live={lobbyLive} />
+        <Lobby players={lobbyPlayers} active={tab === "lobby"} live={lobbyLive} bots={bots} />
       </div>
       {tab === "avatar" ? (
         <div className={pending ? "pointer-events-none opacity-70" : undefined}>
