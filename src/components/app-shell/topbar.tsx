@@ -9,6 +9,7 @@ interface TopbarProps {
   userEmail: string;
   role: string;
   isPlatformAdmin?: boolean;
+  hasPortal?: boolean;
 }
 
 export function Topbar({
@@ -17,6 +18,7 @@ export function Topbar({
   userEmail,
   role,
   isPlatformAdmin,
+  hasPortal,
 }: TopbarProps) {
   return (
     <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between gap-3 bg-background/85 px-4 backdrop-blur supports-backdrop-filter:bg-background/70 sm:px-6 md:rounded-t-[22px] lg:px-10">
@@ -38,6 +40,7 @@ export function Topbar({
             role={role}
             orgName={orgName}
             isPlatformAdmin={isPlatformAdmin}
+          hasPortal={hasPortal}
           />
         </div>
       </div>

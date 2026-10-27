@@ -78,7 +78,11 @@ export default async function AppLayout({
   }
 
   const { organization, settings, role } = current;
-  const isPlatformAdmin = await getIsPlatformAdmin();
+  const [isPlatformAdmin, portalCreators] = await Promise.all([
+    getIsPlatformAdmin(),
+    getMyPortalCreators(),
+  ]);
+  const hasPortal = portalCreators.length > 0;
 
   if (organization.status === "suspended") {
     return (
@@ -103,6 +107,7 @@ export default async function AppLayout({
           userEmail={user.email ?? ""}
           role={role}
           isPlatformAdmin={isPlatformAdmin}
+          hasPortal={hasPortal}
         />
         {/* The content canvas sits inset in the paper frame, like a sheet. */}
         <div className="flex min-w-0 flex-1 flex-col md:py-2 md:pr-2">
@@ -113,6 +118,7 @@ export default async function AppLayout({
               userEmail={user.email ?? ""}
               role={role}
               isPlatformAdmin={isPlatformAdmin}
+              hasPortal={hasPortal}
             />
             <main className="flex-1 px-4 pt-2 pb-10 sm:px-6 lg:px-10">
               <div className="mx-auto max-w-7xl">{children}</div>

@@ -2,7 +2,7 @@
 
 import { useTransition } from "react";
 import Link from "next/link";
-import { ChevronRight, ChevronsUpDown, LogOut, ShieldCheck } from "lucide-react";
+import { ChevronRight, ChevronsUpDown, Gamepad2, LogOut, ShieldCheck } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,6 +24,8 @@ interface UserMenuProps {
   role: string;
   orgName?: string;
   isPlatformAdmin?: boolean;
+  /** The account is also a creator with portal access. */
+  hasPortal?: boolean;
 }
 
 function initials(email: string): string {
@@ -36,9 +38,10 @@ export function UserMenu({
   role,
   orgName,
   isPlatformAdmin,
+  hasPortal,
 }: UserMenuProps) {
   const [pending, startTransition] = useTransition();
-  const items = buildUserMenuItems({ isPlatformAdmin });
+  const items = buildUserMenuItems({ isPlatformAdmin, hasPortal });
 
   // `logout` is a Server Action (signOut + redirect("/login")). Invoked
   // imperatively via startTransition — the same pattern the CRM status menus
@@ -111,6 +114,11 @@ export function UserMenu({
           item.key === "admin" ? (
             <DropdownMenuItem key="admin" render={<Link href={item.href!} />}>
               <ShieldCheck />
+              {item.label}
+            </DropdownMenuItem>
+          ) : item.key === "portal" ? (
+            <DropdownMenuItem key="portal" render={<Link href={item.href!} />}>
+              <Gamepad2 />
               {item.label}
             </DropdownMenuItem>
           ) : (

@@ -84,3 +84,9 @@ test("regression: logout server action does signOut then redirect('/login')", ()
   assert.match(body, /redirect\("\/login"\)/);
   assert.doesNotMatch(body, /\btry\s*\{/, "no try/catch around redirect()");
 });
+
+test("menu items: an account linked to a creator gets 'Meu portal' -> /portal", () => {
+  const items = buildUserMenuItems({ hasPortal: true });
+  assert.deepEqual(items.map((i) => i.key), ["portal", "logout"]);
+  assert.equal(items[0].href, "/portal");
+});

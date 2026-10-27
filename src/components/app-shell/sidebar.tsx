@@ -8,6 +8,7 @@ interface SidebarProps {
   userEmail: string;
   role: string;
   isPlatformAdmin?: boolean;
+  hasPortal?: boolean;
 }
 
 /**
@@ -20,6 +21,7 @@ export function Sidebar({
   userEmail,
   role,
   isPlatformAdmin,
+  hasPortal,
 }: SidebarProps) {
   return (
     <aside className="sticky top-0 hidden h-svh w-[17rem] shrink-0 flex-col bg-sidebar px-3 pt-5 pb-3 md:flex">
@@ -31,6 +33,7 @@ export function Sidebar({
         role={role}
         orgName={orgName}
         isPlatformAdmin={isPlatformAdmin}
+        hasPortal={hasPortal}
       />
     </aside>
   );
