@@ -8,6 +8,7 @@ import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { getCurrentUser } from "@/features/organizations/queries";
 import { getMyPortalCreators, getPortalDashboard } from "@/features/portal/queries";
 import { getPortalContent } from "@/features/content/queries";
+import { getGame } from "@/features/game/queries";
 import { portalLogout } from "@/features/portal/actions";
 import { PortalDashboardView } from "@/features/portal/components/dashboard";
 import { ThemeStyle } from "@/components/theme-style";
@@ -61,9 +62,10 @@ export default async function PortalPage({
     );
   }
 
-  const [dashboard, content] = await Promise.all([
+  const [dashboard, content, game] = await Promise.all([
     getPortalDashboard(selected.creator_id),
     getPortalContent(selected.creator_id),
+    getGame(selected.creator_id),
   ]);
   if (!dashboard) {
     return (
@@ -87,6 +89,8 @@ export default async function PortalPage({
         canEditAvatar
         content={content}
         canSubmitContent
+        game={game?.stats ?? null}
+        gameHref={creators.length > 1 ? `/portal/jogo?c=${selected.creator_id}` : "/portal/jogo"}
       />
     </Shell>
   );

@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, Eye } from "lucide-react";
 import { getPortalPreview } from "@/features/portal/queries";
 import { getPortalContent } from "@/features/content/queries";
+import { getGame } from "@/features/game/queries";
 import { PortalDashboardView } from "@/features/portal/components/dashboard";
 
 export const metadata: Metadata = { title: "Portal da creator (visualização)" };
@@ -21,7 +22,11 @@ export default async function CreatorPortalPreviewPage({
 }) {
   const { creatorId } = await params;
   if (!UUID_RE.test(creatorId)) notFound();
-  const [data, content] = await Promise.all([getPortalPreview(creatorId), getPortalContent(creatorId)]);
+  const [data, content, game] = await Promise.all([
+    getPortalPreview(creatorId),
+    getPortalContent(creatorId),
+    getGame(creatorId),
+  ]);
 
   return (
     <div className="space-y-4">
@@ -44,6 +49,8 @@ export default async function CreatorPortalPreviewPage({
             canEditAvatar
             content={content}
             canSubmitContent={false}
+            game={game?.stats ?? null}
+            gameHref={null}
           />
         </div>
       ) : (

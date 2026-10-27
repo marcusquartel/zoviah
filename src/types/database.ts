@@ -1540,6 +1540,11 @@ export interface Database {
         Returns: Json;
       };
       delete_creator_content: { Args: { p_id: string }; Returns: Json };
+      portal_game: { Args: { p_creator_id: string }; Returns: Json };
+      portal_save_avatar: { Args: { p_creator_id: string; p_avatar: Json }; Returns: Json };
+      portal_game_seen: { Args: { p_creator_id: string; p_ids: string[] }; Returns: undefined };
+      portal_interact: { Args: { p_from: string; p_to: string; p_kind: string }; Returns: Json };
+      portal_collect_hennas: { Args: { p_creator_id: string; p_count: number }; Returns: number };
       set_creator_avatar: { Args: { p_creator_id: string; p_url: string }; Returns: Json };
       claim_sale_notifications: {
         Args: { p_org: string; p_ingest_key: string; p_limit?: number };

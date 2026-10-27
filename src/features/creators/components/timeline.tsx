@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { APPLICATION_STATUS_LABELS } from "@/features/applications/status";
 import { formatDateTime } from "@/features/creators/format";
+import { ACHIEVEMENTS } from "@/lib/game/catalog";
 import type { ApplicationStatus, CreatorEvent } from "@/types/database";
 
 /** Statuses removed with the address step — still named in older events. */
@@ -100,6 +101,14 @@ function describe(event: CreatorEvent): {
               : "Endereço enviado pela creator",
         detail: actor ? `por ${actor}` : undefined,
       };
+    case "game_prize_unlocked": {
+      const a = ACHIEVEMENTS.find((x) => x.id === data.achievement);
+      return {
+        icon: UserPlus,
+        title: `🎁 Prêmio desbloqueado no Glance World: ${a?.realPrize ?? "prêmio"}`,
+        detail: a ? `Conquista "${a.title}" — combine a entrega com a creator.` : undefined,
+      };
+    }
     case "portal_invited":
       return {
         icon: UserPlus,

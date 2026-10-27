@@ -1,8 +1,9 @@
-import { Flame, Lock, Ticket, Trophy } from "lucide-react";
+import { Flame, Ticket, Trophy } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { formatMoney, formatPercent } from "@/lib/money";
 import { formatDate } from "@/features/creators/format";
-import { computeAchievements, nextAchievement, type Achievement } from "@/lib/portal/achievements";
+import Link from "next/link";
+import { evaluateAchievements, type AchievementState, type GameStats } from "@/lib/game/catalog";
 import { CopyCode } from "@/features/portal/components/copy-code";
 import { RankingTabs } from "@/features/portal/components/ranking";
 import { CreatorAvatar } from "@/features/portal/components/avatar-upload";
@@ -44,6 +45,8 @@ export function PortalDashboardView({
   canEditAvatar,
   content,
   canSubmitContent,
+  game,
+  gameHref,
 }: {
   data: PortalDashboard;
   creatorId: string;
@@ -51,6 +54,10 @@ export function PortalDashboardView({
   content: PortalContent | null;
   /** The creator herself registers content; the staff preview only shows it. */
   canSubmitContent: boolean;
+  /** Glance World stats (achievements live there). */
+  game: GameStats | null;
+  /** Link into Glance World; null in the staff preview. */
+  gameHref: string | null;
 }) {
   const primary = data.branding.primary_color || FALLBACK_PRIMARY;
   const secondary = data.branding.secondary_color || primary || FALLBACK_SECONDARY;
@@ -62,16 +69,8 @@ export function PortalDashboardView({
   const me = data.ranking.all.find((r) => r.me) ?? null;
   const meTier = data.ranking.tier?.find((r) => r.me) ?? null;
   const month = monthLabel(data.month.from);
-  const achievements = computeAchievements({
-    monthOrders: Number(data.month.orders),
-    monthSales: Number(data.month.sales),
-    totalOrders: Number(data.totals.orders),
-    position: me && Number(data.month.orders) > 0 ? me.position : null,
-    streakMonths: data.streak_months,
-    monthContent: content?.month.approved ?? 0,
-    totalContent: content?.total_approved ?? 0,
-  });
-  const next = nextAchievement(achievements);
+  const achievements = game ? evaluateAchievements(game) : [];
+  const next = nextGoal(achievements);
   const unlocked = achievements.filter((a) => a.unlocked).length;
 
   return (
@@ -118,10 +117,10 @@ export function PortalDashboardView({
               <span className="font-medium">
                 Próxima conquista: {next.emoji} {next.title}
               </span>
-              <span className="shrink-0 text-white/85">{next.remaining}</span>
+              <span className="shrink-0 text-white/85">{remainingLabel(next)}</span>
             </div>
             <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-white/25">
-              <div className="h-full rounded-full bg-white" style={{ width: `${Math.max(4, Math.round(next.progress * 100))}%` }} />
+              <div className="h-full rounded-full bg-white" style={{ width: `${Math.max(4, Math.round(next.ratio * 100))}%` }} />
             </div>
           </div>
         ) : null}
@@ -199,20 +198,10 @@ export function PortalDashboardView({
         <PortalContentSection creatorId={creatorId} content={content} accent={primary} canSubmit={canSubmitContent} />
       ) : null}
 
-      {/* ---------------------------------------------------- achievements */}
-      <Card>
-        <div className="flex items-center justify-between gap-2">
-          <p className="font-semibold">Conquistas</p>
-          <span className="text-sm text-muted-foreground">
-            {unlocked} de {achievements.length}
-          </span>
-        </div>
-        <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {achievements.map((a) => (
-            <AchievementCard key={a.id} a={a} gradient={textGradient} />
-          ))}
-        </div>
-      </Card>
+      {/* ---------------------------------------------------- glance world */}
+      {game ? (
+        <GlanceWorldCard unlocked={unlocked} total={achievements.length} href={gameHref} gradient={textGradient} />
+      ) : null}
 
       {/* --------------------------------------------------------- ranking */}
       <Card>
@@ -394,29 +383,54 @@ function CouponTicket({
   );
 }
 
-function AchievementCard({ a, gradient }: { a: Achievement; gradient: string }) {
+/** Entry card into the game area (achievements, avatar, 3D lobby). */
+function GlanceWorldCard({
+  unlocked,
+  total,
+  href,
+  gradient,
+}: {
+  unlocked: number;
+  total: number;
+  href: string | null;
+  gradient: string;
+}) {
   return (
-    <div
-      className={cn(
-        "flex flex-col items-center gap-1 rounded-2xl p-3 text-center",
-        a.unlocked ? "text-white shadow-sm" : "border bg-muted/30",
-      )}
-      style={a.unlocked ? { background: gradient } : undefined}
-      title={a.description}
-    >
-      <span className={cn("text-3xl", !a.unlocked && "opacity-40 grayscale")} aria-hidden>
-        {a.emoji}
-      </span>
-      <p className={cn("text-sm font-semibold", !a.unlocked && "text-muted-foreground")}>{a.title}</p>
-      <p className={cn("text-[0.7rem] leading-tight", a.unlocked ? "text-white/90" : "text-muted-foreground")}>
-        {a.unlocked ? a.description : (a.remaining ?? a.description)}
-      </p>
-      {!a.unlocked && a.remaining ? (
-        <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-          <div className="h-full rounded-full bg-foreground/40" style={{ width: `${Math.round(a.progress * 100)}%` }} />
+    <div className="relative overflow-hidden rounded-2xl bg-[#0a0a0a] p-5 text-white shadow-sm sm:p-6">
+      <div aria-hidden className="pointer-events-none absolute -right-10 -top-10 size-44 rounded-full opacity-60" style={{ background: gradient }} />
+      <div className="relative flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.25em] text-white/60">Novo</p>
+          <p className="text-2xl font-black tracking-wider">🌐 GLANCE WORLD</p>
+          <p className="mt-1 max-w-md text-sm text-white/75">
+            Monte seu avatar, desbloqueie roupas, pets e títulos com as suas conquistas e encontre as outras
+            embaixadoras no mundo 3D. · 🎖️ {unlocked}/{total} conquistas
+          </p>
         </div>
-      ) : null}
-      {!a.unlocked && !a.remaining ? <Lock className="size-3 text-muted-foreground" aria-label="Bloqueada" /> : null}
+        {href ? (
+          <Link
+            href={href}
+            className="rounded-2xl border-4 border-white bg-[#fd9fb0] px-6 py-3 text-sm font-black uppercase tracking-wide text-[#0a0a0a] shadow-[4px_4px_0_#ffffff] transition-transform active:translate-y-1 active:shadow-none"
+          >
+            🎮 Entrar
+          </Link>
+        ) : (
+          <span className="text-xs text-white/60">Pré-visualização: o jogo abre no portal da creator.</span>
+        )}
+      </div>
     </div>
   );
+}
+
+const MONEY_GOALS = new Set(["sales1k", "sales5k", "sales10k"]);
+const brl0 = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
+
+/** The locked, measurable achievement closest to unlocking. */
+function nextGoal(list: AchievementState[]): AchievementState | null {
+  return list.filter((a) => !a.unlocked && a.target > 1).sort((a, b) => b.ratio - a.ratio)[0] ?? null;
+}
+
+function remainingLabel(a: AchievementState): string {
+  const left = Math.max(0, a.target - a.current);
+  return MONEY_GOALS.has(a.id) ? `faltam ${brl0.format(left)}` : `faltam ${Math.ceil(left)}`;
 }
