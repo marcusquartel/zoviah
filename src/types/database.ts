@@ -791,6 +791,8 @@ export interface Database {
           notify_sales: boolean;
           /** Public URL in the creator-avatars bucket (set_creator_avatar). */
           avatar_url: string | null;
+          /** Staff turned portal access off (blocks the automatic link). */
+          portal_disabled: boolean;
         } & Timestamps;
         Insert: {
           id?: string;

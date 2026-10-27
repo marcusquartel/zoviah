@@ -184,3 +184,57 @@ export async function setCreatorAvatar(creatorId: string, url: string | null): P
   revalidatePath("/app/creators");
   return { ok: true };
 }
+
+// ---------------------------------------------------------------------------
+// First access (no invite)
+// ---------------------------------------------------------------------------
+
+export interface PortalFirstAccessResult {
+  ok: boolean;
+  error?: string;
+  accountExists?: boolean;
+}
+
+const firstAccessSchema = z.object({
+  email: z.email().max(254),
+  password: z.string().min(8).max(72),
+});
+
+/**
+ * Creates the account for an approved creator's first access. The answer is
+ * the same whether or not the e-mail belongs to a creator (no enumeration):
+ * the portal link happens only after she confirms the e-mail, and only for
+ * creators with that e-mail on an approved record (portal_my_creators).
+ */
+export async function startPortalAccess(input: { email: string; password: string }): Promise<PortalFirstAccessResult> {
+  if (!isSupabaseConfigured()) return { ok: false, error: "Serviço indisponível." };
+  const parsed = firstAccessSchema.safeParse({
+    email: String(input.email ?? "").trim().toLowerCase(),
+    password: String(input.password ?? ""),
+  });
+  if (!parsed.success) return { ok: false, error: "Informe um e-mail válido e uma senha de 8 caracteres ou mais." };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.signUp({
+    email: parsed.data.email,
+    password: parsed.data.password,
+    options: { emailRedirectTo: buildAuthCallbackUrl("/portal") },
+  });
+  const exists = "Você já tem uma conta com este e-mail. Entre com sua senha ou use \"Esqueci minha senha\".";
+  if (error) {
+    const msg = error.message.toLowerCase();
+    if (msg.includes("already registered") || msg.includes("already been registered")) {
+      return { ok: false, accountExists: true, error: exists };
+    }
+    if (msg.includes("weak") || msg.includes("password")) {
+      return { ok: false, error: "Senha muito fraca. Use uma senha mais forte." };
+    }
+    if (msg.includes("rate") || error.status === 429) {
+      return { ok: false, error: "Muitas tentativas. Aguarde alguns minutos." };
+    }
+    console.error("[portal first access]", error.status, error.message);
+    return { ok: false, error: "Não foi possível criar o acesso." };
+  }
+  if (data.user && data.user.identities?.length === 0) return { ok: false, accountExists: true, error: exists };
+  return { ok: true };
+}

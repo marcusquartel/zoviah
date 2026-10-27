@@ -130,6 +130,8 @@ export interface CouponsTabData {
   notifySales: boolean;
   portal: {
     active: boolean;
+    /** Access was removed by staff (the automatic link is blocked). */
+    disabled: boolean;
     since: string | null;
     invite: { status: string; created_at: string; expires_at: string } | null;
   };
@@ -145,7 +147,7 @@ export async function loadCouponsTab(creatorId: string): Promise<CouponsTabData>
       tiers: [],
       tierId: null,
       notifySales: true,
-      portal: { active: false, since: null, invite: null },
+      portal: { active: false, disabled: false, since: null, invite: null },
     };
   }
   const supabase = await createClient();
@@ -173,7 +175,7 @@ export async function loadCouponsTab(creatorId: string): Promise<CouponsTabData>
     getTiers(orgId),
     supabase
       .from("creators")
-      .select("tier_id, notify_sales")
+      .select("tier_id, notify_sales, portal_disabled")
       .eq("organization_id", orgId)
       .eq("id", creatorId)
       .maybeSingle(),
@@ -200,6 +202,7 @@ export async function loadCouponsTab(creatorId: string): Promise<CouponsTabData>
     notifySales: creator?.notify_sales ?? true,
     portal: {
       active: Boolean(portalUser),
+      disabled: creator?.portal_disabled ?? false,
       since: portalUser?.created_at ?? null,
       // An expired invite reads as "no invite" (the RPCs expire it lazily).
       invite:

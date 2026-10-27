@@ -145,7 +145,9 @@ function PortalAccess({
             ? `Ativo desde ${formatDate(portal.since ?? "")}. Ela vê vendas, comissões, cupons e o ranking.`
             : pendingInvite
               ? `Convite enviado em ${formatDate(pendingInvite.created_at)}, aguardando ela criar a senha (vale até ${formatDate(pendingInvite.expires_at)}).`
-              : "Sem acesso. Convide para ela acompanhar vendas, comissões e o ranking."}
+              : portal.disabled
+                ? "Acesso removido. Envie um convite para liberar de novo."
+                : "Liberado: com o cadastro aprovado, ela entra em zoviah.app/portal/login com o e-mail cadastrado (\"Primeiro acesso\" para criar a senha). O convite é opcional."}
         </p>
       </div>
       {link ? (
@@ -177,7 +179,7 @@ function PortalAccess({
               ? "Reenviar convite"
               : pendingInvite
                 ? "Reenviar convite"
-                : "Convidar para o portal"}
+                : "Enviar link de acesso"}
         </Button>
       </div>
     </section>

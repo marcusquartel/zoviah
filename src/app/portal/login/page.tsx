@@ -8,7 +8,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { SetupNotice } from "@/components/setup-notice";
-import { LoginForm } from "@/app/login/login-form";
+import { PortalLoginPanel } from "@/features/portal/components/portal-login-panel";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { getCurrentUser } from "@/features/organizations/queries";
 
@@ -35,11 +35,11 @@ export default async function PortalLoginPage({
         <CardHeader>
           <CardTitle>Portal da creator</CardTitle>
           <CardDescription>
-            Entre com o e-mail e a senha que você criou pelo convite da marca.
+            Entre com o e-mail da sua inscrição. É o primeiro acesso? Crie sua senha abaixo.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <LoginForm next={next} />
+          <PortalLoginPanel next={next} />
         </CardContent>
       </Card>
     </div>

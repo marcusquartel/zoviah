@@ -33,8 +33,9 @@ export default async function PortalPage({
         <div className="mx-auto max-w-md space-y-2 py-20 text-center">
           <h1 className="text-lg font-semibold">Portal não ativado</h1>
           <p className="text-sm text-muted-foreground">
-            Sua conta ({user.email}) ainda não tem um portal de creator. Use o
-            link do convite que a marca enviou por e-mail.
+            Sua conta ({user.email}) ainda não tem um portal de creator. O
+            acesso é liberado quando a marca aprova seu cadastro — use o mesmo
+            e-mail que você informou na inscrição.
           </p>
         </div>
       </Shell>
